@@ -4,6 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#17462e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="WYD 2026">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Who's Your Daddy 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1091,8 +1098,20 @@ function render() {
   }
 }
 
+function installTip() {
+  if (ui.tv) return '';
+  let standalone = false, dismissed = false;
+  try { standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) {}
+  try { dismissed = localStorage.getItem('wyd-install-tip') === 'no'; } catch (e) {}
+  const ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua), android = /Android/.test(ua);
+  if (standalone || dismissed || !(ios || android)) return '';
+  const how = ios ? 'In Safari, tap <b>Share</b> (the square with the arrow), then <b>Add to Home Screen</b>.' : 'Tap the <b>⋮</b> menu, then <b>Add to Home screen</b> (or <b>Install app</b>).';
+  return `<div class="banner"><p><b>Get the app:</b> ${how} It opens full screen like any other app.</p><div class="row">${window.__wydInstall ? '<button class="btn primary" data-act="install">Install</button>' : ''}<button class="btn" data-act="tip-no">Not now</button></div></div>`;
+}
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.__wydInstall = e; try { render(); } catch (x) {} });
+
 function banner() {
-  let out = '';
+  let out = installTip();
   if (ui.pinOpen && !canWrite) out += `<section class="banner" role="dialog" aria-labelledby="pin-h"><p id="pin-h"><b>Scorekeeper PIN.</b> Enter it once and this phone or computer can enter scores for the rest of the trip.</p>
     <form class="row" data-form="pin"><input id="pin-in" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="PIN" style="width:110px"><button class="btn primary" type="submit">Unlock</button><button class="btn" type="button" data-act="pin-cancel">Cancel</button></form></section>`;
   if (ui.importData) out += `<section class="banner" role="alertdialog" aria-labelledby="imp-h"><p id="imp-h"><b>Are you sure?</b> Importing <b>${esc(ui.importName || 'this file')}</b> replaces all players, teams, scores and setup with what's in the file.</p>
@@ -1378,6 +1397,8 @@ document.getElementById('main').addEventListener('click', async (e) => {
   const act = b.dataset.act, day = b.dataset.day;
   if (act === 'rday') { ui.rday = day; return render(); }
   if (act === 'pin-open') return askPin();
+  if (act === 'tip-no') { try { localStorage.setItem('wyd-install-tip', 'no'); } catch (x) {} return render(); }
+  if (act === 'install') { const ev = window.__wydInstall; window.__wydInstall = null; if (ev) { try { await ev.prompt(); } catch (x) {} } return render(); }
   if (act === 'pin-cancel') { ui.pinOpen = false; return render(); }
   if (act === 'export') return exportTrip();
   if (act === 'imp-cancel') { ui.importData = null; return render(); }
