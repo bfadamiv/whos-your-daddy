@@ -155,14 +155,15 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .bd-dot { width: .6em; height: .6em; border-radius: 50%; background: #ff4d4d; box-shadow: 0 0 0 0 rgba(255,77,77,.6); animation: bdpulse 1.6s infinite; }
 .bd-dot.done { background: var(--m-gold); animation: none; }
 @keyframes bdpulse { 0% { box-shadow: 0 0 0 0 rgba(255,77,77,.55); } 70% { box-shadow: 0 0 0 .55em rgba(255,77,77,0); } 100% { box-shadow: 0 0 0 0 rgba(255,77,77,0); } }
-.bd-main { display: grid; grid-template-columns: minmax(0, 1fr) 17em; gap: 14px; align-items: start; }
+.bd-main { display: grid; grid-template-columns: minmax(0, 1fr) 19em; gap: 14px; align-items: start; }
 .bd-main.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .bd-board { --cols: 3.9em minmax(9em, 1fr) repeat(18, var(--hw, 2.4em)) 3.2em 4.4em; display: flex; flex-direction: column; gap: 3px; background: var(--m-frame-2); padding: 3px; border-radius: 3px; min-width: 0; font-variant-numeric: tabular-nums; }
 .bd-board.has-pay { --cols: 3.9em minmax(9em, 1fr) repeat(18, var(--hw, 2.4em)) 3.2em 4.4em 4.6em; }
-.bd-board.wk { --cols: 3.9em minmax(0, 1fr) 4.4em; }
+.bd-board.wk { --cols: 3.9em minmax(0, 1fr) 4.4em 5em; }
 .bd-board.ml { --cols: 3.9em minmax(0, 1fr) 5.2em; }
 .bd-main.one { grid-template-columns: minmax(0, 34em); justify-content: center; }
 .bd-li.s { grid-template-columns: minmax(0, 1fr) auto; }
+.bd-li i { font-style: normal; color: #cfe0d4; font-size: .9em; }
 .bd-row { display: grid; grid-template-columns: var(--cols); align-items: center; background: var(--m-slat); color: var(--m-ink); min-height: 2.25em; }
 .bd-row .c { padding: 0 .3em; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 1px solid var(--m-rule); line-height: 2.1; }
 .bd-row .c:first-child { border-left: 0; }
@@ -205,24 +206,25 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 @container (max-width: 760px) {
   .bd-board { --cols: 3em minmax(0, 1fr) 2.2em 3.2em; } .bd-board.has-pay { --cols: 3em minmax(0, 1fr) 2.2em 3.2em 3.8em; }
   .bd-row .c.nm { white-space: normal; line-height: 1.2; padding-block: .35em; font-size: 1em; }
-  .bd-board.wk { --cols: 3em minmax(0, 1fr) 3.6em; } .bd-board.ml { --cols: 3em minmax(0, 1fr) 4.6em; }
+  .bd-board.wk { --cols: 3em minmax(0, 1fr) 3.4em 4.2em; } .bd-board.ml { --cols: 3em minmax(0, 1fr) 4.6em; }
   .bd-row .c.h { display: none; } .bd-name { font-size: 2em; }
   .bd-main.two { grid-template-columns: minmax(0, 1fr); }
 }
-.bd-board.pr { --cols: 3.9em minmax(0, 1fr) minmax(0, 1fr); }
-.bd-board.pr .bd-row > .c:nth-child(3) { border-left: 3px solid var(--m-frame); }
+.bd-board.pr { --cols: 3.9em minmax(0, 1fr) 3.6em minmax(0, 1fr) 3.6em; }
+.bd-board.pr .bd-row > .c:nth-child(4) { border-left: 3px solid var(--m-frame); }
 .bd-row .c.sd { color: var(--m-dim); font-size: .9em; }
 .bd-row .c.amp { font-family: var(--font-board); font-style: italic; color: var(--m-dim); }
 .bd-row .c sup { font-size: .55em; color: var(--m-dim); margin-left: 1px; }
 .bd-note { color: #cfe0d4; font-size: .85em; }
-@container (max-width: 760px) { .bd-board.pr { --cols: 3em minmax(0, 1fr) minmax(0, 1fr); } .bd-row .c.sd { padding: 0; border: 0; font-size: 0; } }
+@container (max-width: 760px) { .bd-board.pr { --cols: 2.4em minmax(0, 1fr) 2.8em minmax(0, 1fr) 2.8em; } .bd-row .c.sd { padding: 0; border: 0; font-size: 0; } }
 /* TV view: fill the screen, size type from the screen height */
 body.tv-mode header.band, body.tv-mode::before { display: none; }
 body.tv-mode { background: var(--m-frame); }
 body.tv-mode main { max-width: none; padding-block: 0; }
 .bd.tv { border-radius: 0; box-shadow: none; min-height: 100dvh; padding: 1.6vh 1.4vw calc(84px + env(safe-area-inset-bottom, 0px)); font-size: clamp(13px, 1.55vh, 30px); }
 .bd.tv .bd-board { font-size: clamp(10px, min(calc(62vh / (var(--rows) * 2.3)), calc((100vw - 400px) / 80)), 30px); }
-.bd.tv .bd-board.wk, .bd.tv .bd-board.pr, .bd.tv .bd-board.ml { font-size: clamp(10px, min(calc(62vh / (var(--rows) * 2.3)), calc((100vw - 120px) / 44)), 30px); }
+.bd.tv .bd-board.pr { font-size: clamp(10px, min(calc(62vh / (var(--rows) * 2.3)), calc((100vw - 120px) / 70)), 24px); }
+.bd.tv .bd-board.wk, .bd.tv .bd-board.ml { font-size: clamp(10px, min(calc(62vh / (var(--rows) * 2.3)), calc((100vw - 120px) / 44)), 30px); }
 .bd.tv .bd-name { font-size: 3.2em; }
 @media (prefers-reduced-motion: reduce) { .bd-dot, .bd-row.flash { animation: none; } }
 </style>
@@ -839,16 +841,16 @@ function boardDay(day) {
     const key = day + ':' + x.id, sig = x.toPar + '|' + x.thru;
     const changed = boardPrev[key] != null && boardPrev[key] !== sig;
     boardPrev[key] = sig;
-    return `<div class="bd-row ${changed ? 'flash' : ''} ${x.payout && r.complete ? 'inmoney' : ''}">
+    return `<div class="bd-row ${changed ? 'flash' : ''} ${x.payout ? 'inmoney' : ''}">
       <div class="c pos">${x.pos}</div>
       <div class="c nm">${nameCell(x)}</div>
       ${H.map(h => `<div class="c h ${tpCls(x.cum[h])} ${h === 9 ? 'turn' : ''}">${x.cum[h] == null ? '' : tpStr(x.cum[h])}</div>`).join('')}
       <div class="c thru">${x.final ? 'F' : x.thru || '—'}</div>
       <div class="c tp ${tpCls(x.toPar)}">${tpStr(x.toPar)}</div>
-      ${r.complete ? `<div class="c pay">${x.payout ? fmt$(x.payout) : ''}</div>` : ''}
+      <div class="c pay">${x.payout ? fmt$(x.payout) : ''}</div>
     </div>`;
   }).join('');
-  const holeRow = `<div class="bd-row hdr"><div class="c pos">Pos</div><div class="c nm">Hole</div>${H.map(h => `<div class="c h ${h === 9 ? 'turn' : ''}">${h + 1}</div>`).join('')}<div class="c thru">Thru</div><div class="c tp">Score</div>${r.complete ? '<div class="c pay">Won</div>' : ''}</div>`;
+  const holeRow = `<div class="bd-row hdr"><div class="c pos">Pos</div><div class="c nm">Hole</div>${H.map(h => `<div class="c h ${h === 9 ? 'turn' : ''}">${h + 1}</div>`).join('')}<div class="c thru">Thru</div><div class="c tp">Score</div><div class="c pay">Won</div></div>`;
   // Side panel: only who's winning. Details live on the Results tab.
   const who = (pids) => pids.map(p => S.players[p] ? (pids.length > 1 ? lastName(S.players[p].name) : shortName(S.players[p].name)) : '?').join('/');
   const skinBy = {};
@@ -856,21 +858,21 @@ function boardDay(day) {
   const skinList = Object.values(skinBy).sort((a, b) => b.amt - a.amt);
   const shortGame = { teamF9: 'Front 9', teamB9: 'Back 9', indF9: 'Ind. front', indB9: 'Ind. back', ind18: 'Ind. 18', group4: 'Foursome' };
   const gameLine = (g) => {
-    const top = g.list.filter(x => x.pos === 1);
-    const name = !top.length ? '—' : top.length > 1 ? top.length + '-way tie' : /^G\d+$/.test(top[0].key) ? top[0].key.replace('G', 'Group ') : who(top[0].pids);
-    return `<div class="bd-li g ${top.length ? '' : 'dim'}"><b>${shortGame[g.key] || esc(g.label)}</b><span>${esc(name)}</span><em>${top.length ? tpStr(top[0].toPar) : ''}</em></div>`;
+    const paid = g.list.filter(x => x.payout);
+    if (!paid.length) return `<div class="bd-li g dim"><b>${shortGame[g.key] || esc(g.label)}</b><span>—</span><em></em></div>`;
+    return paid.map((x, i) => `<div class="bd-li g"><b>${i === 0 || paid[i - 1].pos !== x.pos ? (shortGame[g.key] || esc(g.label)) + (g.places.length > 1 ? ' ' + ordinal(x.pos) : '') : ''}</b><span>${esc(/^G\d+$/.test(x.key) ? x.key.replace('G', 'Group ') : who(x.pids))} <i>${tpStr(x.toPar)}</i></span><em>${fmt$(x.payout)}</em></div>`).join('');
   };
   const side = `<div class="bd-side">
     <div class="bd-box"><div class="bd-box-h">Skins <span>${r.skinUnits ? r.skinUnits + ' won' : 'none yet'}</span></div>
-      ${skinList.slice(0, 8).map(s => `<div class="bd-li s"><span>${esc(who(s.pids))}</span><em>${fmt$(s.amt)}</em></div>`).join('')}
-      ${skinList.length > 8 ? `<div class="bd-li dim">+${skinList.length - 8} more</div>` : ''}</div>
-    ${r.games.length ? `<div class="bd-box"><div class="bd-box-h">Leaders</div>${r.games.map(gameLine).join('')}</div>` : ''}
+      ${skinList.slice(0, 10).map(s => `<div class="bd-li s"><span>${esc(who(s.pids))}</span><em>${fmt$(s.amt)}</em></div>`).join('')}
+      ${skinList.length > 10 ? `<div class="bd-li dim">+${skinList.length - 10} more</div>` : ''}</div>
+    ${r.games.length ? `<div class="bd-box"><div class="bd-box-h">Nines &amp; Individuals</div>${r.games.map(gameLine).join('')}</div>` : ''}
     ${r.contests.length ? `<div class="bd-box"><div class="bd-box-h">Closest to Pin</div>
-      ${r.contests.map(c => `<div class="bd-li s ${c.winner ? '' : 'dim'}"><span><b>#${c.hole}</b> ${c.winner ? esc(shortName(S.players[c.winner].name)) : '—'}</span><em></em></div>`).join('')}</div>` : ''}
+      ${r.contests.map(c => `<div class="bd-li s ${c.winner ? '' : 'dim'}"><span><b>#${c.hole}</b> ${c.winner ? esc(shortName(S.players[c.winner].name)) : '—'}</span><em>${c.winner ? fmt$(c.amt) : ''}</em></div>`).join('')}</div>` : ''}
   </div>`;
   const right = `<span class="bd-dot ${r.complete ? 'done' : ''}"></span>${r.complete ? 'Final' : 'Live'}<small>${finished} of ${rows.length} in · ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</small>`;
   const sub = `${DAY_LABEL[day]} · ${esc(r.course.name)} · ${esc(r.fmt.label)}`;
-  return boardHeader(sub, right) + `<div class="bd-main"><div class="bd-board ${r.complete ? 'has-pay' : ''}" style="--rows:${rows.length + 1}">${holeRow}${body || '<div class="bd-row"><div class="c nm">No teams set</div></div>'}</div>${side}</div>`;
+  return boardHeader(sub, right) + `<div class="bd-main"><div class="bd-board has-pay" style="--rows:${rows.length + 1}">${holeRow}${body || '<div class="bd-row"><div class="c nm">No teams set</div></div>'}</div>${side}</div>`;
 }
 
 function boardWeekend() {
@@ -882,6 +884,7 @@ function boardWeekend() {
   const base = individualNet(S, ['fri', 'sat']);
   const tm = tripMoney(S);
   const payBy = Object.fromEntries(tm.weekend.list.filter(x => x.payout).map(x => [x.pid, x.payout]));
+  const wonBy = Object.fromEntries(tm.list.map(x => [x.pid, x.total]));
   const rows = base.map(p => {
     const f = p.detail.fri != null ? p.detail.fri - parOf('fri') : null;
     const s = p.detail.sat != null ? p.detail.sat - parOf('sat') : null;
@@ -894,12 +897,12 @@ function boardWeekend() {
   const places = (S.config.weekend && S.config.weekend.places) || [];
   const half = Math.ceil(rows.length / 2);
   const done = tm.weekend.complete;
-  const col = (list) => `<div class="bd-board wk" style="--rows:${half + 1}"><div class="bd-row hdr"><div class="c pos">Pos</div><div class="c nm">Player</div><div class="c tp">Score</div></div>
+  const col = (list) => `<div class="bd-board wk" style="--rows:${half + 1}"><div class="bd-row hdr"><div class="c pos">Pos</div><div class="c nm">Player</div><div class="c tp">Score</div><div class="c pay">Won</div></div>
     ${list.map(x => {
-      const key = 'wk:' + x.pid, sig = x.toPar + '|' + x.n; const changed = boardPrev[key] != null && boardPrev[key] !== sig; boardPrev[key] = sig;
-      return `<div class="bd-row ${changed ? 'flash' : ''} ${payBy[x.pid] ? 'inmoney' : ''}"><div class="c pos">${x.pos}</div><div class="c nm">${esc(shortName(x.name))}${payBy[x.pid] && done ? ` <em class="pz">${fmt$(payBy[x.pid])}</em>` : ''}</div><div class="c tp ${tpCls(x.toPar)}">${tpStr(x.toPar)}</div></div>`; }).join('')}</div>`;
-  const right = `<span class="bd-dot ${done ? 'done' : ''}"></span>${done ? 'Final' : 'Live'}<small>Top ${places.length} paid</small>`;
-  return boardHeader('Weekend Individual', right) + `<div class="bd-main two">${col(rows.slice(0, half))}${col(rows.slice(half))}</div>`;
+      const key = 'wk:' + x.pid, sig = x.toPar + '|' + x.n + '|' + (wonBy[x.pid] || 0); const changed = boardPrev[key] != null && boardPrev[key] !== sig; boardPrev[key] = sig;
+      return `<div class="bd-row ${changed ? 'flash' : ''} ${payBy[x.pid] ? 'inmoney' : ''}"><div class="c pos">${x.pos}</div><div class="c nm">${esc(shortName(x.name))}</div><div class="c tp ${tpCls(x.toPar)}">${tpStr(x.toPar)}</div><div class="c pay">${wonBy[x.pid] ? fmt$(wonBy[x.pid]) : ''}</div></div>`; }).join('')}</div>`;
+  const right = `<span class="bd-dot ${done ? 'done' : ''}"></span>${done ? 'Final' : 'Live'}<small>Won = all money this trip${done ? '' : ' · projected'}</small>`;
+  return boardHeader('Weekend &amp; Money', right) + `<div class="bd-main two">${col(rows.slice(0, half))}${col(rows.slice(half))}</div>`;
 }
 
 // Live Sunday pairing projection: each player's individual net to par over every
@@ -929,11 +932,12 @@ function boardPairs() {
   if (n % 2) pairs.push([Math.floor(n / 2), null]);
   const allIn = seeds.every(s => s.holes === 36);
   const cell = (k) => {
-    if (k == null) return '<div class="c nm">— solo —</div>';
-    return `<div class="c nm">${esc(shortName(seeds[k].name))}</div>`;
+    if (k == null) return '<div class="c nm">— solo —</div><div class="c d"></div>';
+    const s = seeds[k];
+    return `<div class="c nm">${esc(shortName(s.name))}</div><div class="c d ${tpCls(s.tp)}">${s.tp == null ? '—' : tpStr(s.tp)}${s.holes && s.holes < 36 ? `<sup>${s.holes}</sup>` : ''}</div>`;
   };
   const half = Math.ceil(pairs.length / 2);
-  const col = (list, off) => `<div class="bd-board pr" style="--rows:${half + 1}"><div class="bd-row hdr"><div class="c pos">#</div><div class="c nm">Players</div><div class="c nm"></div></div>
+  const col = (list, off) => `<div class="bd-board pr" style="--rows:${half + 1}"><div class="bd-row hdr"><div class="c pos">#</div><div class="c nm">Top half</div><div class="c d">Net</div><div class="c nm">Bottom half</div><div class="c d">Net</div></div>
     ${list.map(([a, z], i) => { const key = 'pr:' + (off + i), sig = seeds[a].pid + '|' + (z == null ? '' : seeds[z].pid); const changed = boardPrev[key] != null && boardPrev[key] !== sig; boardPrev[key] = sig;
       return `<div class="bd-row ${changed ? 'flash' : ''}"><div class="c pos">${off + i + 1}</div>${cell(a)}${cell(z)}</div>`; }).join('')}</div>`;
   const right = `<span class="bd-dot ${allIn ? 'done' : ''}"></span>${allIn ? 'Set' : 'Projected'}<small>${allIn ? 'All cards in' : 'Until Saturday\'s last card'}</small>`;
@@ -956,15 +960,14 @@ function boardMoney() {
 }
 
 function sundayStarted() { return Object.values(S.scores.sun || {}).some(c => Array.isArray(c) && c.some(v => v != null && v !== '')); }
-function boardViews() { return ['day', 'money', 'weekend', 'pairs']; }
+function boardViews() { return ['day', 'weekend', 'pairs']; }
 
 function viewBoard() {
   const day = ui.bday === 'auto' ? autoBoardDay() : ui.bday;
-  const which = ['weekend', 'pairs', 'money'].includes(ui.bview) ? ui.bview : 'day';
+  const which = ['weekend', 'pairs'].includes(ui.bview) ? ui.bview : 'day';
   const controls = `<div class="bd-ctl">
     <div class="chips">${['auto', ...DAYS].map(d => `<button class="chip" aria-pressed="${ui.bday === d && which === 'day'}" data-act="bday" data-day="${d}">${d === 'auto' ? 'Today' : DAY_LABEL[d]}<small>${d === 'auto' ? 'Latest day with scores' : esc(S.config.courses[S.config.days[d].course].name)}</small></button>`).join('')}
-      <button class="chip" aria-pressed="${which === 'money'}" data-act="bmoney">Money List<small>Who's won what</small></button>
-      <button class="chip" aria-pressed="${which === 'weekend'}" data-act="bweek">Weekend<small>Individual standings</small></button>
+      <button class="chip" aria-pressed="${which === 'weekend'}" data-act="bweek">Weekend &amp; Money<small>Standings + winnings</small></button>
       <button class="chip" aria-pressed="${which === 'pairs'}" data-act="bpairs">Sunday Pairings<small>Live projection</small></button></div>
     <div class="row"><label class="row small"><input type="checkbox" id="b-rotate" data-brot="1" ${ui.rotate ? 'checked' : ''}> Rotate views every 20 s</label>
       <button class="btn primary" data-act="tv-on">Show on clubhouse TV</button></div></div>`;
@@ -972,7 +975,7 @@ function viewBoard() {
   const seg = (act, label, on, extra = '') => `<button class="tvb ${on ? 'on' : ''}" data-act="${act}" ${extra} aria-pressed="${on}">${label}</button>`;
   const tvBar = `<div class="bd-tvbar" role="toolbar" aria-label="Scoreboard views">
     <div class="tvseg">${seg('bday', 'Today', which === 'day' && ui.bday === 'auto', 'data-day="auto"')}${DAYS.map(d => seg('bday', DAY_LABEL[d].slice(0, 3), which === 'day' && ui.bday === d, `data-day="${d}"`)).join('')}</div>
-    <div class="tvseg">${seg('bmoney', 'Money', which === 'money')}${seg('bweek', 'Weekend', which === 'weekend')}${seg('bpairs', 'Pairings', which === 'pairs')}</div>
+    <div class="tvseg">${seg('bweek', 'Weekend & Money', which === 'weekend')}${seg('bpairs', 'Pairings', which === 'pairs')}</div>
     <div class="tvseg">${seg('brot', ui.rotate ? 'Auto-rotate on' : 'Auto-rotate off', ui.rotate)}</div>
     <div class="tvseg">${seg('fs', 'Full screen', false)}${seg('tv-off', 'Exit', false)}</div></div>`;
   return ui.tv ? board + tvBar : controls + board + `<div class="muted small">Updates live as cards are saved. On the clubhouse TV or laptop, open this page and tap <b>Show on clubhouse TV</b>, or open the link with <b>#scoreboard</b> on the end to go straight to it.</div>`;
