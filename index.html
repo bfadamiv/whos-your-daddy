@@ -1,0 +1,1458 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#17462e">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Who's Your Daddy 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Playfair+Display:ital,wght@1,800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<style>
+/* Layout: scoreboard band header + tabbed working surface; tables scroll inside their own frames. */
+:root {
+  --bg: #edf1eb; --surface: #ffffff; --surface-2: #f5f8f3; --ink: #13241a; --muted: #5a6a60; --line: #d3dcd2;
+  --band: #17462e; --band-ink: #f1f6f0; --band-muted: #a9c4b2;
+  --pine: #1d5a3a; --pine-ink: #ffffff; --pine-soft: #e1ede4;
+  --red: #c0392b; --gold: #8f6210; --gold-bg: #fbf0d8; --warn: #9a5a00; --warn-bg: #fdf1df;
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --font-body: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d1410; --surface: #151f19; --surface-2: #1a261f; --ink: #e3ebe4; --muted: #8fa195; --line: #2a3a30;
+  --band: #10301f; --band-ink: #eef4ef; --band-muted: #8fb39c;
+  --pine: #5cbf86; --pine-ink: #0c1a12; --pine-soft: #1c3426;
+  --red: #ff7b6b; --gold: #e2b55a; --gold-bg: #2b2413; --warn: #f0b052; --warn-bg: #2d2412; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d1410; --surface: #151f19; --surface-2: #1a261f; --ink: #e3ebe4; --muted: #8fa195; --line: #2a3a30;
+  --band: #10301f; --band-ink: #eef4ef; --band-muted: #8fb39c;
+  --pine: #5cbf86; --pine-ink: #0c1a12; --pine-soft: #1c3426;
+  --red: #ff7b6b; --gold: #e2b55a; --gold-bg: #2b2413; --warn: #f0b052; --warn-bg: #2d2412; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--band); }
+.wrap { max-width: 1120px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.band { background: var(--band); color: var(--band-ink); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+.band .wrap { padding-block: 14px 0; display: flex; flex-direction: column; gap: 10px; }
+.brand { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand h1 { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: .02em; text-transform: uppercase; margin: 0; line-height: 1; }
+.brand .sub { color: var(--band-muted); font-size: 13px; margin-top: 4px; }
+.status { font-family: var(--font-display); font-size: 13px; letter-spacing: .08em; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; border: 1px solid var(--band-muted); color: var(--band-ink); white-space: nowrap; }
+nav.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+nav.tabs button { font-family: var(--font-display); font-weight: 600; font-size: 17px; letter-spacing: .05em; text-transform: uppercase; background: none; border: 0; color: var(--band-muted); padding: 8px 14px 10px; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; }
+nav.tabs button[aria-selected="true"] { color: var(--band-ink); border-bottom-color: var(--band-ink); }
+nav.tabs button:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--pine); outline-offset: 1px; }
+
+main { padding-block: 18px 48px; display: flex; flex-direction: column; gap: 18px; }
+h2 { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: .02em; text-transform: uppercase; margin: 0; line-height: 1.1; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-weight: 600; font-size: 18px; letter-spacing: .04em; text-transform: uppercase; margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font-family: var(--font-display); font-size: 16px; font-weight: 600; letter-spacing: .03em; padding: 6px 12px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; text-align: left; line-height: 1.15; }
+.chip small { display: block; font-family: var(--font-body); font-weight: 400; font-size: 12px; color: var(--muted); letter-spacing: 0; }
+.chip[aria-pressed="true"] { background: var(--pine); border-color: var(--pine); color: var(--pine-ink); }
+.chip[aria-pressed="true"] small { color: var(--pine-ink); opacity: .8; }
+.pill { font-family: var(--font-display); font-size: 13px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 3px; display: inline-block; }
+.pill.final { background: var(--pine); color: var(--pine-ink); }
+.pill.live { background: var(--warn-bg); color: var(--warn); }
+.banner { border: 1px solid var(--line); background: var(--gold-bg); border-radius: 6px; padding: 12px 16px; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.banner p { margin: 0; max-width: 62ch; }
+
+button.btn { font-family: var(--font-body); font-weight: 600; font-size: 14px; padding: 8px 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; }
+button.btn.primary { background: var(--pine); border-color: var(--pine); color: var(--pine-ink); }
+button.btn.danger { color: var(--red); border-color: var(--red); }
+button.btn.danger.armed { background: var(--red); color: var(--surface); }
+button.btn:disabled { opacity: .5; cursor: default; }
+button.link { background: none; border: 0; color: var(--red); cursor: pointer; font-size: 13px; padding: 4px; }
+input, select, textarea { font: inherit; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 4px; padding: 6px 8px; min-width: 0; }
+input:disabled, select:disabled { opacity: .75; }
+textarea { width: 100%; min-height: 110px; font-family: var(--font-body); }
+label.f { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+label.f input, label.f select { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: 15px; color: var(--ink); }
+
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; }
+td.wrap-cell { white-space: normal; min-width: 180px; }
+.pos { font-family: var(--font-display); font-weight: 700; font-size: 20px; width: 48px; }
+.score { font-family: var(--font-display); font-weight: 700; font-size: 20px; }
+.under { color: var(--red); }
+.money { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--gold); }
+.money.zero { color: var(--muted); font-weight: 500; }
+tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
+.each { display: block; font-size: 12px; color: var(--muted); font-family: var(--font-body); font-weight: 400; }
+
+/* Scorecard grid */
+.card { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
+.card th, .card td { padding: 4px 3px; text-align: center; border-bottom: 1px solid var(--line); }
+.card th:first-child, .card td:first-child { text-align: left; padding-left: 10px; position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 130px; max-width: 170px; white-space: normal; }
+.card th:first-child { background: var(--surface-2); }
+.card .tot { font-family: var(--font-display); font-weight: 700; font-size: 17px; min-width: 40px; background: var(--surface-2); }
+.card tr.meta td { font-size: 12px; color: var(--muted); }
+.card tr.team td { font-family: var(--font-display); font-weight: 600; font-size: 16px; color: var(--pine); }
+.cell { position: relative; display: inline-block; }
+.cell input { width: 36px; height: 36px; text-align: center; padding: 0; font-family: var(--font-display); font-weight: 600; font-size: 18px; border-radius: 4px; }
+.cell input.birdie { border: 1.5px solid var(--red); border-radius: 50%; color: var(--red); }
+.cell input.eagle { border: 3px double var(--red); border-radius: 50%; color: var(--red); }
+.cell input.bogey { border: 1.5px solid var(--ink); border-radius: 0; }
+.cell input.dbl { border: 3px double var(--ink); border-radius: 0; }
+.pop { position: absolute; top: 2px; right: 3px; font-size: 9px; line-height: 1; color: var(--pine); pointer-events: none; letter-spacing: -1px; }
+.pname { font-weight: 600; display: block; }
+.pmeta { font-size: 12px; color: var(--muted); }
+
+.teamlist { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.teambtn { text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 8px 10px; cursor: pointer; color: var(--ink); font: inherit; display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.teambtn[aria-pressed="true"] { border-color: var(--pine); box-shadow: inset 0 0 0 1px var(--pine); background: var(--pine-soft); }
+.teambtn .t { min-width: 0; font-size: 14px; }
+.teambtn .t b { display: block; font-family: var(--font-display); font-size: 15px; letter-spacing: .04em; }
+.thru { font-family: var(--font-display); font-weight: 600; font-size: 14px; color: var(--muted); white-space: nowrap; }
+.thru.done { color: var(--pine); }
+
+.teamcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.teamcard { border: 1px solid var(--line); border-radius: 5px; padding: 10px; display: flex; flex-direction: column; gap: 6px; background: var(--surface-2); }
+.teamcard b { font-family: var(--font-display); letter-spacing: .05em; font-size: 15px; }
+.teamcard select { width: 100%; }
+.teamcard select.dup { border-color: var(--red); }
+.skin { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.skin:last-child { border-bottom: 0; }
+.hole { font-family: var(--font-display); font-weight: 700; font-size: 16px; width: 54px; display: inline-block; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 5px; z-index: 20; max-width: calc(100% - 32px); }
+.empty { padding: 22px; text-align: center; color: var(--muted); }
+.kpis { display: flex; gap: 24px; flex-wrap: wrap; }
+.kpi .v { font-family: var(--font-display); font-weight: 700; font-size: 26px; line-height: 1; }
+.kpi .l { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.ok { color: var(--pine); } .bad { color: var(--red); }
+.placelist { display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; }
+.placelist label.f input { width: 78px; }
+.siinput { width: 38px; text-align: center; padding: 4px 2px; }
+@media (max-width: 600px) { .brand h1 { font-size: 25px; } nav.tabs button { font-size: 16px; padding: 8px 10px 10px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+/* ===== Clubhouse scoreboard — modeled on a major-championship hand-operated leaderboard.
+   Deliberately one look in both themes: green frame, white slats, red under par, green over. */
+:root {
+  --m-frame: #0e4a2b; --m-frame-2: #145c37; --m-slat: #fdfcf6; --m-ink: #171717; --m-rule: #d8d4c3;
+  --m-under: #c3122f; --m-over: #146a3c; --m-gold: #e9c869; --m-flash: #fff1a8; --m-dim: #6f7a70;
+  --font-board: 'Playfair Display', Georgia, 'Times New Roman', serif;
+}
+.bd { container-type: inline-size; background: var(--m-frame); color: #fff; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: inset 0 0 0 4px var(--m-frame-2); }
+.bd-ctl { display: flex; flex-direction: column; gap: 10px; }
+.bd-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid var(--m-gold); padding-bottom: 10px; }
+.bd-kicker { font-family: var(--font-display); letter-spacing: .28em; text-transform: uppercase; font-size: .78em; color: var(--m-gold); }
+.bd-name { font-family: var(--font-board); font-style: italic; font-weight: 800; font-size: 2.6em; line-height: 1; color: #fff; text-wrap: balance; }
+.bd-sub { font-family: var(--font-display); font-weight: 600; letter-spacing: .1em; text-transform: uppercase; font-size: .95em; color: #d5e6da; margin-top: 4px; }
+.bd-live { font-family: var(--font-display); font-weight: 700; font-size: 1.3em; letter-spacing: .14em; text-transform: uppercase; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.bd-live small { display: block; width: 100%; text-align: right; font-weight: 500; font-size: .62em; letter-spacing: .08em; color: #cfe0d4; }
+.bd-dot { width: .6em; height: .6em; border-radius: 50%; background: #ff4d4d; box-shadow: 0 0 0 0 rgba(255,77,77,.6); animation: bdpulse 1.6s infinite; }
+.bd-dot.done { background: var(--m-gold); animation: none; }
+@keyframes bdpulse { 0% { box-shadow: 0 0 0 0 rgba(255,77,77,.55); } 70% { box-shadow: 0 0 0 .55em rgba(255,77,77,0); } 100% { box-shadow: 0 0 0 0 rgba(255,77,77,0); } }
+.bd-main { display: grid; grid-template-columns: minmax(0, 1fr) 17em; gap: 14px; align-items: start; }
+.bd-main.two { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.bd-board { --cols: 3.9em minmax(9em, 1fr) repeat(18, var(--hw, 2.4em)) 3.2em 4.4em; display: flex; flex-direction: column; gap: 3px; background: var(--m-frame-2); padding: 3px; border-radius: 3px; min-width: 0; font-variant-numeric: tabular-nums; }
+.bd-board.has-pay { --cols: 3.9em minmax(9em, 1fr) repeat(18, var(--hw, 2.4em)) 3.2em 4.4em 4.6em; }
+.bd-board.wk { --cols: 3.9em minmax(0, 1fr) 3.2em 3.2em 3.2em 4em; }
+.bd-row { display: grid; grid-template-columns: var(--cols); align-items: center; background: var(--m-slat); color: var(--m-ink); min-height: 2.25em; }
+.bd-row .c { padding: 0 .3em; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 1px solid var(--m-rule); line-height: 2.1; }
+.bd-row .c:first-child { border-left: 0; }
+.bd-row .c.nm { text-align: left; text-transform: uppercase; letter-spacing: .04em; font-size: 1.1em; padding-left: .55em; white-space: normal; line-height: 1.15; padding-block: .3em; overflow-wrap: anywhere; }
+.bd-row .c.h { padding: 0; }
+.bd:not(.tv) .bd-board:not(.wk):not(.pr) { font-size: 14px; --hw: 2.2em; }
+.bd-row .c.turn { border-left: 2px solid var(--m-frame); }
+.bd-row .c.pos { font-size: 1.1em; padding: 0 .15em; text-overflow: clip; }
+.bd-row .c.tp { font-size: 1.35em; }
+.bd-row .c.pay { color: #8a6410; }
+.bd-row .u { color: var(--m-under); }
+.bd-row .o { color: var(--m-over); }
+.bd-row.hdr { background: var(--m-frame); color: #fff; min-height: 1.9em; }
+.bd-row.hdr .c { border-left-color: rgba(255,255,255,.18); font-size: .85em; letter-spacing: .06em; text-overflow: clip; text-transform: uppercase; line-height: 2.2; }
+.bd-row.par .c { color: var(--m-dim); font-size: .95em; }
+.bd-row.inmoney .c.nm { box-shadow: inset .3em 0 0 var(--m-gold); }
+.bd-row .pz { font-style: normal; color: #8a6410; font-size: .85em; letter-spacing: 0; }
+.bd-row.flash { animation: bdflash 3.5s ease-out; }
+@keyframes bdflash { 0%, 30% { background: var(--m-flash); } 100% { background: var(--m-slat); } }
+.bd-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.bd-box { background: var(--m-frame-2); border: 1px solid rgba(255,255,255,.12); border-radius: 4px; padding: .6em .8em; display: flex; flex-direction: column; gap: 2px; }
+.bd-box-h { font-family: var(--font-display); font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--m-gold); font-size: 1.05em; display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px solid rgba(255,255,255,.2); padding-bottom: 4px; margin-bottom: 2px; }
+.bd-box-h span { color: #cfe0d4; font-weight: 500; letter-spacing: .04em; font-size: .85em; }
+.bd-li { display: grid; grid-template-columns: 4.8em minmax(0, 1fr) auto; gap: 6px; font-size: .98em; line-height: 1.55; }
+.bd-li b { font-family: var(--font-display); color: var(--m-gold); letter-spacing: .04em; }
+.bd-li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bd-li em { font-style: normal; font-family: var(--font-display); font-weight: 600; color: #fff; }
+.bd-li.dim { color: #a9c2b1; display: block; }
+.bd-tvbar { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; opacity: .35; transition: opacity .2s; z-index: 15; pointer-events: none; }
+.bd-tvbar:hover, .bd-tvbar:focus-within { opacity: 1; }
+.tvseg { display: flex; border: 1px solid rgba(255,255,255,.35); border-radius: 5px; overflow: hidden; background: rgba(10,40,24,.92); pointer-events: auto; }
+.tvb { font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: #e6efe8; background: none; border: 0; border-left: 1px solid rgba(255,255,255,.18); padding: 8px 12px; cursor: pointer; }
+.tvb:first-child { border-left: 0; }
+.tvb.on { background: var(--m-gold); color: #10301e; }
+.tvb:focus-visible { outline: 2px solid var(--m-gold); outline-offset: -2px; }
+@container (max-width: 1300px) { .bd:not(.tv) .bd-main:not(.two) { grid-template-columns: minmax(0, 1fr); } .bd:not(.tv) .bd-side { flex-direction: row; flex-wrap: wrap; } .bd:not(.tv) .bd-side .bd-box { flex: 1 1 15em; } }
+@container (max-width: 1000px) { .bd:not(.tv) .bd-row .c.h { display: none; } .bd:not(.tv) .bd-board { --cols: 3.9em minmax(0, 1fr) 3.2em 4.4em; } .bd:not(.tv) .bd-board.has-pay { --cols: 3.9em minmax(0, 1fr) 3.2em 4.4em 4.6em; } }
+@container (max-width: 980px) { .bd-main { grid-template-columns: minmax(0, 1fr); } .bd-side { flex-direction: row; flex-wrap: wrap; } .bd-side .bd-box { flex: 1 1 15em; } }
+@container (max-width: 760px) {
+  .bd-board { --cols: 3em minmax(0, 1fr) 2.2em 3.2em; } .bd-board.has-pay { --cols: 3em minmax(0, 1fr) 2.2em 3.2em 3.8em; }
+  .bd-row .c.nm { white-space: normal; line-height: 1.2; padding-block: .35em; font-size: 1em; }
+  .bd-board.wk { --cols: 3em minmax(0, 1fr) 2.4em 2.4em 2.4em 3.2em; }
+  .bd-row .c.h { display: none; } .bd-name { font-size: 2em; }
+  .bd-main.two { grid-template-columns: minmax(0, 1fr); }
+}
+.bd-board.pr { --cols: 3.9em 2.6em minmax(0, 1fr) 3.4em 2.6em minmax(0, 1fr) 3.4em; }
+.bd-board.pr .bd-row > .c:nth-child(5) { border-left: 3px solid var(--m-frame); }
+.bd-row .c.sd { color: var(--m-dim); font-size: .9em; }
+.bd-row .c.amp { font-family: var(--font-board); font-style: italic; color: var(--m-dim); }
+.bd-row .c sup { font-size: .55em; color: var(--m-dim); margin-left: 1px; }
+.bd-note { color: #cfe0d4; font-size: .85em; }
+@container (max-width: 760px) { .bd-board.pr { --cols: 3em 0 minmax(0, 1fr) 2.8em 0 minmax(0, 1fr) 2.8em; }
+  .bd-board.pr .bd-row > .c:nth-child(6) { border-left: 3px solid var(--m-frame); } .bd-row .c.sd { padding: 0; border: 0; font-size: 0; } }
+/* TV view: fill the screen, size type from the screen height */
+body.tv-mode header.band, body.tv-mode::before { display: none; }
+body.tv-mode { background: var(--m-frame); }
+body.tv-mode main { max-width: none; padding-block: 0; }
+.bd.tv { border-radius: 0; box-shadow: none; min-height: 100dvh; padding: 1.6vh 1.4vw calc(84px + env(safe-area-inset-bottom, 0px)); font-size: clamp(13px, 1.55vh, 30px); }
+.bd.tv .bd-board { font-size: clamp(10px, min(calc(62vh / (var(--rows) * 2.3)), calc((100vw - 400px) / 80)), 30px); }
+.bd.tv .bd-board.wk, .bd.tv .bd-board.pr { font-size: clamp(10px, min(calc(62vh / (var(--rows) * 2.3)), calc((100vw - 120px) / 44)), 30px); }
+.bd.tv .bd-name { font-size: 3.2em; }
+@media (prefers-reduced-motion: reduce) { .bd-dot, .bd-row.flash { animation: none; } }
+</style>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<header class="band">
+  <div class="wrap">
+    <div class="brand">
+      <div>
+        <h1>Who's Your Daddy 2026</h1>
+        <div class="sub">Fallen Oak · Shell Landing · Windance</div>
+      </div>
+      <span class="status" id="status">Loading</span>
+    </div>
+    <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-tab="board" aria-selected="false">Scoreboard</button>
+      <button role="tab" data-tab="results" aria-selected="true">Results</button>
+      <button role="tab" data-tab="scores" aria-selected="false">Enter Scores</button>
+      <button role="tab" data-tab="players" aria-selected="false">Players &amp; Teams</button>
+      <button role="tab" data-tab="setup" aria-selected="false">Setup &amp; Payouts</button>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="main"><div class="panel empty">Loading the trip…</div></main>
+<div id="toast" class="toast" hidden></div>
+
+<script>
+// ===== Scoring engine (pure functions) =====
+const DAYS = ['fri', 'sat', 'sun'];
+const FORMATS = {
+  bb2:   { label: '2-Man Best Ball (Net)', size: 2, balls: 1, scramble: false },
+  bb4x2: { label: '4-Man, 2 Best Balls (Net)', size: 4, balls: 2, scramble: false },
+  scr2:  { label: '2-Man Scramble (Net)', size: 2, balls: 1, scramble: true },
+};
+
+function sum(a) { return a.reduce((s, v) => s + (v || 0), 0); }
+function round2(n) { return Math.round(n * 100) / 100; }
+
+function teeFor(state, pid, day) {
+  const dc = state.config.days[day];
+  const course = state.config.courses[dc.course];
+  const p = state.players[pid];
+  const want = p && p.tees && p.tees[day];
+  return course.tees.find(t => t.id === want) || course.tees.find(t => t.id === course.defaultTee) || course.tees[0];
+}
+
+// WHS: Course Handicap = Index x Slope/113 + (Rating - Par), rounded; then allowance.
+function courseHcp(index, tee) {
+  return Math.round(index * tee.slope / 113 + (tee.rating - tee.par));
+}
+function playingHcp(index, tee, allowance) {
+  const ch = courseHcp(index, tee);
+  return Math.round(ch * (allowance == null ? 100 : allowance) / 100);
+}
+
+// Strokes received on a hole of stroke index `si` for playing handicap `ph`.
+function pops(ph, si) {
+  if (ph >= 0) return Math.floor(ph / 18) + (si <= ph % 18 ? 1 : 0);
+  const p = -ph;
+  return -(Math.floor(p / 18) + (si > 18 - (p % 18) ? 1 : 0));
+}
+
+function playerPH(state, pid, day) {
+  const p = state.players[pid];
+  if (!p) return 0;
+  return playingHcp(Number(p.index) || 0, teeFor(state, pid, day), state.config.days[day].allowance);
+}
+
+function scrambleTeamHcp(state, pids, day) {
+  const dc = state.config.days[day];
+  const chs = pids.map(pid => {
+    const p = state.players[pid];
+    return p ? courseHcp(Number(p.index) || 0, teeFor(state, pid, day)) : 0;
+  }).sort((a, b) => a - b);
+  if (!chs.length) return 0;
+  if (dc.scrHcp === '3515' && chs.length >= 2) {
+    return Math.round(chs[0] * 0.35 + chs[chs.length - 1] * 0.15);
+  }
+  const pct = dc.scrPct == null ? 100 : dc.scrPct;
+  return Math.round(sum(chs) / chs.length * pct / 100);
+}
+
+function cardOf(state, day, key) {
+  const c = state.scores[day] && state.scores[day][key];
+  return Array.isArray(c) ? c.map(v => (v === '' || v == null || isNaN(Number(v))) ? null : Number(v)) : new Array(18).fill(null);
+}
+
+function teamLabel(state, team) {
+  return team.pids.map(pid => (state.players[pid] ? state.players[pid].name : '?')).join(' / ');
+}
+
+// Compare two hole-score arrays by matching cards: back 9, back 6, back 3, 18th.
+function cardOff(a, b) {
+  for (const n of [9, 6, 3, 1]) {
+    const d = sum(a.slice(18 - n)) - sum(b.slice(18 - n));
+    if (d !== 0) return d;
+  }
+  return 0;
+}
+
+function placeMoney(sorted, places, tieBreak, key) {
+  // sorted: complete teams sorted by total (then card-off if chosen). Assign pos + money.
+  let i = 0;
+  while (i < sorted.length) {
+    let j = i + 1;
+    while (j < sorted.length && sorted[j].total === sorted[i].total &&
+      (tieBreak !== 'cards' || cardOff(sorted[j][key], sorted[i][key]) === 0)) j++;
+    let pot = 0;
+    for (let k = i; k < j; k++) pot += Number(places[k]) || 0;
+    for (let k = i; k < j; k++) {
+      sorted[k].pos = i + 1;
+      sorted[k].tied = j - i > 1;
+      sorted[k].payout = round2(pot / (j - i));
+    }
+    i = j;
+  }
+}
+
+function computeDay(state, day) {
+  const dc = state.config.days[day];
+  const fmt = FORMATS[dc.format] || FORMATS.bb2;
+  const course = state.config.courses[dc.course];
+  const pars = course.pars, si = course.si;
+  const coursePar = sum(pars);
+  const teams = ((state.teams && state.teams[day]) || []).filter(t => t.pids && t.pids.some(Boolean))
+    .map(t => ({ ...t, pids: t.pids.filter(pid => pid && state.players[pid]) }))
+    .filter(t => t.pids.length);
+  const money = {};
+  const add = (pid, amt, why) => {
+    if (!amt) return;
+    (money[pid] = money[pid] || { total: 0, items: [] });
+    const a = Math.round(amt + 1e-9); // payouts are whole dollars
+    money[pid].total = round2(money[pid].total + a);
+    money[pid].items.push({ why, amt: a });
+  };
+
+  // Units for skins: individuals (best ball days) or teams (scramble).
+  const units = [];
+  const rows = teams.map(t => {
+    const row = { id: t.id, pids: t.pids, name: teamLabel(state, t), holes: new Array(18).fill(null), members: [] };
+    if (fmt.scramble) {
+      const ph = scrambleTeamHcp(state, t.pids, day);
+      const gross = cardOf(state, day, t.id);
+      const net = gross.map((g, h) => g == null ? null : g - pops(ph, si[h]));
+      row.ph = ph;
+      row.gross = gross;
+      row.holes = gross.slice();
+      row.thru = gross.filter(v => v != null).length;
+      row.grossTotal = sum(gross);
+      row.total = row.thru === 18 ? row.grossTotal - ph : null;
+      row.toPar = row.total == null ? null : row.total - coursePar;
+      units.push({ key: t.id, pids: t.pids, name: row.name, gross, net });
+    } else {
+      row.members = t.pids.map(pid => {
+        const ph = playerPH(state, pid, day);
+        const gross = cardOf(state, day, pid);
+        const net = gross.map((g, h) => g == null ? null : g - pops(ph, si[h]));
+        units.push({ key: pid, pids: [pid], name: state.players[pid].name, gross, net });
+        return { pid, ph, gross, net };
+      });
+      for (let h = 0; h < 18; h++) {
+        const nets = row.members.map(m => m.net[h]);
+        if (nets.some(v => v == null)) continue;
+        nets.sort((a, b) => a - b);
+        row.holes[h] = sum(nets.slice(0, fmt.balls));
+      }
+      row.thru = row.holes.filter(v => v != null).length;
+      row.total = row.thru === 18 ? sum(row.holes) : null;
+      row.toPar = row.total == null ? null : row.total - coursePar * fmt.balls;
+      row.running = sum(row.holes);
+      row.runningPar = sum(pars.filter((_, h) => row.holes[h] != null)) * fmt.balls;
+    }
+    return row;
+  });
+  if (fmt.scramble) rows.forEach(r => {
+    r.running = r.holes.reduce((s, g, h) => s + (g == null ? 0 : g - pops(r.ph, si[h])), 0);
+    r.runningPar = sum(pars.filter((_, h) => r.holes[h] != null));
+  });
+
+  const complete = rows.filter(r => r.thru === 18);
+  const allIn = rows.length > 0 && complete.length === rows.length;
+  const tieBreak = state.config.tieBreak || 'split';
+  const keyFor = fmt.scramble ? 'holes' : 'holes';
+  // For scramble card-off, compare net holes.
+  if (fmt.scramble) rows.forEach(r => { r.netHoles = units.find(u => u.key === r.id).net; });
+  const cmpKey = fmt.scramble ? 'netHoles' : 'holes';
+  complete.sort((a, b) => a.total - b.total || (tieBreak === 'cards' ? cardOff(a[cmpKey], b[cmpKey]) : 0));
+  placeMoney(complete, dc.places || [], tieBreak, cmpKey);
+  complete.forEach(r => {
+    if (!r.payout) return;
+    r.each = Math.round(r.payout / r.pids.length + 1e-9);
+    r.payout = r.each * r.pids.length;
+    const each = r.each;
+    r.pids.forEach(pid => add(pid, each, `${ordinal(r.pos)}${r.tied ? ' (tie)' : ''} place`));
+  });
+  const incomplete = rows.filter(r => r.thru !== 18).sort((a, b) => (b.thru - a.thru) || ((a.running - a.runningPar) - (b.running - b.runningPar)));
+  const standings = complete.concat(incomplete);
+
+  // Skins, played hole by hole in order.
+  //   1 low score  -> full skin (plus any carryover)
+  //   2 tied low   -> half skin each (of the hole's value incl. carryover)
+  //   3+ tied low  -> no skin; the hole's value carries to the next hole
+  // Scoring: 'netGrossP3' = net, but gross on par 3s (default); 'net'; 'gross'.
+  const skinsType = dc.skinsType || 'netGrossP3';
+  const skins = [], carries = [];
+  let carry = 0, units_awarded = 0, skinHolesDecided = 0, carryOut = 0;
+  for (let h = 0; h < 18; h++) {
+    const useGross = skinsType === 'gross' || (skinsType === 'netGrossP3' && pars[h] === 3);
+    const scored = units.map(u => ({ u, s: (useGross ? u.gross : u.net)[h] })).filter(x => x.s != null);
+    const holeComplete = units.length > 0 && scored.length === units.length;
+    if (holeComplete) skinHolesDecided++;
+    if (!scored.length) continue;
+    const worth = 1 + carry;
+    const low = Math.min(...scored.map(x => x.s));
+    const at = scored.filter(x => x.s === low);
+    if (at.length <= 2) {
+      skins.push({ hole: h + 1, par: pars[h], score: low, gross: useGross, worth, final: holeComplete,
+        winners: at.map(x => ({ key: x.u.key, pids: x.u.pids, name: x.u.name, share: worth / at.length, grossScore: x.u.gross[h] })) });
+      units_awarded += worth; carry = 0;
+    } else {
+      carries.push({ hole: h + 1, tied: at.length, score: low, worth, final: holeComplete });
+      carry = worth;
+    }
+  }
+  carryOut = carry; // value still carrying after the last scored hole (unclaimed)
+  const skinsPot = Number(dc.skinsPot) || 0;
+  const skinValue = units_awarded ? Math.floor(skinsPot / units_awarded * 100) / 100 : 0;
+  skins.forEach(s => s.winners.forEach(w => {
+    const piece = Math.round(skinValue * w.share / w.pids.length + 1e-9);
+    w.amt = piece * w.pids.length;
+    w.pids.forEach(pid => add(pid, piece, `${w.share < s.worth ? 'Half skin' : 'Skin'} #${s.hole}`));
+  }));
+
+  // Contests (CTP / LD) — winners entered manually.
+  const contests = (dc.contests || []).map(c => {
+    const pid = state.extras && state.extras[day] && state.extras[day][c.id];
+    const winner = pid && state.players[pid] ? pid : null;
+    if (winner) add(winner, Number(c.amt) || 0, `${c.type} #${c.hole}`);
+    return { ...c, winner };
+  });
+
+  const placesTotal = sum((dc.places || []).map(Number));
+  const contestsTotal = sum((dc.contests || []).map(c => Number(c.amt) || 0));
+  return {
+    day, fmt, course, coursePar, standings, complete: allIn, cardsIn: complete.length, cardsTotal: rows.length,
+    skins, carries, carryOut, skinUnits: units_awarded, skinValue, skinsPot, skinsType, skinHolesDecided, contests, money,
+    allocated: placesTotal + skinsPot + contestsTotal,
+  };
+}
+
+function ordinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+// Individual net totals across given days (used for Sunday pairing).
+function individualNet(state, days) {
+  return Object.keys(state.players).map(pid => {
+    const p = state.players[pid];
+    let total = 0, rounds = 0, detail = {};
+    for (const day of days) {
+      const card = cardOf(state, day, pid);
+      if (card.some(v => v == null)) { detail[day] = null; continue; }
+      const net = sum(card) - playerPH(state, pid, day);
+      detail[day] = net; total += net; rounds++;
+    }
+    return { pid, name: p.name, index: Number(p.index) || 0, total, rounds, detail };
+  }).sort((a, b) => (b.rounds - a.rounds) || (a.total - b.total) || (a.index - b.index) || a.name.localeCompare(b.name));
+}
+
+function sundayPairs(state) {
+  const ranked = individualNet(state, ['fri', 'sat']);
+  const n = ranked.length, teams = [];
+  for (let i = 0; i < Math.floor(n / 2); i++) {
+    teams.push({ id: 'S' + (i + 1), pids: [ranked[i].pid, ranked[n - 1 - i].pid] });
+  }
+  if (n % 2) teams.push({ id: 'S' + (teams.length + 1), pids: [ranked[Math.floor(n / 2)].pid] });
+  return { teams, ranked };
+}
+
+// Weekend individual standings: Fri net + Sat net + his Sunday team's net.
+function weekendStandings(state, sunDay) {
+  const sun = sunDay || computeDay(state, 'sun');
+  const sunNet = {};
+  sun.standings.forEach(t => { if (t.thru === 18) t.pids.forEach(pid => { sunNet[pid] = t.total; }); });
+  const rows = individualNet(state, ['fri', 'sat']).map(r => {
+    const s = sunNet[r.pid];
+    const rounds = r.rounds + (s != null ? 1 : 0);
+    return { pid: r.pid, name: r.name, index: r.index, fri: r.detail.fri, sat: r.detail.sat, sun: s ?? null, rounds, total: r.total + (s ?? 0) };
+  });
+  const done = rows.filter(r => r.rounds === 3).sort((a, b) => a.total - b.total);
+  const rest = rows.filter(r => r.rounds !== 3).sort((a, b) => b.rounds - a.rounds || a.total - b.total);
+  const places = (state.config.weekend && state.config.weekend.places) || [];
+  let i = 0;
+  while (i < done.length) {
+    let j = i + 1;
+    while (j < done.length && done[j].total === done[i].total) j++;
+    let pot = 0; for (let k = i; k < j; k++) pot += Number(places[k]) || 0;
+    for (let k = i; k < j; k++) { done[k].pos = i + 1; done[k].tied = j - i > 1; done[k].payout = Math.round(pot / (j - i) + 1e-9); }
+    i = j;
+  }
+  return { list: done.concat(rest), complete: rows.length > 0 && done.length === rows.length, places };
+}
+
+function tripMoney(state) {
+  const per = {};
+  const days = {};
+  const blank = () => ({ fri: 0, sat: 0, sun: 0, wknd: 0, total: 0 });
+  for (const d of DAYS) {
+    days[d] = computeDay(state, d);
+    for (const [pid, m] of Object.entries(days[d].money)) {
+      (per[pid] = per[pid] || blank());
+      per[pid][d] = m.total; per[pid].total = round2(per[pid].total + m.total);
+    }
+  }
+  const weekend = weekendStandings(state, days.sun);
+  weekend.list.forEach(r => { if (r.payout) { (per[r.pid] = per[r.pid] || blank()); per[r.pid].wknd = r.payout; per[r.pid].total = round2(per[r.pid].total + r.payout); } });
+  const buyIn = Number(state.config.buyIn) || 0;
+  const list = Object.keys(state.players).map(pid => {
+    const m = per[pid] || blank();
+    return { pid, name: state.players[pid].name, ...m, net: round2(m.total - buyIn) };
+  }).sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+  return { list, days, weekend };
+}
+
+
+// ===== Default trip setup + sample data =====
+function defaultConfig() {
+  const par3 = (pars) => pars.map((p, i) => p === 3 ? i + 1 : null).filter(Boolean);
+  const courses = {
+    fallen: {
+      name: 'Fallen Oak', city: 'Saucier, MS',
+      pars: [5,4,3,4,4,5,4,3,4, 4,4,4,5,3,5,4,3,4],
+      si:   [7,3,13,11,1,9,17,15,5, 8,10,16,4,18,2,14,12,6],
+      tees: [
+        { id: 't1', name: 'Tee 1 · 7,487 yds', rating: 76.5, slope: 142, par: 72 },
+        { id: 't2', name: 'Tee 2 · 6,938 yds', rating: 73.7, slope: 141, par: 72 },
+        { id: 't3', name: 'Tee 3 · 6,549 yds', rating: 71.7, slope: 138, par: 72 },
+        { id: 't4', name: 'Tee 4 · 6,133 yds', rating: 69.4, slope: 133, par: 72 },
+      ],
+      defaultTee: 't3',
+    },
+    shell: {
+      name: 'Shell Landing', city: 'Gautier, MS',
+      pars: [4,3,5,4,4,4,5,3,4, 4,3,4,5,4,4,5,3,4],
+      si:   [9,17,3,11,13,1,7,15,5, 12,18,10,8,2,14,6,16,4],
+      tees: [
+        { id: 'snap', name: 'Snapping (Black)', rating: 73.8, slope: 134, par: 72 },
+        { id: 'leat', name: 'Leatherback (Gold)', rating: 71.2, slope: 129, par: 72 },
+        { id: 'hawk', name: 'Hawksbill (Blue)', rating: 69.2, slope: 119, par: 72 },
+        { id: 'goph', name: 'Gopher (White)', rating: 66.6, slope: 115, par: 72 },
+      ],
+      defaultTee: 'leat',
+    },
+    windance: {
+      name: 'Windance', city: 'Gulfport, MS',
+      pars: [4,3,5,3,4,4,5,3,4, 4,4,5,4,4,3,5,4,4],
+      si:   [8,6,2,18,4,14,10,16,12, 5,3,9,13,11,15,1,17,7],
+      tees: [
+        { id: 'blue', name: 'Blue', rating: 72.3, slope: 127, par: 72 },
+        { id: 'white', name: 'White', rating: 69.5, slope: 125, par: 72 },
+        { id: 'green', name: 'Green', rating: 66.2, slope: 111, par: 72 },
+      ],
+      defaultTee: 'blue',
+    },
+  };
+  const contests = (course, ld) => par3(courses[course].pars).map((h, i) => ({ id: 'c' + h, type: 'CTP', hole: h, amt: 25 }))
+    .concat([{ id: 'ld' + ld, type: 'LD', hole: ld, amt: 40 }]);
+  return {
+    buyIn: 105,
+    tieBreak: 'split',
+    courses,
+    weekend: { places: [200, 120, 80] },
+    days: {
+      fri: { label: 'Friday', course: 'fallen', format: 'bb2', allowance: 100, places: [200, 150, 110, 80, 60], skinsPot: 250, skinsType: 'netGrossP3', contests: contests('fallen', 13) },
+      sat: { label: 'Saturday', course: 'shell', format: 'bb4x2', allowance: 100, places: [300, 180, 110], skinsPot: 250, skinsType: 'netGrossP3', contests: contests('shell', 16) },
+      sun: { label: 'Sunday', course: 'windance', format: 'scr2', allowance: 100, scrHcp: 'avg', scrPct: 100, places: [200, 150, 110, 80, 60], skinsPot: 250, skinsType: 'netGrossP3', contests: contests('windance', 12) },
+    },
+  };
+}
+
+// Realistic test scores. A player's average gross runs about 3 over his course handicap,
+// with more of the damage on the harder (low stroke-index) holes and more scatter for higher handicaps.
+function makeTestScores(state, seedIn) {
+  let seed = seedIn || 11;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const normal = () => Math.sqrt(-2 * Math.log(rnd() + 1e-12)) * Math.cos(2 * Math.PI * rnd());
+  const cfg = state.config;
+  const card = (course, ch, extra, sdMul) => {
+    const over = ch + extra; // expected strokes over par for the round
+    const w = course.si.map(si => 1 + 0.7 * (9.5 - si) / 8.5);
+    const wsum = w.reduce((a, b) => a + b, 0);
+    const sd = (0.55 + Math.max(0, ch) * 0.02) * (sdMul || 1);
+    return course.pars.map((par, h) => {
+      const exp = par + over * w[h] / wsum;
+      const s = Math.round(exp + normal() * sd);
+      return Math.max(Math.max(2, par - 2), Math.min(par + 5, s));
+    });
+  };
+  const scores = { fri: {}, sat: {}, sun: {} };
+  for (const day of ['fri', 'sat']) {
+    const course = cfg.courses[cfg.days[day].course];
+    for (const pid of Object.keys(state.players)) {
+      const ch = courseHcp(Number(state.players[pid].index) || 0, teeFor(state, pid, day));
+      scores[day][pid] = card(course, ch, 3 + normal() * 1.5);
+    }
+  }
+  const sunCourse = cfg.courses[cfg.days.sun.course];
+  for (const t of (state.teams.sun || [])) {
+    const chs = t.pids.filter(p => state.players[p]).map(p => courseHcp(Number(state.players[p].index) || 0, teeFor(state, p, 'sun'))).sort((a, b) => a - b);
+    if (!chs.length) continue;
+    // 2-man scramble: roughly 35% of the low man's + 15% of the high man's handicap over par, minus ~3.
+    const over = 0.35 * chs[0] + 0.15 * chs[chs.length - 1] - 2 + normal() * 1.5;
+    scores.sun[t.id] = card(sunCourse, 0, over, 0.75);
+  }
+  return scores;
+}
+
+function makeSample() {
+  let seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+  const first = ['Cody','Travis','Wes','Brandon','Kyle','Dustin','Garrett','Shane','Clay','Brent','Tyler','Jared','Colby','Derek','Lance','Russ','Trey','Blake','Chase','Grant','Heath','Jace','Kirk','Luke','Mason','Nate','Owen','Reid','Seth','Tate','Vince','Walt'];
+  const last = ['Avery','Bishop','Cole','Dawson','Ellis','Foster','Gaines','Hale','Irwin','Jessup','Keller','Lowe','Mercer','Nash','Oakes','Pruitt','Quinn','Rhodes','Sutton','Tate','Upton','Vance','Wade','Yates','Abbott','Barnes','Crane','Doyle','Eaton','Frey','Gill','Hurst'];
+  const players = {};
+  for (let i = 0; i < 32; i++) {
+    const pid = 'p' + (i + 1);
+    players[pid] = { name: first[i] + ' ' + last[i], index: Math.round((1 + rnd() * 23) * 10) / 10 };
+  }
+  const cfg = defaultConfig();
+  const ids = Object.keys(players);
+  const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const chunk = (a, n, pre) => { const out = []; for (let i = 0; i < a.length; i += n) out.push({ id: pre + (out.length + 1), pids: a.slice(i, i + n) }); return out; };
+  const teams = { fri: chunk(shuffle(ids), 2, 'F'), sat: chunk(shuffle(ids), 4, 'A'), sun: [] };
+  const state = { config: cfg, players, teams, scores: { fri: {}, sat: {}, sun: {} }, extras: {} };
+  const s1 = makeTestScores(state, 7);
+  state.scores.fri = s1.fri; state.scores.sat = s1.sat;
+  teams.sun = sundayPairs(state).teams;
+  state.scores.sun = makeTestScores(state, 7).sun;
+  const extras = {};
+  for (const day of ['fri', 'sat', 'sun']) {
+    extras[day] = {};
+    for (const c of cfg.days[day].contests) extras[day][c.id] = ids[Math.floor(rnd() * ids.length)];
+  }
+  return { config: cfg, players, teams, scores: state.scores, extras };
+}
+
+
+</script>
+<script>
+(function () {
+const DOC_IDS = ['config', 'players', 'teams', 'scores_fri', 'scores_sat', 'scores_sun', 'extras'];
+const DAY_LABEL = { fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+const SKIN_LABEL = { netGrossP3: 'Net, gross on par 3s', net: 'Net', gross: 'Gross' };
+let docs = {};           // raw docs as stored
+let S = null;            // derived state
+let mode = 'loading';    // loading | sample | live
+let backend = null;      // 'db' | 'local'
+let db = null;
+let canWrite = false;
+let authId = null;
+const ui = { tab: 'results', rday: 'fri', sday: 'fri', team: null, drafts: {}, armed: null, bday: 'auto', bview: 'day', rotate: true, tv: false };
+try { const t = localStorage.getItem('wyd-tab'); if (t) ui.tab = t; } catch (e) {}
+if (location.hash === '#scoreboard') { ui.tab = 'board'; ui.tv = true; }
+// ===== Clubhouse scoreboard (Who's Your Daddy) =====
+// Expects: S, ui, DAYS, DAY_LABEL, computeDay, individualNet, esc, fmt$ in scope.
+const boardPrev = {};
+function tpStr(n) { return n == null ? '' : n === 0 ? 'E' : n > 0 ? '+' + n : String(n); }
+function tpCls(n) { return n == null ? '' : n < 0 ? 'u' : 'o'; }
+
+function autoBoardDay() {
+  // The latest day that has any score entered; Friday if none.
+  let pick = 'fri';
+  for (const d of DAYS) { const sc = S.scores[d] || {}; if (Object.values(sc).some(c => Array.isArray(c) && c.some(v => v != null && v !== ''))) pick = d; }
+  return pick;
+}
+
+function boardRows(day) {
+  const r = computeDay(S, day);
+  const pars = r.course.pars, balls = r.fmt.balls, scr = r.fmt.scramble;
+  const rows = r.standings.map(t => {
+    const holes = scr ? (t.netHoles || []) : t.holes;
+    let run = 0, any = false; const cum = [];
+    for (let h = 0; h < 18; h++) {
+      if (holes[h] == null) { cum.push(null); continue; }
+      run += holes[h] - pars[h] * balls; any = true; cum.push(run);
+    }
+    const names = t.pids.map(pid => S.players[pid] ? S.players[pid].name : '?');
+    return { id: t.id, names, thru: t.thru, toPar: any ? run : null, cum, payout: t.payout, final: t.thru === 18 };
+  });
+  rows.sort((a, b) => (a.toPar == null) - (b.toPar == null) || (a.toPar ?? 0) - (b.toPar ?? 0) || b.thru - a.thru || a.names[0].localeCompare(b.names[0]));
+  let i = 0;
+  while (i < rows.length) {
+    let j = i + 1;
+    while (j < rows.length && rows[j].toPar === rows[i].toPar) j++;
+    for (let k = i; k < j; k++) rows[k].pos = rows[i].toPar == null ? '' : (j - i > 1 ? 'T' : '') + (i + 1);
+    i = j;
+  }
+  return { r, rows };
+}
+
+function splitName(n) { const p = String(n).trim().split(/\s+/); return p.length > 1 ? { first: p[0], last: p.slice(1).join(' ') } : { first: '', last: p[0] }; }
+let nameCache = { key: null, short: {}, last: {} };
+function nameLabels() {
+  const all = Object.values(S.players).map(p => p.name);
+  const key = all.join('|');
+  if (nameCache.key === key) return nameCache;
+  const count = (arr) => arr.reduce((m, v) => (m[v] = (m[v] || 0) + 1, m), {});
+  const parts = Object.fromEntries(all.map(n => [n, splitName(n)]));
+  const initials = count(all.map(n => (parts[n].first[0] || '') + '|' + parts[n].last.toLowerCase()));
+  const lasts = count(all.map(n => parts[n].last.toLowerCase()));
+  const short = {}, last = {};
+  for (const n of all) {
+    const { first, last: l } = parts[n];
+    short[n] = !first ? l : initials[first[0] + '|' + l.toLowerCase()] > 1 ? first + ' ' + l : first[0] + '. ' + l;
+    last[n] = lasts[l.toLowerCase()] > 1 && first ? short[n] : l;
+  }
+  nameCache = { key, short, last };
+  return nameCache;
+}
+function lastName(n) { return nameLabels().last[n] || splitName(n).last; }
+function shortName(n) { return nameLabels().short[n] || n; }
+
+function boardHeader(sub, right) {
+  return `<div class="bd-head"><div class="bd-title"><div class="bd-kicker">Biloxi, Mississippi</div><div class="bd-name">Who's Your Daddy 2026</div><div class="bd-sub">${sub}</div></div>
+    <div class="bd-live">${right}</div></div>`;
+}
+
+function boardDay(day) {
+  const { r, rows } = boardRows(day);
+  const pars = r.course.pars, balls = r.fmt.balls;
+  const finished = rows.filter(x => x.final).length;
+  const H = [...Array(18).keys()];
+  const nameCell = (x) => x.names.length > 2 ? x.names.map(lastName).map(esc).reduce((s, n, i) => s + (i === 0 ? '' : i % 2 === 0 ? '<br>' : ' · ') + n, '') : esc(x.names.map(shortName).join(' / '));
+  const body = rows.map(x => {
+    const key = day + ':' + x.id, sig = x.toPar + '|' + x.thru;
+    const changed = boardPrev[key] != null && boardPrev[key] !== sig;
+    boardPrev[key] = sig;
+    return `<div class="bd-row ${changed ? 'flash' : ''} ${x.payout && r.complete ? 'inmoney' : ''}">
+      <div class="c pos">${x.pos}</div>
+      <div class="c nm">${nameCell(x)}</div>
+      ${H.map(h => `<div class="c h ${tpCls(x.cum[h])} ${h === 9 ? 'turn' : ''}">${x.cum[h] == null ? '' : tpStr(x.cum[h])}</div>`).join('')}
+      <div class="c thru">${x.final ? 'F' : x.thru || '—'}</div>
+      <div class="c tp ${tpCls(x.toPar)}">${tpStr(x.toPar)}</div>
+      ${r.complete ? `<div class="c pay">${x.payout ? fmt$(x.payout) : ''}</div>` : ''}
+    </div>`;
+  }).join('');
+  const holeRow = `<div class="bd-row hdr"><div class="c pos">Pos</div><div class="c nm">Hole</div>${H.map(h => `<div class="c h ${h === 9 ? 'turn' : ''}">${h + 1}</div>`).join('')}<div class="c thru">Thru</div><div class="c tp">Score</div>${r.complete ? '<div class="c pay">Won</div>' : ''}</div>
+    <div class="bd-row par"><div class="c pos"></div><div class="c nm">Par${balls > 1 ? ' ×2' : ''}</div>${H.map(h => `<div class="c h ${h === 9 ? 'turn' : ''}">${pars[h] * balls}</div>`).join('')}<div class="c thru"></div><div class="c tp">${r.coursePar * balls}</div>${r.complete ? '<div class="c pay"></div>' : ''}</div>`;
+  // Side: skins + contests
+  const skins = r.skins.flatMap(s => s.winners.map(w => ({ hole: s.hole, name: w.pids.map(p => S.players[p] ? lastName(S.players[p].name) : '?').join(' / '), amt: w.amt, half: s.winners.length === 2 }))).sort((a, b) => a.hole - b.hole);
+  const contests = r.contests.filter(c => c.winner);
+  const side = `<div class="bd-side">
+    <div class="bd-box"><div class="bd-box-h">Skins <span>${r.skinUnits ? r.skinUnits + ' @ ' + fmt$(Math.round(r.skinValue)) : fmt$(r.skinsPot) + ' pot'}</span></div>
+      ${skins.length ? skins.map(s => `<div class="bd-li"><b>#${s.hole}</b><span>${esc(s.name)}${s.half ? ' ½' : ''}</span><em>${fmt$(s.amt)}</em></div>`).join('') : '<div class="bd-li dim">None won yet</div>'}
+      ${r.carryOut ? `<div class="bd-li dim">${r.carryOut} carrying</div>` : ''}</div>
+    <div class="bd-box"><div class="bd-box-h">Pins &amp; Drives</div>
+      ${r.contests.length ? r.contests.map(c => `<div class="bd-li ${c.winner ? '' : 'dim'}"><b>${c.type === 'LD' ? 'LD' : 'CTP'} #${c.hole}</b><span>${c.winner ? esc(shortName(S.players[c.winner].name)) : '—'}</span><em>${fmt$(c.amt)}</em></div>`).join('') : '<div class="bd-li dim">None set</div>'}</div>
+  </div>`;
+  const right = `<span class="bd-dot ${r.complete ? 'done' : ''}"></span>${r.complete ? 'Final' : 'Live'}<small>${finished} of ${rows.length} in · ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</small>`;
+  const sub = `${DAY_LABEL[day]} · ${esc(r.course.name)} · ${esc(r.fmt.label)}`;
+  return boardHeader(sub, right) + `<div class="bd-main"><div class="bd-board ${r.complete ? 'has-pay' : ''}" style="--rows:${rows.length + 2}">${holeRow}${body || '<div class="bd-row"><div class="c nm">No teams set</div></div>'}</div>${side}</div>`;
+}
+
+function boardWeekend() {
+  // Live weekend: Fri individual net + Sat individual net + Sunday team net, shown to par.
+  const parOf = (d) => S.config.courses[S.config.days[d].course].pars.reduce((a, b) => a + b, 0);
+  // Sunday counts live: a team still on the course carries its running net to par.
+  const sunTP = {};
+  boardRows('sun').rows.forEach(t => { if (t.toPar != null) S.teams.sun.find(x => x.id === t.id).pids.forEach(pid => { if (pid) sunTP[pid] = t.toPar; }); });
+  const base = individualNet(S, ['fri', 'sat']);
+  const tm = tripMoney(S);
+  const payBy = Object.fromEntries(tm.weekend.list.filter(x => x.payout).map(x => [x.pid, x.payout]));
+  const rows = base.map(p => {
+    const f = p.detail.fri != null ? p.detail.fri - parOf('fri') : null;
+    const s = p.detail.sat != null ? p.detail.sat - parOf('sat') : null;
+    const u = sunTP[p.pid] ?? null;
+    const parts = [f, s, u].filter(v => v != null);
+    return { pid: p.pid, name: p.name, f, s, u, n: parts.length, toPar: parts.length ? parts.reduce((a, b) => a + b, 0) : null };
+  }).sort((a, b) => (a.toPar == null) - (b.toPar == null) || (a.toPar ?? 0) - (b.toPar ?? 0) || b.n - a.n || a.name.localeCompare(b.name));
+  let i = 0;
+  while (i < rows.length) { let j = i + 1; while (j < rows.length && rows[j].toPar === rows[i].toPar) j++; for (let k = i; k < j; k++) rows[k].pos = rows[i].toPar == null ? '' : (j - i > 1 ? 'T' : '') + (i + 1); i = j; }
+  const places = (S.config.weekend && S.config.weekend.places) || [];
+  const half = Math.ceil(rows.length / 2);
+  const col = (list) => `<div class="bd-board wk" style="--rows:${half + 1}"><div class="bd-row hdr"><div class="c pos">Pos</div><div class="c nm">Player</div><div class="c d">Fri</div><div class="c d">Sat</div><div class="c d">Sun</div><div class="c tp">Total</div></div>
+    ${list.map(x => {
+      const key = 'wk:' + x.pid, sig = x.toPar + '|' + x.n; const changed = boardPrev[key] != null && boardPrev[key] !== sig; boardPrev[key] = sig;
+      return `<div class="bd-row ${changed ? 'flash' : ''} ${payBy[x.pid] ? 'inmoney' : ''}"><div class="c pos">${x.pos}</div><div class="c nm">${esc(shortName(x.name))}${payBy[x.pid] ? ` <em class="pz">${fmt$(payBy[x.pid])}</em>` : ''}</div>
+        <div class="c d ${tpCls(x.f)}">${tpStr(x.f)}</div><div class="c d ${tpCls(x.s)}">${tpStr(x.s)}</div><div class="c d ${tpCls(x.u)}">${tpStr(x.u)}</div><div class="c tp ${tpCls(x.toPar)}">${tpStr(x.toPar)}</div></div>`; }).join('')}</div>`;
+  const done = tm.weekend.complete;
+  const right = `<span class="bd-dot ${done ? 'done' : ''}"></span>${done ? 'Final' : 'Live'}<small>Top ${places.length} paid: ${places.map(p => fmt$(p)).join(' / ')}</small>`;
+  return boardHeader('Weekend Individual', right) + `<div class="bd-main two">${col(rows.slice(0, half))}${col(rows.slice(half))}</div>`;
+}
+
+// Live Sunday pairing projection: each player's individual net to par over every
+// Friday/Saturday hole entered so far. Same order the "Pair" button uses once cards are complete.
+function liveSeeds() {
+  const out = Object.keys(S.players).map(pid => {
+    const p = S.players[pid]; let tp = 0, holes = 0;
+    for (const d of ['fri', 'sat']) {
+      const course = S.config.courses[S.config.days[d].course];
+      const ph = playerPH(S, pid, d);
+      const card = (S.scores[d] && S.scores[d][pid]) || [];
+      for (let h = 0; h < 18; h++) {
+        const g = card[h]; if (g == null || g === '' || isNaN(Number(g))) continue;
+        tp += Number(g) - pops(ph, course.si[h]) - course.pars[h]; holes++;
+      }
+    }
+    return { pid, name: p.name, index: Number(p.index) || 0, tp: holes ? tp : null, holes };
+  });
+  out.sort((a, b) => (a.tp == null) - (b.tp == null) || (a.tp ?? 0) - (b.tp ?? 0) || a.index - b.index || a.name.localeCompare(b.name));
+  return out;
+}
+
+function boardPairs() {
+  const seeds = liveSeeds(), n = seeds.length;
+  const pairs = [];
+  for (let i = 0; i < Math.floor(n / 2); i++) pairs.push([i, n - 1 - i]);
+  if (n % 2) pairs.push([Math.floor(n / 2), null]);
+  const allIn = seeds.every(s => s.holes === 36);
+  const cell = (k) => {
+    if (k == null) return '<div class="c sd"></div><div class="c nm">— solo —</div><div class="c d"></div>';
+    const s = seeds[k];
+    return `<div class="c sd">${k + 1}</div><div class="c nm">${esc(shortName(s.name))}</div><div class="c d ${tpCls(s.tp)}">${s.tp == null ? '—' : tpStr(s.tp)}${s.holes && s.holes < 36 ? `<sup>${s.holes}</sup>` : ''}</div>`;
+  };
+  const half = Math.ceil(pairs.length / 2);
+  const col = (list, off) => `<div class="bd-board pr" style="--rows:${half + 1}"><div class="bd-row hdr"><div class="c pos">Team</div><div class="c sd">Seed</div><div class="c nm">Top half</div><div class="c d">Net</div><div class="c sd">Seed</div><div class="c nm">Bottom half</div><div class="c d">Net</div></div>
+    ${list.map(([a, z], i) => { const key = 'pr:' + (off + i), sig = seeds[a].pid + '|' + (z == null ? '' : seeds[z].pid); const changed = boardPrev[key] != null && boardPrev[key] !== sig; boardPrev[key] = sig;
+      return `<div class="bd-row ${changed ? 'flash' : ''}"><div class="c pos">${off + i + 1}</div>${cell(a)}${cell(z)}</div>`; }).join('')}</div>`;
+  const right = `<span class="bd-dot ${allIn ? 'done' : ''}"></span>${allIn ? 'Set' : 'Projected'}<small>${allIn ? 'All Fri + Sat cards in' : 'Changes live until Saturday\'s last card'}</small>`;
+  return boardHeader('Sunday Pairings · #1 with #' + n + ', #2 with #' + (n - 1) + ' · Fri + Sat individual net', right)
+    + `<div class="bd-main two">${col(pairs.slice(0, half), 0)}${col(pairs.slice(half), half)}</div>
+    <div class="bd-note">Net to par over the holes entered so far; the small number shows holes counted when a player isn't finished. Ties go to the lower index.</div>`;
+}
+
+function sundayStarted() { return Object.values(S.scores.sun || {}).some(c => Array.isArray(c) && c.some(v => v != null && v !== '')); }
+function boardViews() { return ['day', 'weekend', 'pairs']; }
+
+function viewBoard() {
+  const day = ui.bday === 'auto' ? autoBoardDay() : ui.bday;
+  const which = ['weekend', 'pairs'].includes(ui.bview) ? ui.bview : 'day';
+  const controls = `<div class="bd-ctl">
+    <div class="chips">${['auto', ...DAYS].map(d => `<button class="chip" aria-pressed="${ui.bday === d && which === 'day'}" data-act="bday" data-day="${d}">${d === 'auto' ? 'Today' : DAY_LABEL[d]}<small>${d === 'auto' ? 'Latest day with scores' : esc(S.config.courses[S.config.days[d].course].name)}</small></button>`).join('')}
+      <button class="chip" aria-pressed="${which === 'weekend'}" data-act="bweek">Weekend<small>Individual standings</small></button>
+      <button class="chip" aria-pressed="${which === 'pairs'}" data-act="bpairs">Sunday Pairings<small>Live projection</small></button></div>
+    <div class="row"><label class="row small"><input type="checkbox" id="b-rotate" data-brot="1" ${ui.rotate ? 'checked' : ''}> Rotate views every 20 s</label>
+      <button class="btn primary" data-act="tv-on">Show on clubhouse TV</button></div></div>`;
+  const board = `<section class="bd ${ui.tv ? 'tv' : ''}" id="board">${which === 'weekend' ? boardWeekend() : which === 'pairs' ? boardPairs() : boardDay(day)}</section>`;
+  const seg = (act, label, on, extra = '') => `<button class="tvb ${on ? 'on' : ''}" data-act="${act}" ${extra} aria-pressed="${on}">${label}</button>`;
+  const tvBar = `<div class="bd-tvbar" role="toolbar" aria-label="Scoreboard views">
+    <div class="tvseg">${seg('bday', 'Today', which === 'day' && ui.bday === 'auto', 'data-day="auto"')}${DAYS.map(d => seg('bday', DAY_LABEL[d].slice(0, 3), which === 'day' && ui.bday === d, `data-day="${d}"`)).join('')}</div>
+    <div class="tvseg">${seg('bweek', 'Weekend', which === 'weekend')}${seg('bpairs', 'Pairings', which === 'pairs')}</div>
+    <div class="tvseg">${seg('brot', ui.rotate ? 'Auto-rotate on' : 'Auto-rotate off', ui.rotate)}</div>
+    <div class="tvseg">${seg('fs', 'Full screen', false)}${seg('tv-off', 'Exit', false)}</div></div>`;
+  return ui.tv ? board + tvBar : controls + board + `<div class="muted small">Updates live as cards are saved. On the clubhouse TV or laptop, open this page and tap <b>Show on clubhouse TV</b>, or open the link with <b>#scoreboard</b> on the end to go straight to it.</div>`;
+}
+
+let rotTimer = null;
+function setRotation() {
+  clearInterval(rotTimer);
+  if (!ui.rotate) return;
+  rotTimer = setInterval(() => {
+    if (ui.tab !== 'board') return;
+    const v = boardViews(); ui.bview = v[(v.indexOf(ui.bview) + 1) % v.length];
+    render();
+  }, 20000);
+}
+
+
+const $ = (s) => document.querySelector(s);
+const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt$ = (n) => { n = Number(n) || 0; const neg = n < 0; n = Math.abs(n); const whole = Math.abs(n - Math.round(n)) < 0.005;
+  return (neg ? '-' : '') + '$' + (whole ? Math.round(n).toLocaleString('en-US') : n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })); };
+const numFmt = (v) => { const n = Number(String(v).replace(/[$,]/g, '')); return isNaN(n) || v === '' || v == null ? esc(v) : n.toLocaleString('en-US', { maximumFractionDigits: 2 }); };
+const toParStr = (n) => n == null ? '' : n === 0 ? 'E' : (n > 0 ? '+' + n : String(n));
+const clean = (o) => { const r = {}; if (o) for (const [k, v] of Object.entries(o)) if (v != null) r[k] = v; return r; };
+const uid = (p) => p + Date.now().toString(36).slice(-5) + Math.random().toString(36).slice(2, 5);
+const clone = (o) => JSON.parse(JSON.stringify(o));
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => t.hidden = true, 3200); }
+
+function deriveState() {
+  if (!docs.config || !docs.config.cfg) { mode = 'sample'; S = makeSample(); return; }
+  mode = 'live';
+  const t = docs.teams || {};
+  S = {
+    config: docs.config.cfg,
+    players: clean(docs.players && docs.players.list),
+    teams: { fri: t.fri || [], sat: t.sat || [], sun: t.sun || [] },
+    scores: { fri: clean(docs.scores_fri && docs.scores_fri.h), sat: clean(docs.scores_sat && docs.scores_sat.h), sun: clean(docs.scores_sun && docs.scores_sun.h) },
+    extras: docs.extras || {},
+  };
+}
+
+// ---- storage: db when available, this browser otherwise ----
+function deepMerge(a, b) {
+  const out = (a && typeof a === 'object' && !Array.isArray(a)) ? { ...a } : {};
+  for (const [k, v] of Object.entries(b)) {
+    out[k] = (v && typeof v === 'object' && !Array.isArray(v) && out[k] && typeof out[k] === 'object' && !Array.isArray(out[k])) ? deepMerge(out[k], v) : v;
+  }
+  return out;
+}
+function saveLocal() { try { localStorage.setItem('bgt-docs', JSON.stringify(docs)); } catch (e) {} }
+async function writeDoc(id, body, merge) {
+  if (!canWrite) { askPin(); return; }
+  if (backend === 'local') {
+    docs[id] = merge ? deepMerge(docs[id], body) : body;
+    saveLocal(); deriveState(); render(); return;
+  }
+  try { await db.collection('trip').doc(id).set(body, merge ? { merge: true } : {}); }
+  catch (e) {
+    if (e && e.code === 'permission-denied') { canWrite = false; render(); toast('Enter the scorekeeper PIN to make changes.'); askPin(); }
+    else toast('Could not save: ' + ((e && e.message) || 'unknown error'));
+  }
+}
+async function deleteAll() {
+  if (backend === 'local') { docs = {}; saveLocal(); deriveState(); render(); return; }
+  for (const id of DOC_IDS) { try { await db.collection('trip').doc(id).delete(); } catch (e) {} }
+}
+function askPin() { if (backend !== 'db') return; ui.pinOpen = true; render(); setTimeout(() => { const el = document.getElementById('pin-in'); if (el) el.focus(); }, 30); }
+async function submitPin() {
+  const el = document.getElementById('pin-in'); const pin = el ? el.value.trim() : '';
+  if (!pin) return toast('Type the PIN first.');
+  if (!authId) return toast('Still connecting. Try again in a moment.');
+  try {
+    await db.collection('editors').doc(authId).set({ pin });
+    canWrite = true; ui.pinOpen = false; toast('Scorekeeper mode is on for this device.'); render();
+  } catch (e) { toast("That PIN didn't work. Check with the host."); }
+}
+function exportTrip() {
+  const out = {}; DOC_IDS.forEach(id => { if (docs[id]) out[id] = docs[id]; });
+  const blob = new Blob([JSON.stringify(out, null, 1)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'whos-your-daddy-backup-' + new Date().toISOString().slice(0, 10) + '.json';
+  document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+async function writeTrip(state) {
+  await writeDoc('config', { cfg: state.config }, false);
+  await writeDoc('players', { list: state.players }, false);
+  await writeDoc('teams', { fri: state.teams.fri || [], sat: state.teams.sat || [], sun: state.teams.sun || [] }, false);
+  for (const d of DAYS) await writeDoc('scores_' + d, { h: state.scores[d] || {} }, false);
+  await writeDoc('extras', { fri: {}, sat: {}, sun: {}, ...(state.extras || {}) }, false);
+}
+const saveConfig = (cfg) => writeDoc('config', { cfg }, false);
+
+// ---- render ----
+function render() {
+  const st = $('#status');
+  st.textContent = mode === 'loading' ? 'Loading' : backend === 'local' ? 'Offline · this device only' : (canWrite ? 'Live · Scorekeeper' : mode === 'sample' ? 'Sample data' : 'Live · watching');
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
+  if (mode === 'loading') return;
+  // keep focus + typed text across re-renders
+  const a = document.activeElement, keep = a && a.id && $('#main').contains(a) ? { id: a.id, v: a.value, s: a.selectionStart, e: a.selectionEnd } : null;
+  const views = { board: viewBoard, results: viewResults, scores: viewScores, players: viewPlayers, setup: viewSetup };
+  document.body.classList.toggle('tv-mode', !!ui.tv && ui.tab === 'board');
+  $('#main').innerHTML = (ui.tv && ui.tab === 'board' ? '' : banner()) + views[ui.tab]();
+  if (keep) {
+    const el = document.getElementById(keep.id);
+    if (el) { if ('value' in el && el.tagName !== 'SELECT' && el.value !== keep.v) el.value = keep.v; el.focus(); try { if (keep.s != null) el.setSelectionRange(keep.s, keep.e); } catch (e) {} }
+  }
+}
+
+function banner() {
+  let out = '';
+  if (ui.pinOpen && !canWrite) out += `<section class="banner" role="dialog" aria-labelledby="pin-h"><p id="pin-h"><b>Scorekeeper PIN.</b> Enter it once and this phone or computer can enter scores for the rest of the trip.</p>
+    <form class="row" data-form="pin"><input id="pin-in" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="PIN" style="width:110px"><button class="btn primary" type="submit">Unlock</button><button class="btn" type="button" data-act="pin-cancel">Cancel</button></form></section>`;
+  if (ui.importData) out += `<section class="banner" role="alertdialog" aria-labelledby="imp-h"><p id="imp-h"><b>Are you sure?</b> Importing <b>${esc(ui.importName || 'this file')}</b> replaces all players, teams, scores and setup with what's in the file.</p>
+    <div class="row"><button class="btn" data-act="imp-cancel">Cancel</button><button class="btn primary" data-act="imp-yes">Yes, import it</button></div></section>`;
+  if (mode === 'sample') return out + `<div class="banner"><p><b>You're looking at a made-up sample trip</b> (32 fake players, all three rounds scored) so you can see how results and payouts come out.${canWrite ? ' Start your real trip, or import a trip file.' : ' The host will load the real trip soon.'}</p>
+    <div class="row">${canWrite ? `<button class="btn primary" data-act="start">Start my trip</button><label class="btn" for="imp-file">Import a trip file</label><input type="file" id="imp-file" accept=".json,application/json" hidden><button class="btn" data-act="load-sample">Save sample to test with</button>` : `<button class="btn" data-act="pin-open">Scorekeeper? Enter PIN</button>`}</div></div>`;
+  if (!canWrite && !ui.pinOpen) return out + `<div class="banner"><p>Watching live. Results update as cards are entered.</p><div class="row"><button class="btn" data-act="pin-open">Scorekeeper? Enter PIN</button></div></div>`;
+  return out;
+}
+const dis = () => (mode !== 'live' || !canWrite) ? 'disabled' : '';
+
+function dayChips(sel, act, withTrip) {
+  const c = S.config;
+  const chips = DAYS.map(d => `<button class="chip" aria-pressed="${sel === d}" data-act="${act}" data-day="${d}">${DAY_LABEL[d]}<small>${esc(c.courses[c.days[d].course].name)}</small></button>`);
+  if (withTrip) chips.push(`<button class="chip" aria-pressed="${sel === 'trip'}" data-act="${act}" data-day="trip">Trip Totals<small>Money list &amp; seeding</small></button>`);
+  return `<div class="chips">${chips.join('')}</div>`;
+}
+
+function viewResults() {
+  if (!Object.keys(S.players).length) return dayChips(ui.rday, 'rday', true) + `<div class="panel empty">No players yet. Add them under Players &amp; Teams.</div>`;
+  if (ui.rday === 'trip') return dayChips('trip', 'rday', true) + viewTrip();
+  const r = computeDay(S, ui.rday), dc = S.config.days[ui.rday];
+  const status = r.cardsTotal === 0 ? `<span class="pill live">No teams set</span>` : r.complete ? `<span class="pill final">Final</span>` : `<span class="pill live">${r.cardsIn} of ${r.cardsTotal} cards in</span>`;
+  const scr = r.fmt.scramble;
+  const rows = r.standings.map(t => {
+    const done = t.thru === 18;
+    const running = done ? t.toPar : (t.thru ? t.running - t.runningPar : null);
+    return `<tr class="${t.payout ? 'paid' : ''}">
+      <td class="pos">${done ? (t.tied ? 'T' : '') + t.pos : '–'}</td>
+      <td class="wrap-cell">${esc(t.name)}</td>
+      <td class="num thru ${done ? 'done' : ''}">${done ? 'F' : t.thru}</td>
+      ${scr ? `<td class="num">${t.thru ? t.grossTotal : ''}</td><td class="num">${t.ph}</td>` : ''}
+      <td class="num score">${done ? t.total : ''}</td>
+      <td class="num score ${running < 0 ? 'under' : ''}">${toParStr(running)}</td>
+      <td class="num">${t.payout ? `<span class="money">${fmt$(t.payout)}</span><span class="each">${fmt$(t.each)} each</span>` : ''}</td></tr>`;
+  }).join('');
+  const skinLine = (s) => s.winners.map(w => `<div class="skin"><span><span class="hole">#${s.hole}</span>${esc(w.name)} <span class="muted small">${s.gross ? 'gross' : 'net'} ${s.score}${!s.gross && w.grossScore !== s.score ? ' (gross ' + w.grossScore + ')' : ''} on par ${s.par}${s.worth > 1 ? ' · worth ' + s.worth + ' skins with carryover' : ''}${s.winners.length === 2 ? ' · half skin, tied' : ''}</span>${s.final ? '' : ' <span class="pill live">pending</span>'}</span><span class="money">${fmt$(w.amt)}</span></div>`).join('');
+  const carryNote = r.carries.length ? `<div class="muted small">Carried: ${r.carries.map(c => '#' + c.hole + ' (' + c.tied + '-way tie at ' + c.score + ')').join(', ')}${r.carryOut ? `. ${r.carryOut} skin${r.carryOut > 1 ? 's' : ''} still carrying after the last hole scored.` : '.'}</div>` : '';
+  const skins = (r.skins.length ? r.skins.map(skinLine).join('') : `<div class="muted">No skins won yet.</div>`) + carryNote;
+  const contests = r.contests.length ? r.contests.map(c => `<div class="skin"><span><span class="hole">${c.type} #${c.hole}</span>${c.winner ? esc(S.players[c.winner].name) : '<span class="muted">Not entered</span>'}</span><span class="money ${c.winner ? '' : 'zero'}">${fmt$(c.amt)}</span></div>`).join('') : `<div class="muted">None set for this day.</div>`;
+  const money = Object.entries(r.money).sort((a, b) => b[1].total - a[1].total).map(([pid, m]) =>
+    `<tr><td>${esc(S.players[pid].name)}</td><td class="wrap-cell muted small">${m.items.map(i => esc(i.why) + ' ' + fmt$(i.amt)).join(' · ')}</td><td class="num money">${fmt$(m.total)}</td></tr>`).join('');
+  const paidOut = Object.values(r.money).reduce((s, m) => s + m.total, 0);
+  return dayChips(ui.rday, 'rday', true) + `
+  <section class="panel">
+    <div class="row between"><div><h2>${DAY_LABEL[ui.rday]} · ${esc(r.course.name)}</h2><div class="muted small">${esc(r.fmt.label)} · Par ${r.coursePar}${r.fmt.balls > 1 ? ' (' + r.coursePar * r.fmt.balls + ' for 2 balls)' : ''}${scr ? ' · Team handicap: ' + (dc.scrHcp === '3515' ? '35% low + 15% high' : 'average of course handicaps' + (dc.scrPct != 100 ? ' × ' + dc.scrPct + '%' : '')) : ''}</div></div>${status}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Team</th><th class="num">Thru</th>${scr ? '<th class="num">Gross</th><th class="num">Hcp</th>' : ''}<th class="num">Net</th><th class="num">To Par</th><th class="num">Payout</th></tr></thead><tbody>${rows || `<tr><td colspan="8" class="empty">Set teams under Players &amp; Teams.</td></tr>`}</tbody></table></div>
+    ${r.complete ? '' : '<div class="muted small">Places and payouts settle as cards come in. Teams still on the course are listed below the finished ones.</div>'}
+  </section>
+  <div class="grid2">
+    <section class="panel"><div class="row between"><h3>Skins · ${SKIN_LABEL[r.skinsType] || 'Net'}${scr ? ' (team)' : ''}</h3><span class="muted small">${fmt$(r.skinsPot)} pot${r.skinUnits ? ' · ' + r.skinUnits + ' skin' + (r.skinUnits === 1 ? '' : 's') + ' at about ' + fmt$(Math.round(r.skinValue)) : ''} · rounded to whole dollars</span></div>${skins}</section>
+    <section class="panel"><div class="row between"><h3>Closest to Pin &amp; Long Drive</h3><span class="muted small">Enter winners on the score screen</span></div>${contests}</section>
+  </div>
+  <section class="panel"><div class="row between"><h3>${DAY_LABEL[ui.rday]} payouts by player</h3><span class="muted small">${fmt$(paidOut)} of ${fmt$(r.allocated)} paid</span></div>
+    ${money ? `<div class="tbl-wrap"><table><thead><tr><th>Player</th><th>For</th><th class="num">Won</th></tr></thead><tbody>${money}</tbody></table></div>` : '<div class="muted">Nothing paid yet.</div>'}</section>`;
+}
+
+function weekendPanel(w) {
+  const places = w.places || [];
+  const dash = '<span class="muted">–</span>';
+  const rows = w.list.map(r => `<tr class="${r.payout ? 'paid' : ''}"><td class="pos">${r.pos ? (r.tied ? 'T' : '') + r.pos : '–'}</td><td>${esc(r.name)}</td><td class="num">${r.fri ?? dash}</td><td class="num">${r.sat ?? dash}</td><td class="num">${r.sun ?? dash}</td><td class="num score">${r.rounds === 3 ? r.total : ''}</td><td class="num">${r.payout ? `<span class="money">${fmt$(r.payout)}</span>` : ''}</td></tr>`).join('');
+  return `<section class="panel"><div class="row between"><div><h3>Weekend individual · top ${places.length}</h3><div class="muted small">Friday individual net + Saturday individual net + his Sunday scramble team's net. Pays ${places.map((p, i) => ordinal(i + 1) + ' ' + fmt$(p)).join(', ')}. Ties split.</div></div>${w.complete ? '<span class="pill final">Final</span>' : '<span class="pill live">In progress</span>'}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Player</th><th class="num">Fri net</th><th class="num">Sat net</th><th class="num">Sun team net</th><th class="num">Total</th><th class="num">Payout</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
+function viewTrip() {
+  const tm = tripMoney(S);
+  const buyIn = Number(S.config.buyIn) || 0;
+  const rows = tm.list.map((p, i) => `<tr class="${p.total ? 'paid' : ''}"><td class="pos">${i + 1}</td><td>${esc(p.name)}</td>${DAYS.concat('wknd').map(d => `<td class="num">${p[d] ? fmt$(p[d]) : '<span class="muted">–</span>'}</td>`).join('')}<td class="num money ${p.total ? '' : 'zero'}">${fmt$(p.total)}</td><td class="num score ${p.net >= 0 ? 'ok' : 'muted'}">${p.net >= 0 ? '+' : '−'}${fmt$(Math.abs(p.net))}</td></tr>`).join('');
+  const seed = individualNet(S, ['fri', 'sat']).map((p, i) => `<tr><td class="pos">${p.rounds === 2 ? i + 1 : '–'}</td><td>${esc(p.name)}</td><td class="num">${p.index.toFixed(1)}</td><td class="num">${p.detail.fri ?? '<span class="muted">–</span>'}</td><td class="num">${p.detail.sat ?? '<span class="muted">–</span>'}</td><td class="num score">${p.rounds === 2 ? p.total : ''}</td></tr>`).join('');
+  const paid = tm.list.reduce((s, p) => s + p.total, 0), pot = buyIn * tm.list.length;
+  return `<section class="panel"><div class="row between"><h2>Trip Money List</h2><div class="kpis"><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(paid)}</div><div class="l">Paid so far</div></div></div></div>
+    <div class="tbl-wrap"><table><thead><tr><th></th><th>Player</th><th class="num">Fri</th><th class="num">Sat</th><th class="num">Sun</th><th class="num">Weekend</th><th class="num">Won</th><th class="num">Net vs ${fmt$(buyIn)}</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  ${weekendPanel(tm.weekend)}
+  <section class="panel"><div><h3>Individual net, Friday + Saturday</h3><div class="muted small">Each player's own net score (gross minus course handicap) for both rounds. This ranking seeds Sunday's scramble: #1 plays with last place, #2 with second-to-last, and so on.</div></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Rank</th><th>Player</th><th class="num">Index</th><th class="num">Fri net</th><th class="num">Sat net</th><th class="num">Total</th></tr></thead><tbody>${seed}</tbody></table></div></section>`;
+}
+
+// ---- score entry ----
+function teamsFor(day) { return (S.teams[day] || []).filter(t => t.pids && t.pids.some(p => p && S.players[p])); }
+function draftKey(day, key) { return day + '|' + key; }
+function cardValues(day, key) {
+  const d = ui.drafts[draftKey(day, key)];
+  if (d) return d;
+  const c = S.scores[day] && S.scores[day][key];
+  return Array.isArray(c) ? c.map(v => v == null ? '' : String(v)) : new Array(18).fill('');
+}
+function markClass(v, par) {
+  const n = Number(v); if (v === '' || isNaN(n)) return '';
+  const d = n - par; return d <= -2 ? 'eagle' : d === -1 ? 'birdie' : d === 1 ? 'bogey' : d >= 2 ? 'dbl' : '';
+}
+function viewScores() {
+  const day = ui.sday, dc = S.config.days[day], fmt = FORMATS[dc.format], course = S.config.courses[dc.course];
+  const teams = teamsFor(day);
+  const r = computeDay(S, day);
+  const byId = Object.fromEntries(r.standings.map(t => [t.id, t]));
+  if (!teams.find(t => t.id === ui.team)) ui.team = teams[0] ? teams[0].id : null;
+  const list = teams.map((t, i) => { const st = byId[t.id]; const thru = st ? st.thru : 0;
+    const dirty = (fmt.scramble ? [t.id] : t.pids).some(k => ui.drafts[draftKey(day, k)]);
+    return `<button class="teambtn" aria-pressed="${t.id === ui.team}" data-act="pick-team" data-id="${esc(t.id)}"><span class="t"><b>TEAM ${i + 1}</b>${esc(t.pids.filter(p => S.players[p]).map(p => S.players[p].name).join(' / '))}</span><span class="thru ${thru === 18 ? 'done' : ''}">${dirty ? 'Unsaved' : thru === 18 ? '✓ 18' : thru ? 'Thru ' + thru : '—'}</span></button>`; }).join('');
+  let editor = '';
+  const team = teams.find(t => t.id === ui.team);
+  if (team) {
+    const H = [...Array(18).keys()];
+    const head = `<tr><th>Hole</th>${H.slice(0, 9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">Out</th>${H.slice(9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">In</th><th class="tot">Tot</th></tr>`;
+    const meta = (label, arr, total) => `<tr class="meta"><td>${label}</td>${H.slice(0, 9).map(h => `<td>${arr[h]}</td>`).join('')}<td class="tot">${total ? arr.slice(0, 9).reduce((a, b) => a + b, 0) : ''}</td>${H.slice(9).map(h => `<td>${arr[h]}</td>`).join('')}<td class="tot">${total ? arr.slice(9).reduce((a, b) => a + b, 0) : ''}</td><td class="tot">${total ? arr.reduce((a, b) => a + b, 0) : ''}</td></tr>`;
+    const rowFor = (key, label, sub, ph) => {
+      const vals = cardValues(day, key);
+      const tot = (a) => a.reduce((s, v) => s + (Number(v) || 0), 0) || '';
+      const cell = (h) => { const p = pops(ph, course.si[h]); return `<td><span class="cell"><input id="sc-${esc(key)}-${h}" data-score="${esc(key)}" data-h="${h}" class="${markClass(vals[h], course.pars[h])}" inputmode="numeric" maxlength="2" value="${esc(vals[h])}" aria-label="${esc(label)} hole ${h + 1}" ${canWrite && mode === 'live' ? '' : 'disabled'}>${p > 0 ? `<span class="pop">${'●'.repeat(p)}</span>` : p < 0 ? '<span class="pop">+</span>' : ''}</span></td>`; };
+      return `<tr><td><span class="pname">${esc(label)}</span><span class="pmeta">${sub}</span></td>${H.slice(0, 9).map(cell).join('')}<td class="tot">${tot(vals.slice(0, 9))}</td>${H.slice(9).map(cell).join('')}<td class="tot">${tot(vals.slice(9))}</td><td class="tot">${tot(vals)}</td></tr>`;
+    };
+    let body = '';
+    if (fmt.scramble) {
+      const ph = scrambleTeamHcp(S, team.pids, day);
+      body = rowFor(team.id, 'Team score', `${team.pids.map(p => esc(S.players[p].name.split(' ')[0])).join(' & ')} · team hcp ${ph}`, ph);
+    } else {
+      body = team.pids.map(pid => {
+        const ph = computeDayPH(pid, day);
+        const tee = teeName(pid, day);
+        return rowFor(pid, S.players[pid].name, `Idx ${Number(S.players[pid].index).toFixed(1)} · CH ${ph} · ${esc(tee)}`, ph);
+      }).join('');
+      const st = byId[team.id];
+      if (st) body += `<tr class="team"><td>${fmt.balls > 1 ? '2 best nets' : 'Best net'}</td>${H.slice(0, 9).map(h => `<td>${st.holes[h] ?? ''}</td>`).join('')}<td class="tot"></td>${H.slice(9).map(h => `<td>${st.holes[h] ?? ''}</td>`).join('')}<td class="tot"></td><td class="tot">${st.thru === 18 ? st.total : ''}</td></tr>`;
+    }
+    const keys = fmt.scramble ? [team.id] : team.pids;
+    const dirty = keys.some(k => ui.drafts[draftKey(day, k)]);
+    editor = `<section class="panel"><div class="row between"><h3>Team ${teams.indexOf(team) + 1} card</h3>
+      <div class="row">${dirty ? '<span class="pill live">Unsaved changes</span><button class="btn" data-act="discard">Discard</button>' : ''}<button class="btn primary" data-act="save-card" ${dis()} ${dirty ? '' : 'disabled'}>Save card</button></div></div>
+      <div class="tbl-wrap"><table class="card"><thead>${head}</thead><tbody>${meta('Par', course.pars, true)}${meta('Hdcp', course.si, false)}${body}</tbody></table></div>
+      <div class="muted small">Enter gross scores. Dots mark holes where a player gets a stroke. Circles are birdies, squares are bogeys. The best net row updates after you save.</div></section>`;
+  }
+  const opts = (sel) => `<option value="">— not entered —</option>` + Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([pid, p]) => `<option value="${pid}" ${pid === sel ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
+  const contests = (dc.contests || []).map(c => `<label class="f">${c.type === 'LD' ? 'Long drive' : 'Closest to pin'} · #${c.hole} · ${fmt$(c.amt)}<select id="ex-${day}-${c.id}" data-extra="${c.id}" ${dis()}>${opts(S.extras[day] && S.extras[day][c.id])}</select></label>`).join('');
+  const clearBox = (mode === 'live' && canWrite) ? (ui.clearing
+    ? `<section class="banner" role="alertdialog" aria-labelledby="clr-h"><p id="clr-h"><b>Are you sure?</b> This erases every score entered for Friday, Saturday and Sunday${ui.clearExtras ? ', plus all closest-to-pin and long-drive winners' : ''}. Players, teams and payouts stay. This can't be undone.</p>
+        <div class="row"><label class="row small"><input type="checkbox" id="clr-extras" data-clrx="1" ${ui.clearExtras ? 'checked' : ''}> Also clear contest winners</label><button class="btn" data-act="clear-cancel">Cancel</button><button class="btn danger armed" data-act="clear-yes">Yes, clear all scores</button></div></section>`
+    : ui.filling
+    ? `<section class="banner" role="alertdialog" aria-labelledby="fill-h"><p id="fill-h"><b>Are you sure?</b> This replaces every Friday and Saturday score with made-up test scores, picks random closest-to-pin and long-drive winners, and clears Sunday's teams and scores so you can re-pair them.</p>
+        <div class="row"><button class="btn" data-act="fill-cancel">Cancel</button><button class="btn primary" data-act="fill-yes">Yes, fill test scores</button></div></section>`
+    : `<div class="row" style="justify-content:flex-end"><button class="btn" data-act="fill-ask">Fill test scores (Fri + Sat)</button><button class="btn danger" data-act="clear-ask">Clear scores</button></div>`) : '';
+  return dayChips(day, 'sday') + clearBox + `
+  <section class="panel"><div class="row between"><h2>${DAY_LABEL[day]} cards · ${esc(course.name)}</h2><span class="muted small">${esc(fmt.label)}</span></div>
+    ${teams.length ? `<div class="teamlist">${list}</div>` : `<div class="empty">No ${DAY_LABEL[day]} teams yet. Set them under Players &amp; Teams.</div>`}</section>
+  ${editor}
+  <section class="panel"><h3>${DAY_LABEL[day]} contest winners</h3>${contests ? `<div class="grid2" style="gap:12px">${contests}</div>` : '<div class="muted">No contests set for this day.</div>'}</section>`;
+}
+function computeDayPH(pid, day) { const t = teeObj(pid, day); return Math.round(courseHcp(Number(S.players[pid].index) || 0, t) * (S.config.days[day].allowance ?? 100) / 100); }
+function teeObj(pid, day) { const c = S.config.courses[S.config.days[day].course]; const want = S.players[pid].tees && S.players[pid].tees[day]; return c.tees.find(t => t.id === want) || c.tees.find(t => t.id === c.defaultTee) || c.tees[0]; }
+function teeName(pid, day) { return teeObj(pid, day).name; }
+
+// ---- players & teams ----
+function viewPlayers() {
+  const c = S.config;
+  const ids = Object.keys(S.players).sort((a, b) => S.players[a].name.localeCompare(S.players[b].name));
+  const teeSel = (pid, day) => { const course = c.courses[c.days[day].course]; const cur = (S.players[pid].tees && S.players[pid].tees[day]) || course.defaultTee;
+    return `<select id="tee-${pid}-${day}" data-tee="${pid}" data-day="${day}" ${dis()}>${course.tees.map(t => `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.name)}</option>`).join('')}</select>`; };
+  const rows = ids.map(pid => { const p = S.players[pid];
+    return `<tr><td><input id="pn-${pid}" data-pfield="name" data-pid="${pid}" value="${esc(p.name)}" ${dis()} style="width:150px"></td>
+      <td><input id="pi-${pid}" data-pfield="index" data-pid="${pid}" value="${esc(p.index)}" inputmode="decimal" ${dis()} style="width:64px"></td>
+      ${DAYS.map(d => `<td>${teeSel(pid, d)}<span class="muted small"> CH ${computeDayPH(pid, d)}</span></td>`).join('')}
+      <td>${canWrite && mode === 'live' ? `<button class="link" data-act="del-player" data-pid="${pid}">${ui.armed === 'del-' + pid ? 'Tap to confirm' : 'Remove'}</button>` : ''}</td></tr>`; }).join('');
+  const teamSection = (day) => {
+    const dc = c.days[day], size = FORMATS[dc.format].size;
+    const cur = S.teams[day] || [];
+    let lastUsed = -1; cur.forEach((t, i) => { if ((t.pids || []).some(p => p && S.players[p])) lastUsed = i; });
+    const n = Math.max(Math.ceil(ids.length / size), lastUsed + 1);
+    const used = {}; cur.forEach(t => (t.pids || []).forEach(p => { if (p) used[p] = (used[p] || 0) + 1; }));
+    const unassigned = ids.filter(p => !used[p]);
+    const cards = [...Array(n).keys()].map(i => { const t = cur[i] || { pids: [] };
+      return `<div class="teamcard"><b>TEAM ${i + 1}</b>${[...Array(size).keys()].map(j => { const v = t.pids[j] || '';
+        return `<select id="tm-${day}-${i}-${j}" data-team="${day}" data-ti="${i}" data-tj="${j}" class="${v && used[v] > 1 ? 'dup' : ''}" ${dis()}><option value="">— open —</option>${ids.map(p => `<option value="${p}" ${p === v ? 'selected' : ''}>${esc(S.players[p].name)}</option>`).join('')}</select>`; }).join('')}</div>`; }).join('');
+    const tools = day === 'sat' ? `<button class="btn" data-act="draw-sat" ${dis()}>Random draw</button>`
+      : day === 'sun' ? `<button class="btn" data-act="pair-sun" ${dis()}>${ui.armed === 'pair-sun' ? 'Tap again: this clears Sunday scores' : 'Pair from Fri + Sat net'}</button>` : '';
+    const note = day === 'fri' ? 'Players pick their own partners.' : day === 'sat' ? 'Random draw into teams of 4. Redraw as many times as you like before play.' : 'Pairs #1 with #' + ids.length + ', #2 with #' + (ids.length - 1) + ', and so on, by individual net score over Friday and Saturday. Run it after Saturday\'s cards are in.';
+    return `<section class="panel"><div class="row between"><div><h3>${DAY_LABEL[day]} teams · ${esc(FORMATS[dc.format].label)}</h3><div class="muted small">${note}${unassigned.length ? ` <b class="bad">${unassigned.length} unassigned:</b> ${unassigned.map(p => esc(S.players[p].name)).join(', ')}` : ''}</div></div><div class="row">${tools}</div></div><div class="teamcards">${cards}</div></section>`;
+  };
+  return `<section class="panel"><div class="row between"><h2>Players · ${ids.length}</h2><span class="muted small">CH = course handicap from index, slope, rating and par for the tees played</span></div>
+    ${canWrite && mode === 'live' ? `<label class="f">Add players · one per line: Name, Index<textarea id="bulk" placeholder="Player 1, 12.4&#10;Player 2, 8.1"></textarea></label><div class="row"><button class="btn primary" data-act="bulk-add">Add players</button></div>` : ''}
+    ${ids.length ? `<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Index</th>${DAYS.map(d => `<th>${DAY_LABEL[d]} tees</th>`).join('')}<th></th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}</section>
+  ${DAYS.map(teamSection).join('')}`;
+}
+
+// ---- setup ----
+function viewSetup() {
+  const c = S.config, n = Object.keys(S.players).length, pot = n * (Number(c.buyIn) || 0);
+  let allocated = 0;
+  const daySection = (day) => {
+    const dc = c.days[day];
+    const places = dc.places || [];
+    const pTot = places.reduce((s, v) => s + (Number(v) || 0), 0), cTot = (dc.contests || []).reduce((s, x) => s + (Number(x.amt) || 0), 0), dTot = pTot + (Number(dc.skinsPot) || 0) + cTot;
+    allocated += dTot;
+    const course = c.courses[dc.course];
+    return `<section class="panel"><div class="row between"><h3>${DAY_LABEL[day]}</h3><span class="money">${fmt$(dTot)}</span></div>
+      <div class="row">
+        <label class="f">Course<select id="d-${day}-course" data-dfield="course" data-day="${day}" ${dis()}>${Object.entries(c.courses).map(([k, v]) => `<option value="${k}" ${k === dc.course ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
+        <label class="f">Format<select id="d-${day}-format" data-dfield="format" data-day="${day}" ${dis()}>${Object.entries(FORMATS).map(([k, v]) => `<option value="${k}" ${k === dc.format ? 'selected' : ''}>${v.label}</option>`).join('')}</select></label>
+        ${FORMATS[dc.format].scramble ? `<label class="f">Team handicap<select id="d-${day}-scrHcp" data-dfield="scrHcp" data-day="${day}" ${dis()}><option value="avg" ${dc.scrHcp !== '3515' ? 'selected' : ''}>Average of course handicaps</option><option value="3515" ${dc.scrHcp === '3515' ? 'selected' : ''}>35% low + 15% high (USGA)</option></select></label>
+          ${dc.scrHcp !== '3515' ? `<label class="f">Average × %<input id="d-${day}-scrPct" data-dfield="scrPct" data-day="${day}" data-num="1" value="${dc.scrPct ?? 100}" style="width:80px" ${dis()}></label>` : ''}`
+          : `<label class="f">Handicap allowance %<input id="d-${day}-allowance" data-dfield="allowance" data-day="${day}" data-num="1" value="${dc.allowance ?? 100}" style="width:90px" ${dis()}></label>`}
+      </div>
+      <div><div class="muted small" style="margin-bottom:6px">Team places paid (${places.length}) · ${fmt$(pTot)}, split evenly among teammates</div>
+        <div class="placelist">${places.map((v, i) => `<label class="f">${ordinal(i + 1)}<input id="pl-${day}-${i}" data-place="${i}" data-day="${day}" data-num="1" value="${numFmt(v)}" ${dis()}></label>`).join('')}
+        ${mode === 'live' && canWrite ? `<button class="btn" data-act="add-place" data-day="${day}">+ Place</button>${places.length ? `<button class="btn" data-act="rm-place" data-day="${day}">− Place</button>` : ''}` : ''}</div></div>
+      <div class="row">
+        <label class="f">Skins pot<input id="d-${day}-skinsPot" data-dfield="skinsPot" data-day="${day}" data-num="1" value="${numFmt(dc.skinsPot)}" style="width:90px" ${dis()}></label>
+        <label class="f">Skins scored<select id="d-${day}-skinsType" data-dfield="skinsType" data-day="${day}" ${dis()}>${Object.entries(SKIN_LABEL).map(([k, v]) => `<option value="${k}" ${(dc.skinsType || 'netGrossP3') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      </div>
+      <div><div class="muted small" style="margin-bottom:6px">Closest to pin &amp; long drive · ${fmt$(cTot)}</div>
+        <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th>Hole</th><th>Pays</th><th></th></tr></thead><tbody>
+        ${(dc.contests || []).map((x, i) => `<tr><td><select id="ct-${day}-${i}-type" data-contest="${i}" data-cfield="type" data-day="${day}" ${dis()}><option value="CTP" ${x.type === 'CTP' ? 'selected' : ''}>Closest to pin</option><option value="LD" ${x.type === 'LD' ? 'selected' : ''}>Long drive</option></select></td>
+          <td><select id="ct-${day}-${i}-hole" data-contest="${i}" data-cfield="hole" data-day="${day}" ${dis()}>${course.pars.map((p, h) => `<option value="${h + 1}" ${h + 1 == x.hole ? 'selected' : ''}>#${h + 1} · par ${p}</option>`).join('')}</select></td>
+          <td><input id="ct-${day}-${i}-amt" data-contest="${i}" data-cfield="amt" data-day="${day}" data-num="1" value="${numFmt(x.amt)}" style="width:80px" ${dis()}></td>
+          <td>${mode === 'live' && canWrite ? `<button class="link" data-act="rm-contest" data-day="${day}" data-i="${i}">Remove</button>` : ''}</td></tr>`).join('')}
+        </tbody></table></div>
+        ${mode === 'live' && canWrite ? `<div class="row" style="margin-top:8px"><button class="btn" data-act="add-contest" data-day="${day}">+ Contest</button></div>` : ''}</div>
+    </section>`;
+  };
+  const days = DAYS.map(daySection).join('');
+  const wk = (c.weekend && c.weekend.places) || [];
+  const wTot = wk.reduce((s, v) => s + (Number(v) || 0), 0);
+  allocated += wTot;
+  const weekendSec = `<section class="panel"><div class="row between"><h3>Weekend individual</h3><span class="money">${fmt$(wTot)}</span></div>
+    <div class="muted small">Fri individual net + Sat individual net + Sunday team net. Ties split.</div>
+    <div class="placelist">${wk.map((v, i) => `<label class="f">${ordinal(i + 1)}<input id="wk-${i}" data-wplace="${i}" data-num="1" value="${numFmt(v)}" ${dis()}></label>`).join('')}
+    ${mode === 'live' && canWrite ? `<button class="btn" data-act="add-wplace">+ Place</button>${wk.length ? '<button class="btn" data-act="rm-wplace">− Place</button>' : ''}` : ''}</div></section>`;
+  const left = pot - allocated;
+  const courses = Object.entries(c.courses).map(([k, co]) => {
+    const H = [...Array(18).keys()];
+    return `<section class="panel"><div class="row between"><h3>${esc(co.name)}</h3><span class="muted small">${esc(co.city || '')} · Par ${co.pars.reduce((a, b) => a + b, 0)}</span></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Tees</th><th class="num">Rating</th><th class="num">Slope</th><th class="num">Par</th><th>Default</th></tr></thead><tbody>
+      ${co.tees.map((t, i) => `<tr><td><input id="te-${k}-${i}-name" data-course="${k}" data-tee-i="${i}" data-tfield="name" value="${esc(t.name)}" ${dis()} style="width:170px"></td>
+        <td class="num"><input id="te-${k}-${i}-rating" data-course="${k}" data-tee-i="${i}" data-tfield="rating" data-num="1" value="${t.rating}" style="width:70px" ${dis()}></td>
+        <td class="num"><input id="te-${k}-${i}-slope" data-course="${k}" data-tee-i="${i}" data-tfield="slope" data-num="1" value="${t.slope}" style="width:64px" ${dis()}></td>
+        <td class="num"><input id="te-${k}-${i}-par" data-course="${k}" data-tee-i="${i}" data-tfield="par" data-num="1" value="${t.par}" style="width:56px" ${dis()}></td>
+        <td><input type="radio" name="def-${k}" id="te-${k}-${i}-def" data-course="${k}" data-default="${t.id}" ${t.id === co.defaultTee ? 'checked' : ''} ${dis()} aria-label="Default tee"></td></tr>`).join('')}
+      </tbody></table></div>
+      ${mode === 'live' && canWrite ? `<div class="row"><button class="btn" data-act="add-tee" data-course="${k}">+ Tee</button></div>` : ''}
+      <div class="tbl-wrap"><table class="card"><thead><tr><th>Hole</th>${H.map(h => `<th>${h + 1}</th>`).join('')}</tr></thead><tbody>
+        <tr><td>Par</td>${H.map(h => `<td><input class="siinput" id="cp-${k}-${h}" data-course="${k}" data-hole="${h}" data-hfield="pars" data-num="1" value="${co.pars[h]}" ${dis()}></td>`).join('')}</tr>
+        <tr><td>Hdcp</td>${H.map(h => `<td><input class="siinput" id="cs-${k}-${h}" data-course="${k}" data-hole="${h}" data-hfield="si" data-num="1" value="${co.si[h]}" ${dis()}></td>`).join('')}</tr>
+      </tbody></table></div></section>`;
+  }).join('');
+  return `<section class="panel"><div class="row between"><h2>The Pot</h2>
+      <div class="kpis"><div class="kpi"><div class="v">${n}</div><div class="l">Players</div></div><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(allocated)}</div><div class="l">Allocated</div></div><div class="kpi"><div class="v ${Math.abs(left) < 0.01 ? 'ok' : 'bad'}">${left >= 0 ? '' : '−'}${fmt$(Math.abs(left))}</div><div class="l">${left >= 0 ? 'Unallocated' : 'Over the pot'}</div></div></div></div>
+    <div class="row">
+      <label class="f">Buy-in per player<input id="buyIn" data-gfield="buyIn" data-num="1" value="${numFmt(c.buyIn)}" style="width:100px" ${dis()}></label>
+      <label class="f">Ties for a paid place<select id="tieBreak" data-gfield="tieBreak" ${dis()}><option value="split" ${c.tieBreak !== 'cards' ? 'selected' : ''}>Split the money</option><option value="cards" ${c.tieBreak === 'cards' ? 'selected' : ''}>Match cards (back 9, 6, 3, 18th)</option></select></label>
+    </div>
+    <div class="muted small">Skins: one low score wins the full skin; two tied for low split it (half skin each); three or more tied means no skin and the hole carries to the next. The skins pot is divided by the number of skins won. Course handicap = Index × Slope ÷ 113 + (Rating − Par), rounded.</div></section>
+  ${days}
+  ${weekendSec}
+  <h2 style="margin-top:8px">Courses</h2>
+  <div class="muted small">Ratings, slopes and hole handicaps were pulled from public scorecards. Check them against the card at each course before play.</div>
+  ${courses}
+  ${canWrite ? `<section class="panel"><h3>Backup</h3><div class="muted small">Save a copy of everything to a file, or load one back in.</div>
+    <div class="row"><button class="btn" data-act="export">Download backup file</button><label class="btn" for="imp-file2">Import a trip file</label><input type="file" id="imp-file2" accept=".json,application/json" hidden></div></section>` : ''}
+  ${mode === 'live' && canWrite ? `<section class="panel"><h3>Reset</h3><div class="muted small">Erases all players, teams, scores and setup for this trip.</div><div class="row"><button class="btn danger ${ui.armed === 'reset' ? 'armed' : ''}" data-act="reset">${ui.armed === 'reset' ? 'Tap again to erase everything' : 'Reset trip'}</button></div></section>` : ''}`;
+}
+
+// ---- events ----
+function arm(key) { ui.armed = key; clearTimeout(arm.t); arm.t = setTimeout(() => { ui.armed = null; render(); }, 4000); }
+
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-tab]'); if (!b) return;
+  ui.tab = b.dataset.tab; try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {}
+  render(); try { window.scrollTo(0, 0); } catch (x) {}
+});
+
+document.getElementById('main').addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
+  const act = b.dataset.act, day = b.dataset.day;
+  if (act === 'rday') { ui.rday = day; return render(); }
+  if (act === 'pin-open') return askPin();
+  if (act === 'pin-cancel') { ui.pinOpen = false; return render(); }
+  if (act === 'export') return exportTrip();
+  if (act === 'imp-cancel') { ui.importData = null; return render(); }
+  if (act === 'imp-yes') {
+    const d = ui.importData; ui.importData = null; ui.drafts = {};
+    for (const id of DOC_IDS) if (d[id]) await writeDoc(id, d[id], false);
+    toast('Trip imported.'); return render();
+  }
+  if (act === 'bday') { ui.bday = day; ui.bview = 'day'; setRotation(); return render(); }
+  if (act === 'bweek') { ui.bview = 'weekend'; setRotation(); return render(); }
+  if (act === 'bpairs') { ui.bview = 'pairs'; setRotation(); return render(); }
+  if (act === 'brot') { ui.rotate = !ui.rotate; setRotation(); return render(); }
+  if (act === 'tv-on') { ui.tv = true; render(); try { window.scrollTo(0, 0); } catch (x) {} return; }
+  if (act === 'tv-off') { ui.tv = false; try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (x) {} return render(); }
+  if (act === 'fs') {
+    try { if (document.fullscreenElement) await document.exitFullscreen(); else await document.documentElement.requestFullscreen(); }
+    catch (x) { toast('Full screen is not available here. Use the browser or TV\'s own full-screen option.'); }
+    return;
+  }
+  if (act === 'sday') { ui.sday = day; ui.team = null; return render(); }
+  if (act === 'pick-team') { ui.team = b.dataset.id; return render(); }
+  if (act === 'start') { const cfg = defaultConfig(); return writeTrip({ config: cfg, players: {}, teams: { fri: [], sat: [], sun: [] }, scores: { fri: {}, sat: {}, sun: {} }, extras: {} }); }
+  if (act === 'load-sample') { toast('Saving the sample trip…'); return writeTrip(makeSample()); }
+  if (act === 'fill-ask') { ui.filling = true; ui.clearing = false; return render(); }
+  if (act === 'fill-cancel') { ui.filling = false; return render(); }
+  if (act === 'fill-yes') {
+    ui.filling = false; ui.drafts = {};
+    const sc = makeTestScores(S, (Date.now() % 2147483000) + 1);
+    const ids = Object.keys(S.players), pick = () => ids[Math.floor(Math.random() * ids.length)];
+    const ex = { fri: {}, sat: {}, sun: {} };
+    for (const d of ['fri', 'sat']) for (const c of (S.config.days[d].contests || [])) ex[d][c.id] = pick();
+    await writeDoc('scores_fri', { h: sc.fri }, false);
+    await writeDoc('scores_sat', { h: sc.sat }, false);
+    await writeDoc('scores_sun', { h: {} }, false);
+    await writeDoc('extras', ex, false);
+    await writeDoc('teams', { sun: [] }, true);
+    toast('Test scores filled. Pair Sunday under Players & Teams.'); return render();
+  }
+  if (act === 'clear-ask') { ui.clearing = true; ui.filling = false; ui.clearExtras = true; return render(); }
+  if (act === 'clear-cancel') { ui.clearing = false; return render(); }
+  if (act === 'clear-yes') {
+    ui.clearing = false; ui.drafts = {};
+    for (const d of DAYS) await writeDoc('scores_' + d, { h: {} }, false);
+    if (ui.clearExtras) await writeDoc('extras', { fri: {}, sat: {}, sun: {} }, false);
+    toast(ui.clearExtras ? 'All scores and contest winners cleared.' : 'All scores cleared.'); return render();
+  }
+  if (act === 'discard') { const team = teamsFor(ui.sday).find(t => t.id === ui.team); const keys = FORMATS[S.config.days[ui.sday].format].scramble ? [team.id] : team.pids; keys.forEach(k => delete ui.drafts[draftKey(ui.sday, k)]); return render(); }
+  if (act === 'save-card') {
+    const d = ui.sday, h = {};
+    Object.keys(ui.drafts).forEach(k => { const [dd, key] = k.split('|'); if (dd === d) h[key] = ui.drafts[k].map(v => v === '' ? null : Number(v)); });
+    const bad = Object.values(h).some(a => a.some(v => v != null && (isNaN(v) || v < 1 || v > 15)));
+    if (bad) return toast('Scores must be whole numbers from 1 to 15.');
+    Object.keys(ui.drafts).forEach(k => { if (k.startsWith(d + '|')) delete ui.drafts[k]; });
+    await writeDoc('scores_' + d, { h }, true); toast('Card saved.'); return render();
+  }
+  if (act === 'bulk-add') {
+    const lines = ($('#bulk').value || '').split(/\n+/).map(l => l.trim()).filter(Boolean);
+    const list = {}; let bad = 0;
+    for (const l of lines) { const m = l.match(/^(.*?)[,\t ]+(\+?-?\d+(?:\.\d+)?)\s*$/); if (!m) { bad++; continue; }
+      let idx = m[2].startsWith('+') ? -Number(m[2].slice(1)) : Number(m[2]); list[uid('p')] = { name: m[1].trim().replace(/,$/, ''), index: idx }; }
+    if (!Object.keys(list).length) return toast('Use one player per line, like: Player 1, 12.4');
+    $('#bulk').value = '';
+    await writeDoc('players', { list }, true);
+    return toast(`Added ${Object.keys(list).length} player${Object.keys(list).length > 1 ? 's' : ''}${bad ? `. Skipped ${bad} line${bad > 1 ? 's' : ''} without an index.` : '.'}`);
+  }
+  if (act === 'del-player') { const pid = b.dataset.pid; if (ui.armed !== 'del-' + pid) { arm('del-' + pid); return render(); } ui.armed = null; return writeDoc('players', { list: { [pid]: null } }, true); }
+  if (act === 'draw-sat') {
+    const ids = Object.keys(S.players); for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
+    const size = FORMATS[S.config.days.sat.format].size, teams = [];
+    for (let i = 0; i < ids.length; i += size) teams.push({ id: 'A' + (teams.length + 1), pids: ids.slice(i, i + size) });
+    return writeDoc('teams', { sat: teams }, true);
+  }
+  if (act === 'pair-sun') {
+    const hasScores = Object.keys(S.scores.sun || {}).length > 0;
+    if (hasScores && ui.armed !== 'pair-sun') { arm('pair-sun'); return render(); }
+    ui.armed = null;
+    const { teams, ranked } = sundayPairs(S);
+    if (ranked.some(r => r.rounds < 2)) toast('Some players are missing a Friday or Saturday card, so they rank last.');
+    await writeDoc('teams', { sun: teams }, true);
+    if (hasScores) await writeDoc('scores_sun', { h: {} }, false);
+    return;
+  }
+  const cfg = clone(S.config);
+  if (act === 'add-wplace') { cfg.weekend = cfg.weekend || { places: [] }; cfg.weekend.places.push(0); return saveConfig(cfg); }
+  if (act === 'rm-wplace') { cfg.weekend.places.pop(); return saveConfig(cfg); }
+  if (act === 'add-place') { cfg.days[day].places.push(0); return saveConfig(cfg); }
+  if (act === 'rm-place') { cfg.days[day].places.pop(); return saveConfig(cfg); }
+  if (act === 'add-contest') { (cfg.days[day].contests = cfg.days[day].contests || []).push({ id: uid('c'), type: 'CTP', hole: 1, amt: 0 }); return saveConfig(cfg); }
+  if (act === 'rm-contest') { cfg.days[day].contests.splice(Number(b.dataset.i), 1); return saveConfig(cfg); }
+  if (act === 'add-tee') { cfg.courses[b.dataset.course].tees.push({ id: uid('t'), name: 'New tee', rating: 72, slope: 113, par: cfg.courses[b.dataset.course].pars.reduce((a, x) => a + x, 0) }); return saveConfig(cfg); }
+  if (act === 'reset') { if (ui.armed !== 'reset') { arm('reset'); return render(); } ui.armed = null; ui.drafts = {}; return deleteAll(); }
+});
+
+// score typing: keep a draft, auto-advance
+document.getElementById('main').addEventListener('input', (e) => {
+  const el = e.target; if (!el.dataset.score) return;
+  const key = el.dataset.score, h = Number(el.dataset.h), dk = draftKey(ui.sday, key);
+  el.value = el.value.replace(/[^0-9]/g, '');
+  const vals = ui.drafts[dk] || cardValues(ui.sday, key).slice();
+  vals[h] = el.value; ui.drafts[dk] = vals;
+  const course = S.config.courses[S.config.days[ui.sday].course];
+  el.className = markClass(el.value, course.pars[h]);
+  const saveBtn = $('[data-act="save-card"]'); if (saveBtn) saveBtn.disabled = false;
+  if (el.value.length === 2 || (el.value.length === 1 && el.value !== '1')) {
+    const next = document.getElementById(`sc-${key}-${h + 1}`); if (next) { next.focus(); next.select(); }
+  }
+});
+document.getElementById('main').addEventListener('focusin', (e) => { if (e.target.dataset && e.target.dataset.score) e.target.select(); });
+document.getElementById('main').addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.score && !$('#main').contains(e.relatedTarget)) render(); });
+
+document.getElementById('main').addEventListener('submit', (e) => {
+  if (e.target.dataset.form === 'pin') { e.preventDefault(); submitPin(); }
+});
+
+document.getElementById('main').addEventListener('change', async (e) => {
+  const el = e.target, ds = el.dataset;
+  if (el.id === 'imp-file' || el.id === 'imp-file2') {
+    const f = el.files && el.files[0]; if (!f) return;
+    try {
+      const d = JSON.parse(await f.text());
+      if (!d || !d.config || !d.config.cfg || !d.players) throw new Error('bad');
+      ui.importData = d; ui.importName = f.name; render(); window.scrollTo(0, 0);
+    } catch (x) { toast("That file isn't a Who's Your Daddy trip file."); }
+    el.value = ''; return;
+  }
+  if (ds.score) return render();
+  if (ds.brot) { ui.rotate = el.checked; setRotation(); return; }
+  if (ds.clrx) { ui.clearExtras = el.checked; return render(); }
+  const num = (v) => { const n = Number(String(v).replace(/[$,]/g, '')); return isNaN(n) ? 0 : n; };
+  const val = ds.num ? num(el.value) : el.value;
+  if (ds.pfield) { let v = val; if (ds.pfield === 'index') { const s = String(el.value).trim(); v = s.startsWith('+') ? -num(s.slice(1)) : num(s); } else if (!String(v).trim()) return render(); return writeDoc('players', { list: { [ds.pid]: { [ds.pfield]: v } } }, true); }
+  if (ds.tee) return writeDoc('players', { list: { [ds.tee]: { tees: { [ds.day]: el.value } } } }, true);
+  if (ds.team) {
+    const day = ds.team, size = FORMATS[S.config.days[day].format].size;
+    const teams = clone(S.teams[day] || []); const i = Number(ds.ti), j = Number(ds.tj);
+    while (teams.length <= i) teams.push({ id: (day === 'fri' ? 'F' : day === 'sat' ? 'A' : 'S') + (teams.length + 1), pids: [] });
+    teams.forEach((t, k) => { if (!t.id) t.id = (day === 'fri' ? 'F' : day === 'sat' ? 'A' : 'S') + (k + 1); t.pids = [...Array(size).keys()].map(x => t.pids[x] || null); });
+    teams[i].pids[j] = el.value || null;
+    return writeDoc('teams', { [day]: teams }, true);
+  }
+  if (ds.extra) return writeDoc('extras', { [ui.sday]: { [ds.extra]: el.value || null } }, true);
+  const cfg = clone(S.config);
+  if (ds.gfield) cfg[ds.gfield] = val;
+  else if (ds.dfield) { cfg.days[ds.day][ds.dfield] = val; }
+  else if (ds.place != null) cfg.days[ds.day].places[Number(ds.place)] = val;
+  else if (ds.wplace != null) { cfg.weekend = cfg.weekend || { places: [] }; cfg.weekend.places[Number(ds.wplace)] = val; }
+  else if (ds.contest != null) { const c = cfg.days[ds.day].contests[Number(ds.contest)]; c[ds.cfield] = ds.cfield === 'hole' ? Number(el.value) : val; if (ds.cfield !== 'amt') c.id = c.id || uid('c'); }
+  else if (ds.tfield) cfg.courses[ds.course].tees[Number(ds.teeI)][ds.tfield] = val;
+  else if (ds.default) cfg.courses[ds.course].defaultTee = ds.default;
+  else if (ds.hfield) cfg.courses[ds.course][ds.hfield][Number(ds.hole)] = val;
+  else return;
+  return saveConfig(cfg);
+});
+
+// ---- boot ----
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyAA8eXe0v_7uM6oIgW6yK0CPpnQA5zqQgg",
+  authDomain: "whos-your-daddy-d34cb.firebaseapp.com",
+  projectId: "whos-your-daddy-d34cb",
+  storageBucket: "whos-your-daddy-d34cb.firebasestorage.app",
+  messagingSenderId: "480646076828",
+  appId: "1:480646076828:web:bf78c714fc6613acd9d059"
+};
+async function boot() {
+  const fallback = () => {
+    backend = 'local'; canWrite = true;
+    try { docs = JSON.parse(localStorage.getItem('bgt-docs') || '{}') || {}; } catch (e) { docs = {}; }
+    deriveState(); render();
+    toast("Couldn't reach the live scoreboard. Working offline on this device.");
+  };
+  if (!window.firebase) return fallback();
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    db.settings({ ignoreUndefinedProperties: true });
+  } catch (e) { return fallback(); }
+  backend = 'db';
+  db.collection('trip').onSnapshot((snap) => {
+    const next = {}; snap.docs.forEach(d => { next[d.id] = d.data(); });
+    docs = next; deriveState(); render();
+  }, () => toast('Live updates stopped. Reload the page to reconnect.'));
+  try {
+    const cred = await firebase.auth().signInAnonymously();
+    authId = cred.user.uid;
+    const me = await db.collection('editors').doc(authId).get();
+    canWrite = me.exists; render();
+  } catch (e) { /* watching only */ }
+}
+setRotation();
+boot();
+})();
+</script>
+
+</body>
+</html>
