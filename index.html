@@ -201,12 +201,9 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .bd-li em { font-style: normal; font-family: var(--font-display); font-weight: 600; color: #fff; }
 .bd-li.dim { color: #a9c2b1; display: block; }
 .bd-li.g { grid-template-columns: 7.4em minmax(0, 1fr) auto; }
-.bd-tvbar { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; opacity: .35; transition: opacity .2s; z-index: 15; pointer-events: none; }
+.bd-tvbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: calc(8px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px)); background: var(--m-frame); opacity: .5; transition: opacity .2s; }
 .bd-tvbar:hover, .bd-tvbar:focus-within { opacity: 1; }
-@media (max-width: 900px) {
-  .bd-tvbar { position: static; opacity: 1; pointer-events: auto; justify-content: center; padding: 14px max(12px, env(safe-area-inset-left, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)); background: var(--m-frame); }
-  .bd.tv { padding-bottom: 16px; }
-}
+@media (max-width: 900px) { .bd-tvbar { opacity: 1; justify-content: center; gap: 6px; } .bd-tvbar .tvb { font-size: 12px; padding: 7px 9px; letter-spacing: .04em; } }
 .bd-close { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); z-index: 16; font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: rgba(10,40,24,.85); border: 1px solid rgba(255,255,255,.4); border-radius: 999px; padding: 7px 14px; cursor: pointer; opacity: .6; }
 .bd-close:hover, .bd-close:focus-visible { opacity: 1; outline: 2px solid var(--m-gold); }
 @media (max-width: 900px) { .bd-close { opacity: 1; position: absolute; } }
@@ -236,8 +233,8 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 body.tv-mode header.band, body.tv-mode::before { display: none; }
 body.tv-mode { background: var(--m-frame); }
 body.tv-mode main { max-width: none; padding-block: 0; }
-.bd.tv { border-radius: 0; box-shadow: none; min-height: 100dvh; padding: 1.6vh 1.4vw calc(84px + env(safe-area-inset-bottom, 0px)); font-size: clamp(13px, 1.55vh, 30px); }
-.bd.tv .bd-board { font-size: clamp(10px, min(calc(62vh / (var(--rows) * 2.3)), calc((100vw - 400px) / 80)), 30px); }
+.bd.tv { border-radius: 0; box-shadow: none; min-height: 0; padding: 1vh 1.4vw calc(16px + env(safe-area-inset-bottom, 0px)); font-size: clamp(13px, 1.55vh, 30px); }
+.bd.tv .bd-board { font-size: clamp(10px, min(calc(58vh / (var(--rows) * 2.3)), calc((100vw - 400px) / 80)), 30px); }
 .bd.tv .bd-board.pr { font-size: clamp(10px, min(calc(62vh / (var(--rows) * 2.3)), calc((100vw - 120px) / 70)), 24px); }
 .bd.tv .bd-board.wk, .bd.tv .bd-board.ml { font-size: clamp(10px, min(calc(62vh / (var(--rows) * 2.3)), calc((100vw - 120px) / 44)), 30px); }
 .bd.tv .bd-name { font-size: 3.2em; }
@@ -875,7 +872,7 @@ function boardDay(day) {
   const gameLine = (g) => {
     const paid = g.list.filter(x => x.payout);
     if (!paid.length) return `<div class="bd-li g dim"><b>${shortGame[g.key] || esc(g.label)}</b><span>—</span><em></em></div>`;
-    return paid.map((x, i) => `<div class="bd-li g"><b>${i === 0 || paid[i - 1].pos !== x.pos ? (shortGame[g.key] || esc(g.label)) + (g.places.length > 1 ? ' ' + ordinal(x.pos) : '') : ''}</b><span class="${x.pids.length > 2 ? 'wrap' : ''}">${esc(who(x.pids))} <i>${tpStr(x.toPar)}</i></span><em>${fmt$(x.payout)}</em></div>`).join('');
+    return paid.map((x, i) => `<div class="bd-li g"><b>${i === 0 || paid[i - 1].pos !== x.pos ? (shortGame[g.key] || esc(g.label)) + (g.places.length > 1 ? ' ' + ordinal(x.pos) : '') : ''}</b><span class="${x.pids.length > 2 ? 'wrap' : ''}">${esc(x.pids.length > 2 ? x.pids.map(p => S.players[p] ? lastName(S.players[p].name) : '?').join(', ') : who(x.pids))} <i>${tpStr(x.toPar)}</i></span><em>${fmt$(x.payout)}</em></div>`).join('');
   };
   const side = `<div class="bd-side">
     <div class="bd-box"><div class="bd-box-h">Skins <span>${r.skinUnits ? r.skinUnits + ' won' : 'none yet'}</span></div>
@@ -992,9 +989,9 @@ function viewBoard() {
     <div class="tvseg">${DAYS.map(d => seg('bday', DAY_LABEL[d].slice(0, 3), which === 'day' && day === d, `data-day="${d}"`)).join('')}</div>
     <div class="tvseg">${seg('bweek', 'Weekend & Money', which === 'weekend')}${seg('bpairs', 'Pairings', which === 'pairs')}</div>
     <div class="tvseg">${seg('brot', ui.rotate ? 'Auto-rotate on' : 'Auto-rotate off', ui.rotate)}</div>
-    <div class="tvseg">${seg('fs', 'Full screen', false)}${seg('tv-off', 'Exit', false)}</div></div>`;
+    <div class="tvseg">${seg('fs', 'Full screen', false)}${seg('tv-off', '✕ Exit', false)}</div></div>`;
   const tvClose = `<button class="bd-close" data-act="tv-off" aria-label="Exit TV view">✕ <span>Exit</span></button>`;
-  return ui.tv ? tvClose + board + tvBar : controls + board + `<div class="muted small">Updates live as cards are saved. On the clubhouse TV or laptop, open this page and tap <b>Show on clubhouse TV</b>, or open the link with <b>#scoreboard</b> on the end to go straight to it.</div>`;
+  return ui.tv ? tvBar + board : controls + board + `<div class="muted small">Updates live as cards are saved. On the clubhouse TV or laptop, open this page and tap <b>Show on clubhouse TV</b>, or open the link with <b>#scoreboard</b> on the end to go straight to it.</div>`;
 }
 
 let rotTimer = null;
@@ -1604,7 +1601,7 @@ async function boot() {
     canWrite = me.exists; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261022001226';
+const APP_VERSION = '20261022001810';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
