@@ -876,8 +876,8 @@ function boardDay(day) {
   };
   const side = `<div class="bd-side">
     <div class="bd-box"><div class="bd-box-h">Skins <span>${r.skinUnits ? r.skinUnits + ' won' : 'none yet'}</span></div>
-      ${skinList.slice(0, 10).map(s => `<div class="bd-li s"><span>${esc(who(s.pids))}</span><em>${fmt$(s.amt)}</em></div>`).join('')}
-      ${skinList.length > 10 ? `<div class="bd-li dim">+${skinList.length - 10} more</div>` : ''}</div>
+      ${skinList.map(s => `<div class="bd-li s"><span>${esc(who(s.pids))}</span><em>${fmt$(s.amt)}</em></div>`).join('')}
+</div>
     ${r.games.length ? `<div class="bd-box"><div class="bd-box-h">Nines &amp; Individuals</div>${r.games.map(gameLine).join('')}</div>` : ''}
     ${r.contests.length ? `<div class="bd-box"><div class="bd-box-h">Closest to Pin</div>
       ${r.contests.map(c => `<div class="bd-li s ${c.winner ? '' : 'dim'}"><span><b>#${c.hole}</b> ${c.winner ? esc(shortName(S.players[c.winner].name)) : '—'}</span><em>${c.winner ? fmt$(c.amt) : ''}</em></div>`).join('')}</div>` : ''}
@@ -1601,7 +1601,7 @@ async function boot() {
     canWrite = me.exists; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261022001810';
+const APP_VERSION = '20261022002806';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
