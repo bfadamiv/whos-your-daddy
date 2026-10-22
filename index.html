@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="WYD 2026">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<style>html{-webkit-text-size-adjust:100%;text-size-adjust:100%}:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>Who's Your Daddy 2026</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Playfair+Display:ital,wght@1,800&family=Source+Sans+3:wght@400;600;700&display=swap">
@@ -200,7 +200,7 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .bd-li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bd-li em { font-style: normal; font-family: var(--font-display); font-weight: 600; color: #fff; }
 .bd-li.dim { color: #a9c2b1; display: block; }
-.bd-li.g { grid-template-columns: 7.4em minmax(0, 1fr) auto; }
+.bd-li.g { grid-template-columns: 7.4rem minmax(0, 1fr) 3.4rem; font-size: 15px; line-height: 1.35; } .bd.tv .bd-li.g { font-size: inherit; grid-template-columns: 7.4em minmax(0, 1fr) 3.6em; } .bd-li.g em { text-align: right; }
 .bd-tvbar { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding: calc(8px + env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 8px max(12px, env(safe-area-inset-left, 0px)); background: var(--m-frame); opacity: .5; transition: opacity .2s; }
 .bd-tvbar:hover, .bd-tvbar:focus-within { opacity: 1; }
 @media (max-width: 900px) { .bd-tvbar { opacity: 1; justify-content: center; gap: 6px; } .bd-tvbar .tvb { font-size: 12px; padding: 7px 9px; letter-spacing: .04em; } }
@@ -1601,7 +1601,7 @@ async function boot() {
     canWrite = me.exists; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261022002806';
+const APP_VERSION = '20261022003303';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
