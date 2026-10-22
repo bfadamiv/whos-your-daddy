@@ -1098,6 +1098,10 @@ function render() {
   }
 }
 
+// Test tools (Clear scores, Fill test scores, Reset trip) switch off for good at 5:00 AM Central on Friday, Oct 23, 2026.
+const TEST_TOOLS_OFF_AT = Date.parse('2026-10-23T05:00:00-05:00');
+const testToolsOn = () => Date.now() < TEST_TOOLS_OFF_AT;
+
 function installTip() {
   if (ui.tv) return '';
   let standalone = false, dismissed = false;
@@ -1249,7 +1253,7 @@ function viewScores() {
   }
   const opts = (sel) => `<option value="">— not entered —</option>` + Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([pid, p]) => `<option value="${pid}" ${pid === sel ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
   const contests = (dc.contests || []).map(c => `<label class="f">${c.type === 'LD' ? 'Long drive' : 'Closest to pin'} · #${c.hole} · ${fmt$(c.amt)}<select id="ex-${day}-${c.id}" data-extra="${c.id}" ${dis()}>${opts(S.extras[day] && S.extras[day][c.id])}</select></label>`).join('');
-  const clearBox = (mode === 'live' && canWrite) ? (ui.clearing
+  const clearBox = (mode === 'live' && canWrite && testToolsOn()) ? (ui.clearing
     ? `<section class="banner" role="alertdialog" aria-labelledby="clr-h"><p id="clr-h"><b>Are you sure?</b> This erases every score entered for Friday, Saturday and Sunday${ui.clearExtras ? ', plus all closest-to-pin and long-drive winners' : ''}. Players, teams and payouts stay. This can't be undone.</p>
         <div class="row"><label class="row small"><input type="checkbox" id="clr-extras" data-clrx="1" ${ui.clearExtras ? 'checked' : ''}> Also clear contest winners</label><button class="btn" data-act="clear-cancel">Cancel</button><button class="btn danger armed" data-act="clear-yes">Yes, clear all scores</button></div></section>`
     : ui.filling
@@ -1380,7 +1384,7 @@ function viewSetup() {
   ${courses}
   ${canWrite ? `<section class="panel"><h3>Backup</h3><div class="muted small">Save a copy of everything to a file, or load one back in.</div>
     <div class="row"><button class="btn" data-act="export">Download backup file</button><label class="btn" for="imp-file2">Import a trip file</label><input type="file" id="imp-file2" accept=".json,application/json" hidden></div></section>` : ''}
-  ${mode === 'live' && canWrite ? `<section class="panel"><h3>Reset</h3><div class="muted small">Erases all players, teams, scores and setup for this trip.</div><div class="row"><button class="btn danger ${ui.armed === 'reset' ? 'armed' : ''}" data-act="reset">${ui.armed === 'reset' ? 'Tap again to erase everything' : 'Reset trip'}</button></div></section>` : ''}`;
+  ${mode === 'live' && canWrite && testToolsOn() ? `<section class="panel"><h3>Reset</h3><div class="muted small">Erases all players, teams, scores and setup for this trip.</div><div class="row"><button class="btn danger ${ui.armed === 'reset' ? 'armed' : ''}" data-act="reset">${ui.armed === 'reset' ? 'Tap again to erase everything' : 'Reset trip'}</button></div></section>` : ''}`;
 }
 
 // ---- events ----
@@ -1423,6 +1427,7 @@ document.getElementById('main').addEventListener('click', async (e) => {
   if (act === 'pick-team') { ui.team = b.dataset.id; return render(); }
   if (act === 'start') { const cfg = defaultConfig(); return writeTrip({ config: cfg, players: {}, teams: { fri: [], sat: [], sun: [] }, scores: { fri: {}, sat: {}, sun: {} }, extras: {} }); }
   if (act === 'load-sample') { toast('Saving the sample trip…'); return writeTrip(makeSample()); }
+  if (['fill-ask', 'fill-yes', 'clear-ask', 'clear-yes', 'reset'].includes(act) && !testToolsOn()) { toast('Test tools are turned off for the trip.'); return render(); }
   if (act === 'fill-ask') { ui.filling = true; ui.clearing = false; return render(); }
   if (act === 'fill-cancel') { ui.filling = false; return render(); }
   if (act === 'fill-yes') {
