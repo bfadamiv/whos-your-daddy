@@ -207,6 +207,9 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
   .bd-tvbar { position: static; opacity: 1; pointer-events: auto; justify-content: center; padding: 14px max(12px, env(safe-area-inset-left, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)); background: var(--m-frame); }
   .bd.tv { padding-bottom: 16px; }
 }
+.bd-close { position: fixed; top: calc(10px + env(safe-area-inset-top, 0px)); right: max(10px, env(safe-area-inset-right, 0px)); z-index: 16; font-family: var(--font-display); font-weight: 700; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: #fff; background: rgba(10,40,24,.85); border: 1px solid rgba(255,255,255,.4); border-radius: 999px; padding: 7px 14px; cursor: pointer; opacity: .6; }
+.bd-close:hover, .bd-close:focus-visible { opacity: 1; outline: 2px solid var(--m-gold); }
+@media (max-width: 900px) { .bd-close { opacity: 1; position: absolute; } }
 .tvseg { display: flex; border: 1px solid rgba(255,255,255,.35); border-radius: 5px; overflow: hidden; background: rgba(10,40,24,.92); pointer-events: auto; }
 .tvb { font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: #e6efe8; background: none; border: 0; border-left: 1px solid rgba(255,255,255,.18); padding: 8px 12px; cursor: pointer; }
 .tvb:first-child { border-left: 0; }
@@ -990,7 +993,8 @@ function viewBoard() {
     <div class="tvseg">${seg('bweek', 'Weekend & Money', which === 'weekend')}${seg('bpairs', 'Pairings', which === 'pairs')}</div>
     <div class="tvseg">${seg('brot', ui.rotate ? 'Auto-rotate on' : 'Auto-rotate off', ui.rotate)}</div>
     <div class="tvseg">${seg('fs', 'Full screen', false)}${seg('tv-off', 'Exit', false)}</div></div>`;
-  return ui.tv ? board + tvBar : controls + board + `<div class="muted small">Updates live as cards are saved. On the clubhouse TV or laptop, open this page and tap <b>Show on clubhouse TV</b>, or open the link with <b>#scoreboard</b> on the end to go straight to it.</div>`;
+  const tvClose = `<button class="bd-close" data-act="tv-off" aria-label="Exit TV view">✕ <span>Exit</span></button>`;
+  return ui.tv ? tvClose + board + tvBar : controls + board + `<div class="muted small">Updates live as cards are saved. On the clubhouse TV or laptop, open this page and tap <b>Show on clubhouse TV</b>, or open the link with <b>#scoreboard</b> on the end to go straight to it.</div>`;
 }
 
 let rotTimer = null;
@@ -1115,7 +1119,7 @@ function installTip() {
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); window.__wydInstall = e; try { render(); } catch (x) {} });
 
 function banner() {
-  let out = installTip();
+  let out = (ui.updateReady ? `<div class="banner"><p><b>A newer version is ready.</b></p><div class="row"><button class="btn primary" data-act="reload">Update now</button></div></div>` : '') + installTip();
   if (ui.pinOpen && !canWrite) out += `<section class="banner" role="dialog" aria-labelledby="pin-h"><p id="pin-h"><b>Scorekeeper PIN.</b> Enter it once and this phone or computer can enter scores for the rest of the trip.</p>
     <form class="row" data-form="pin"><input id="pin-in" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="PIN" style="width:110px"><button class="btn primary" type="submit">Unlock</button><button class="btn" type="button" data-act="pin-cancel">Cancel</button></form></section>`;
   if (ui.importData) out += `<section class="banner" role="alertdialog" aria-labelledby="imp-h"><p id="imp-h"><b>Are you sure?</b> Importing <b>${esc(ui.importName || 'this file')}</b> replaces all players, teams, scores and setup with what's in the file.</p>
@@ -1400,6 +1404,7 @@ document.getElementById('main').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const act = b.dataset.act, day = b.dataset.day;
   if (act === 'rday') { ui.rday = day; return render(); }
+  if (act === 'reload') { location.reload(); return; }
   if (act === 'pin-open') return askPin();
   if (act === 'tip-no') { try { localStorage.setItem('wyd-install-tip', 'no'); } catch (x) {} return render(); }
   if (act === 'install') { const ev = window.__wydInstall; window.__wydInstall = null; if (ev) { try { await ev.prompt(); } catch (x) {} } return render(); }
@@ -1599,6 +1604,22 @@ async function boot() {
     canWrite = me.exists; render();
   } catch (e) { /* watching only */ }
 }
+const APP_VERSION = '20261022001226';
+async function checkForUpdate() {
+  try {
+    const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) return;
+    const v = (await r.json()).version;
+    if (v && v !== APP_VERSION) {
+      const busy = Object.keys(ui.drafts).length || ui.pinOpen || ui.importData || (document.activeElement && /INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName));
+      if (ui.tv || !busy && document.hidden) { location.reload(); return; }
+      ui.updateReady = true; render();
+    }
+  } catch (e) {}
+}
+setInterval(checkForUpdate, 180000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
+setTimeout(checkForUpdate, 5000);
 setRotation();
 boot();
 })();
