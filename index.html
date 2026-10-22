@@ -163,6 +163,7 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .bd-board.ml { --cols: 3.9em minmax(0, 1fr) 5.2em; }
 .bd-main.one { grid-template-columns: minmax(0, 34em); justify-content: center; }
 .bd-li.s { grid-template-columns: minmax(0, 1fr) auto; }
+.bd-li span.wrap { white-space: normal; line-height: 1.25; }
 .bd-li i { font-style: normal; color: #cfe0d4; font-size: .9em; }
 .bd-row { display: grid; grid-template-columns: var(--cols); align-items: center; background: var(--m-slat); color: var(--m-ink); min-height: 2.25em; }
 .bd-row .c { padding: 0 .3em; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 1.05em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-left: 1px solid var(--m-rule); line-height: 2.1; }
@@ -171,7 +172,7 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .bd-row .c.h { padding: 0; }
 .bd:not(.tv) .bd-board:not(.wk):not(.pr) { font-size: 14px; --hw: 2.2em; }
 .bd-row .c.turn { border-left: 2px solid var(--m-frame); }
-.bd-row .c.pos { font-size: 1.1em; padding: 0 .15em; text-overflow: clip; }
+.bd-row .c.pos { font-size: 1.1em; padding: 0 .15em; text-overflow: clip; text-align: center; min-width: 0; }
 .bd-row .c.tp { font-size: 1.35em; }
 .bd-row .c.pay { color: #8a6410; }
 .bd-row .u { color: var(--m-under); }
@@ -195,6 +196,10 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .bd-li.g { grid-template-columns: 7.4em minmax(0, 1fr) auto; }
 .bd-tvbar { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; opacity: .35; transition: opacity .2s; z-index: 15; pointer-events: none; }
 .bd-tvbar:hover, .bd-tvbar:focus-within { opacity: 1; }
+@media (max-width: 900px) {
+  .bd-tvbar { position: static; opacity: 1; pointer-events: auto; justify-content: center; padding: 14px max(12px, env(safe-area-inset-left, 0px)) calc(28px + env(safe-area-inset-bottom, 0px)); background: var(--m-frame); }
+  .bd.tv { padding-bottom: 16px; }
+}
 .tvseg { display: flex; border: 1px solid rgba(255,255,255,.35); border-radius: 5px; overflow: hidden; background: rgba(10,40,24,.92); pointer-events: auto; }
 .tvb { font-family: var(--font-display); font-weight: 600; font-size: 15px; letter-spacing: .08em; text-transform: uppercase; color: #e6efe8; background: none; border: 0; border-left: 1px solid rgba(255,255,255,.18); padding: 8px 12px; cursor: pointer; }
 .tvb:first-child { border-left: 0; }
@@ -204,9 +209,9 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 @container (max-width: 1000px) { .bd:not(.tv) .bd-row .c.h { display: none; } .bd:not(.tv) .bd-board { --cols: 3.9em minmax(0, 1fr) 3.2em 4.4em; } .bd:not(.tv) .bd-board.has-pay { --cols: 3.9em minmax(0, 1fr) 3.2em 4.4em 4.6em; } }
 @container (max-width: 980px) { .bd-main { grid-template-columns: minmax(0, 1fr); } .bd-side { flex-direction: row; flex-wrap: wrap; } .bd-side .bd-box { flex: 1 1 15em; } }
 @container (max-width: 760px) {
-  .bd-board { --cols: 3em minmax(0, 1fr) 2.2em 3.2em; } .bd-board.has-pay { --cols: 3em minmax(0, 1fr) 2.2em 3.2em 3.8em; }
+  .bd-board { --cols: 3.4em minmax(0, 1fr) 2.6em 3.6em; } .bd-board.has-pay { --cols: 3.4em minmax(0, 1fr) 2.6em 3.6em 3.8em; } .bd-row.hdr .c { font-size: .72em; letter-spacing: .02em; }
   .bd-row .c.nm { white-space: normal; line-height: 1.2; padding-block: .35em; font-size: 1em; }
-  .bd-board.wk { --cols: 3em minmax(0, 1fr) 3.4em 4.2em; } .bd-board.ml { --cols: 3em minmax(0, 1fr) 4.6em; }
+  .bd-board.wk { --cols: 3.4em minmax(0, 1fr) 3.4em 4.2em; } .bd-board.ml { --cols: 3.4em minmax(0, 1fr) 4.6em; }
   .bd-row .c.h { display: none; } .bd-name { font-size: 2em; }
   .bd-main.two { grid-template-columns: minmax(0, 1fr); }
 }
@@ -216,7 +221,7 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .bd-row .c.amp { font-family: var(--font-board); font-style: italic; color: var(--m-dim); }
 .bd-row .c sup { font-size: .55em; color: var(--m-dim); margin-left: 1px; }
 .bd-note { color: #cfe0d4; font-size: .85em; }
-@container (max-width: 760px) { .bd-board.pr { --cols: 2.4em minmax(0, 1fr) 2.8em minmax(0, 1fr) 2.8em; } .bd-row .c.sd { padding: 0; border: 0; font-size: 0; } }
+@container (max-width: 760px) { .bd-board.pr { --cols: 3.2em minmax(0, 1fr) 2.8em minmax(0, 1fr) 2.8em; } .bd-row .c.sd { padding: 0; border: 0; font-size: 0; } }
 /* TV view: fill the screen, size type from the screen height */
 body.tv-mode header.band, body.tv-mode::before { display: none; }
 body.tv-mode { background: var(--m-frame); }
@@ -517,7 +522,7 @@ function computeDay(state, day) {
         if (nets.some(v => v == null)) { holes.push(null); continue; }
         nets.sort((a, b) => a - b); holes.push(sum(nets.slice(0, 2)));
       }
-      groups.push({ key: 'G' + (g / 2 + 1), pids: rs.flatMap(r => r.pids), name: 'Foursome ' + (g / 2 + 1) + ' · ' + rs.map(r => r.name).join(' + '), total: seg(holes, 0, 18) });
+      groups.push({ key: 'G' + (g / 2 + 1), pids: rs.flatMap(r => r.pids), name: rs.map(r => r.name).join(' + '), total: seg(holes, 0, 18) });
     }
     runGame('group4', 'Foursome 2 best balls', groups, coursePar * 2);
   }
@@ -860,7 +865,7 @@ function boardDay(day) {
   const gameLine = (g) => {
     const paid = g.list.filter(x => x.payout);
     if (!paid.length) return `<div class="bd-li g dim"><b>${shortGame[g.key] || esc(g.label)}</b><span>—</span><em></em></div>`;
-    return paid.map((x, i) => `<div class="bd-li g"><b>${i === 0 || paid[i - 1].pos !== x.pos ? (shortGame[g.key] || esc(g.label)) + (g.places.length > 1 ? ' ' + ordinal(x.pos) : '') : ''}</b><span>${esc(/^G\d+$/.test(x.key) ? x.key.replace('G', 'Group ') : who(x.pids))} <i>${tpStr(x.toPar)}</i></span><em>${fmt$(x.payout)}</em></div>`).join('');
+    return paid.map((x, i) => `<div class="bd-li g"><b>${i === 0 || paid[i - 1].pos !== x.pos ? (shortGame[g.key] || esc(g.label)) + (g.places.length > 1 ? ' ' + ordinal(x.pos) : '') : ''}</b><span class="${x.pids.length > 2 ? 'wrap' : ''}">${esc(who(x.pids))} <i>${tpStr(x.toPar)}</i></span><em>${fmt$(x.payout)}</em></div>`).join('');
   };
   const side = `<div class="bd-side">
     <div class="bd-box"><div class="bd-box-h">Skins <span>${r.skinUnits ? r.skinUnits + ' won' : 'none yet'}</span></div>
