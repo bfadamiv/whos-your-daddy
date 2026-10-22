@@ -213,7 +213,7 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .tvb.on { background: var(--m-gold); color: #10301e; }
 .tvb:focus-visible { outline: 2px solid var(--m-gold); outline-offset: -2px; }
 @container (max-width: 1300px) { .bd:not(.tv) .bd-main:not(.two) { grid-template-columns: minmax(0, 1fr); } .bd:not(.tv) .bd-side { flex-direction: row; flex-wrap: wrap; } .bd:not(.tv) .bd-side .bd-box { flex: 1 1 15em; } }
-@container (max-width: 1000px) { .bd:not(.tv) .bd-row .c.h { display: none; } .bd:not(.tv) .bd-board { --cols: 3.9em minmax(0, 1fr) 3.2em 4.4em; } .bd:not(.tv) .bd-board.has-pay { --cols: 3.9em minmax(0, 1fr) 3.2em 4.4em 4.6em; } }
+@container (max-width: 1000px) { .bd:not(.tv) .bd-row .c.h { display: none; } .bd:not(.tv) .bd-board.has-pay { --cols: 3.9em minmax(0, 1fr) 3.2em 4.4em 4.6em; } }
 @container (max-width: 980px) { .bd-main { grid-template-columns: minmax(0, 1fr); } .bd-side { flex-direction: row; flex-wrap: wrap; } .bd-side .bd-box { flex: 1 1 15em; } }
 @container (max-width: 760px) {
   .bd-board { --cols: 3.4em minmax(0, 1fr) 2.6em 3.6em; } .bd-board.has-pay { --cols: 3.4em minmax(0, 1fr) 2.6em 3.6em 3.8em; } .bd-row.hdr .c { font-size: .72em; letter-spacing: .02em; }
@@ -228,7 +228,7 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .bd-row .c.amp { font-family: var(--font-board); font-style: italic; color: var(--m-dim); }
 .bd-row .c sup { font-size: .55em; color: var(--m-dim); margin-left: 1px; }
 .bd-note { color: #cfe0d4; font-size: .85em; }
-@container (max-width: 760px) { .bd-board.pr { --cols: 3.2em minmax(0, 1fr) 2.8em minmax(0, 1fr) 2.8em; } .bd-row .c.sd { padding: 0; border: 0; font-size: 0; } }
+@container (max-width: 760px) { .bd-board.pr { --cols: 2.9em minmax(0, 1fr) 2.6em minmax(0, 1fr) 2.6em; font-size: 12.5px; } .bd-board.pr .c.nm { letter-spacing: 0; overflow-wrap: normal; padding-left: .4em; } .bd-board.pr .c.pos { font-size: 1em; } .bd-row .c.sd { padding: 0; border: 0; font-size: 0; } }
 /* TV view: fill the screen, size type from the screen height */
 body.tv-mode header.band, body.tv-mode::before { display: none; }
 body.tv-mode { background: var(--m-frame); }
