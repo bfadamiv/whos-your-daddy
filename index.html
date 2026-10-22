@@ -188,6 +188,7 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .bd-li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bd-li em { font-style: normal; font-family: var(--font-display); font-weight: 600; color: #fff; }
 .bd-li.dim { color: #a9c2b1; display: block; }
+.bd-li.g { grid-template-columns: 7.4em minmax(0, 1fr) auto; }
 .bd-tvbar { position: fixed; right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(12px + env(safe-area-inset-bottom, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; opacity: .35; transition: opacity .2s; z-index: 15; pointer-events: none; }
 .bd-tvbar:hover, .bd-tvbar:focus-within { opacity: 1; }
 .tvseg { display: flex; border: 1px solid rgba(255,255,255,.35); border-radius: 5px; overflow: hidden; background: rgba(10,40,24,.92); pointer-events: auto; }
@@ -465,11 +466,63 @@ function computeDay(state, day) {
     return { ...c, winner };
   });
 
-  const placesTotal = sum((dc.places || []).map(Number));
+  // ---- Side games: team nines, individual nines/18, Friday foursomes ----
+  const side = dc.side || {};
+  const games = [];
+  const seg = (arr, a, b) => { let s = 0; for (let h = a; h < b; h++) { if (arr[h] == null) return null; s += arr[h]; } return s; };
+  const parSeg = (a, b) => sum(pars.slice(a, b));
+  const runGame = (key, label, entries, parTot) => {
+    const places = (side[key] || []).map(Number).filter(v => v > 0);
+    if (!places.length || !entries.length) return;
+    const done = entries.filter(x => x.total != null).map(x => ({ ...x, toPar: x.total - parTot })).sort((a, b) => a.total - b.total);
+    let i = 0;
+    while (i < done.length) {
+      let j = i + 1;
+      while (j < done.length && done[j].total === done[i].total) j++;
+      let pot = 0; for (let k = i; k < j && k < places.length; k++) pot += places[k];
+      for (let k = i; k < j; k++) {
+        const x = done[k]; x.pos = i + 1; x.tied = j - i > 1;
+        if (pot) {
+          x.each = Math.round(pot / (j - i) / x.pids.length + 1e-9); x.payout = x.each * x.pids.length;
+          x.pids.forEach(pid => add(pid, x.each, `${label} ${ordinal(i + 1)}${x.tied ? ' (tie)' : ''}`));
+        }
+      }
+      i = j;
+    }
+    games.push({ key, label, places, list: done, complete: done.length === entries.length, count: entries.length });
+  };
+  const teamHoles = (r) => fmt.scramble ? (r.netHoles || []) : r.holes;
+  const teamEntries = (a, b) => rows.map(r => ({ key: r.id, pids: r.pids, name: r.name, total: seg(teamHoles(r), a, b) }));
+  runGame('teamF9', 'Team front 9', teamEntries(0, 9), parSeg(0, 9) * fmt.balls);
+  runGame('teamB9', 'Team back 9', teamEntries(9, 18), parSeg(9, 18) * fmt.balls);
+  if (!fmt.scramble) {
+    const indiv = rows.flatMap(r => r.members.map(m => ({ pid: m.pid, net: m.net })));
+    const indEntries = (a, b) => indiv.map(m => ({ key: m.pid, pids: [m.pid], name: state.players[m.pid].name, total: seg(m.net, a, b) }));
+    runGame('indF9', 'Individual front 9', indEntries(0, 9), parSeg(0, 9));
+    runGame('indB9', 'Individual back 9', indEntries(9, 18), parSeg(9, 18));
+    runGame('ind18', 'Individual 18', indEntries(0, 18), coursePar);
+  }
+  if (dc.format === 'bb2') {
+    // Foursomes: Friday teams 1 & 2 play together, 3 & 4, and so on. Two best net balls of the four.
+    const groups = [];
+    for (let g = 0; g < rows.length; g += 2) {
+      const rs = rows.slice(g, g + 2), members = rs.flatMap(r => r.members);
+      const holes = [];
+      for (let h = 0; h < 18; h++) {
+        const nets = members.map(m => m.net[h]);
+        if (nets.some(v => v == null)) { holes.push(null); continue; }
+        nets.sort((a, b) => a - b); holes.push(sum(nets.slice(0, 2)));
+      }
+      groups.push({ key: 'G' + (g / 2 + 1), pids: rs.flatMap(r => r.pids), name: 'Foursome ' + (g / 2 + 1) + ' · ' + rs.map(r => r.name).join(' + '), total: seg(holes, 0, 18) });
+    }
+    runGame('group4', 'Foursome 2 best balls', groups, coursePar * 2);
+  }
+  const sideTotal = Object.entries(side).filter(([k]) => ['teamF9', 'teamB9', 'group4'].includes(k) || !fmt.scramble).reduce((s, [, v]) => s + sum((v || []).map(Number)), 0);
+  const placesTotal = sum((dc.places || []).map(Number)) + sideTotal;
   const contestsTotal = sum((dc.contests || []).map(c => Number(c.amt) || 0));
   return {
     day, fmt, course, coursePar, standings, complete: allIn, cardsIn: complete.length, cardsTotal: rows.length,
-    skins, carries, carryOut, skinUnits: units_awarded, skinValue, skinsPot, skinsType, skinHolesDecided, contests, money,
+    games, skins, carries, carryOut, skinUnits: units_awarded, skinValue, skinsPot, skinsType, skinHolesDecided, contests, money,
     allocated: placesTotal + skinsPot + contestsTotal,
   };
 }
@@ -551,6 +604,34 @@ function tripMoney(state) {
 
 
 // ===== Default trip setup + sample data =====
+// Payout template modeled on the 2024 sheet (28 guys, $110), scaled to 32 guys at $105 = $3,360.
+function payoutTemplate2024(courses, contests) {
+  return {
+    weekend: { places: [110, 60] },
+    days: {
+      fri: { label: 'Friday', course: 'fallen', format: 'bb2', allowance: 100, places: [110, 90, 80, 65, 55, 45], skinsPot: 250, skinsType: 'netGrossP3', contests: contests('fallen'),
+        side: { teamF9: [60], teamB9: [60], group4: [110, 45], indF9: [40], indB9: [40], ind18: [55, 25] } },
+      sat: { label: 'Saturday', course: 'shell', format: 'bb4x2', allowance: 100, places: [260, 175, 110, 45], skinsPot: 240, skinsType: 'netGrossP3', contests: contests('shell'),
+        side: { teamF9: [85], teamB9: [85], indF9: [20], indB9: [20], ind18: [55, 25] } },
+      sun: { label: 'Sunday', course: 'windance', format: 'scr2', allowance: 100, scrHcp: 'avg', scrPct: 100, places: [130, 110, 85, 65], skinsPot: 220, skinsType: 'netGrossP3', contests: contests('windance'),
+        side: { teamF9: [45], teamB9: [45] } },
+    },
+  };
+}
+function applyPayoutTemplate(cfg) {
+  const par3 = (pars) => pars.map((p, i) => p === 3 ? i + 1 : null).filter(Boolean);
+  const out = JSON.parse(JSON.stringify(cfg));
+  const contests = (key) => par3(out.courses[key].pars).map(h => ({ id: 'c' + h, type: 'CTP', hole: h, amt: 20 }));
+  const t = payoutTemplate2024(out.courses, (k) => contests(k));
+  out.weekend = t.weekend;
+  for (const d of ['fri', 'sat', 'sun']) {
+    const keep = out.days[d] || {};
+    const tpl = t.days[d];
+    out.days[d] = { ...keep, places: tpl.places, skinsPot: tpl.skinsPot, side: tpl.side, contests: contests(keep.course || tpl.course) };
+  }
+  return out;
+}
+
 function defaultConfig() {
   const par3 = (pars) => pars.map((p, i) => p === 3 ? i + 1 : null).filter(Boolean);
   const courses = {
@@ -590,18 +671,12 @@ function defaultConfig() {
       defaultTee: 'blue',
     },
   };
-  const contests = (course, ld) => par3(courses[course].pars).map((h, i) => ({ id: 'c' + h, type: 'CTP', hole: h, amt: 25 }))
-    .concat([{ id: 'ld' + ld, type: 'LD', hole: ld, amt: 40 }]);
+  const contests = (course) => par3(courses[course].pars).map(h => ({ id: 'c' + h, type: 'CTP', hole: h, amt: 20 }));
   return {
     buyIn: 105,
     tieBreak: 'split',
     courses,
-    weekend: { places: [200, 120, 80] },
-    days: {
-      fri: { label: 'Friday', course: 'fallen', format: 'bb2', allowance: 100, places: [200, 150, 110, 80, 60], skinsPot: 250, skinsType: 'netGrossP3', contests: contests('fallen', 13) },
-      sat: { label: 'Saturday', course: 'shell', format: 'bb4x2', allowance: 100, places: [300, 180, 110], skinsPot: 250, skinsType: 'netGrossP3', contests: contests('shell', 16) },
-      sun: { label: 'Sunday', course: 'windance', format: 'scr2', allowance: 100, scrHcp: 'avg', scrPct: 100, places: [200, 150, 110, 80, 60], skinsPot: 250, skinsType: 'netGrossP3', contests: contests('windance', 12) },
-    },
+    ...payoutTemplate2024(courses, contests),
   };
 }
 
@@ -676,6 +751,7 @@ function makeSample() {
 (function () {
 const DOC_IDS = ['config', 'players', 'teams', 'scores_fri', 'scores_sat', 'scores_sun', 'extras'];
 const DAY_LABEL = { fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
+const SIDE_GAMES = [['teamF9', 'Team front 9'], ['teamB9', 'Team back 9'], ['group4', 'Foursome 2 best balls (Friday-style)'], ['indF9', 'Individual front 9'], ['indB9', 'Individual back 9'], ['ind18', 'Individual 18']];
 const SKIN_LABEL = { netGrossP3: 'Net, gross on par 3s', net: 'Net', gross: 'Gross' };
 let docs = {};           // raw docs as stored
 let S = null;            // derived state
@@ -779,7 +855,11 @@ function boardDay(day) {
     <div class="bd-box"><div class="bd-box-h">Skins <span>${r.skinUnits ? r.skinUnits + ' @ ' + fmt$(Math.round(r.skinValue)) : fmt$(r.skinsPot) + ' pot'}</span></div>
       ${skins.length ? skins.map(s => `<div class="bd-li"><b>#${s.hole}</b><span>${esc(s.name)}${s.half ? ' ½' : ''}</span><em>${fmt$(s.amt)}</em></div>`).join('') : '<div class="bd-li dim">None won yet</div>'}
       ${r.carryOut ? `<div class="bd-li dim">${r.carryOut} carrying</div>` : ''}</div>
-    <div class="bd-box"><div class="bd-box-h">Pins &amp; Drives</div>
+    ${r.games.length ? `<div class="bd-box"><div class="bd-box-h">Nines &amp; Individuals</div>
+      ${r.games.map(g => { const paid = g.list.filter(x => x.payout); const lead = paid.length ? paid : g.list.slice(0, 1);
+        return lead.length ? lead.map(x => `<div class="bd-li g"><b>${esc(g.label.replace('Individual', 'Ind.').replace('Foursome 2 best balls', '4-some'))}${g.places.length > 1 ? ' ' + ordinal(x.pos) : ''}</b><span>${esc(/^G\d+$/.test(x.key) ? x.name.split(' · ')[0].replace('Foursome ', 'Group ') : x.pids.map(p => S.players[p] ? (x.pids.length > 1 ? lastName(S.players[p].name) : shortName(S.players[p].name)) : '?').join('/'))}${g.complete ? '' : ' ·'}</span><em>${x.payout ? fmt$(x.payout) : tpStr(x.toPar)}</em></div>`).join('')
+          : `<div class="bd-li g dim"><b>${esc(g.label)}</b><span>—</span><em></em></div>`; }).join('')}</div>` : ''}
+    <div class="bd-box"><div class="bd-box-h">Closest to Pin</div>
       ${r.contests.length ? r.contests.map(c => `<div class="bd-li ${c.winner ? '' : 'dim'}"><b>${c.type === 'LD' ? 'LD' : 'CTP'} #${c.hole}</b><span>${c.winner ? esc(shortName(S.players[c.winner].name)) : '—'}</span><em>${fmt$(c.amt)}</em></div>`).join('') : '<div class="bd-li dim">None set</div>'}</div>
   </div>`;
   const right = `<span class="bd-dot ${r.complete ? 'done' : ''}"></span>${r.complete ? 'Final' : 'Live'}<small>${finished} of ${rows.length} in · ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</small>`;
@@ -1038,8 +1118,11 @@ function viewResults() {
   </section>
   <div class="grid2">
     <section class="panel"><div class="row between"><h3>Skins · ${SKIN_LABEL[r.skinsType] || 'Net'}${scr ? ' (team)' : ''}</h3><span class="muted small">${fmt$(r.skinsPot)} pot${r.skinUnits ? ' · ' + r.skinUnits + ' skin' + (r.skinUnits === 1 ? '' : 's') + ' at about ' + fmt$(Math.round(r.skinValue)) : ''} · rounded to whole dollars</span></div>${skins}</section>
-    <section class="panel"><div class="row between"><h3>Closest to Pin &amp; Long Drive</h3><span class="muted small">Enter winners on the score screen</span></div>${contests}</section>
+    <section class="panel"><div class="row between"><h3>Closest to Pin</h3><span class="muted small">Enter winners on the score screen</span></div>${contests}</section>
   </div>
+  ${r.games.length ? `<section class="panel"><div class="row between"><h3>Nines &amp; individual games</h3><span class="muted small">Net · ties split · whole dollars</span></div>
+    <div class="grid2" style="gap:14px">${r.games.map(g => `<div><div class="row between"><b>${esc(g.label)}</b>${g.complete ? '<span class="pill final">Final</span>' : `<span class="pill live">${g.list.length} of ${g.count} in</span>`}</div>
+      ${g.list.length ? g.list.filter((x, i) => x.payout || i < Math.max(3, g.places.length)).map(x => `<div class="skin"><span><span class="hole">${x.tied ? 'T' : ''}${x.pos}</span>${esc(x.name)} <span class="muted small">${toParStr(x.toPar)}</span></span><span class="money ${x.payout ? '' : 'zero'}">${x.payout ? fmt$(x.payout) : ''}</span></div>`).join('') : '<div class="muted small">No complete scores yet.</div>'}</div>`).join('')}</div></section>` : ''}
   <section class="panel"><div class="row between"><h3>${DAY_LABEL[ui.rday]} payouts by player</h3><span class="muted small">${fmt$(paidOut)} of ${fmt$(r.allocated)} paid</span></div>
     ${money ? `<div class="tbl-wrap"><table><thead><tr><th>Player</th><th>For</th><th class="num">Won</th></tr></thead><tbody>${money}</tbody></table></div>` : '<div class="muted">Nothing paid yet.</div>'}</section>`;
 }
@@ -1157,11 +1240,11 @@ function viewPlayers() {
     const used = {}; cur.forEach(t => (t.pids || []).forEach(p => { if (p) used[p] = (used[p] || 0) + 1; }));
     const unassigned = ids.filter(p => !used[p]);
     const cards = [...Array(n).keys()].map(i => { const t = cur[i] || { pids: [] };
-      return `<div class="teamcard"><b>TEAM ${i + 1}</b>${[...Array(size).keys()].map(j => { const v = t.pids[j] || '';
+      return `<div class="teamcard"><b>TEAM ${i + 1}${day === 'fri' && dc.format === 'bb2' ? ` <span class="muted small" style="font-family:var(--font-body);letter-spacing:0">· Foursome ${Math.floor(i / 2) + 1}</span>` : ''}</b>${[...Array(size).keys()].map(j => { const v = t.pids[j] || '';
         return `<select id="tm-${day}-${i}-${j}" data-team="${day}" data-ti="${i}" data-tj="${j}" class="${v && used[v] > 1 ? 'dup' : ''}" ${dis()}><option value="">— open —</option>${ids.map(p => `<option value="${p}" ${p === v ? 'selected' : ''}>${esc(S.players[p].name)}</option>`).join('')}</select>`; }).join('')}</div>`; }).join('');
     const tools = day === 'sat' ? `<button class="btn" data-act="draw-sat" ${dis()}>Random draw</button>`
       : day === 'sun' ? `<button class="btn" data-act="pair-sun" ${dis()}>${ui.armed === 'pair-sun' ? 'Tap again: this clears Sunday scores' : 'Pair from Fri + Sat net'}</button>` : '';
-    const note = day === 'fri' ? 'Players pick their own partners.' : day === 'sat' ? 'Random draw into teams of 4. Redraw as many times as you like before play.' : 'Pairs #1 with #' + ids.length + ', #2 with #' + (ids.length - 1) + ', and so on, by individual net score over Friday and Saturday. Run it after Saturday\'s cards are in.';
+    const note = day === 'fri' ? 'Players pick their own partners. Teams 1 & 2 make up Foursome 1, Teams 3 & 4 make up Foursome 2, and so on.' : day === 'sat' ? 'Random draw into teams of 4. Redraw as many times as you like before play.' : 'Pairs #1 with #' + ids.length + ', #2 with #' + (ids.length - 1) + ', and so on, by individual net score over Friday and Saturday. Run it after Saturday\'s cards are in.';
     return `<section class="panel"><div class="row between"><div><h3>${DAY_LABEL[day]} teams · ${esc(FORMATS[dc.format].label)}</h3><div class="muted small">${note}${unassigned.length ? ` <b class="bad">${unassigned.length} unassigned:</b> ${unassigned.map(p => esc(S.players[p].name)).join(', ')}` : ''}</div></div><div class="row">${tools}</div></div><div class="teamcards">${cards}</div></section>`;
   };
   return `<section class="panel"><div class="row between"><h2>Players · ${ids.length}</h2><span class="muted small">CH = course handicap from index, slope, rating and par for the tees played</span></div>
@@ -1177,7 +1260,9 @@ function viewSetup() {
   const daySection = (day) => {
     const dc = c.days[day];
     const places = dc.places || [];
-    const pTot = places.reduce((s, v) => s + (Number(v) || 0), 0), cTot = (dc.contests || []).reduce((s, x) => s + (Number(x.amt) || 0), 0), dTot = pTot + (Number(dc.skinsPot) || 0) + cTot;
+    const pTot = places.reduce((s, v) => s + (Number(v) || 0), 0), cTot = (dc.contests || []).reduce((s, x) => s + (Number(x.amt) || 0), 0), sideFor = SIDE_GAMES.filter(([k]) => k === 'teamF9' || k === 'teamB9' || (k === 'group4' ? dc.format === 'bb2' : !FORMATS[dc.format].scramble)),
+      sTot = sideFor.reduce((s, [k]) => s + ((dc.side && dc.side[k]) || []).reduce((a, v) => a + (Number(v) || 0), 0), 0),
+      dTot = pTot + (Number(dc.skinsPot) || 0) + cTot + sTot;
     allocated += dTot;
     const course = c.courses[dc.course];
     return `<section class="panel"><div class="row between"><h3>${DAY_LABEL[day]}</h3><span class="money">${fmt$(dTot)}</span></div>
@@ -1195,7 +1280,11 @@ function viewSetup() {
         <label class="f">Skins pot<input id="d-${day}-skinsPot" data-dfield="skinsPot" data-day="${day}" data-num="1" value="${numFmt(dc.skinsPot)}" style="width:90px" ${dis()}></label>
         <label class="f">Skins scored<select id="d-${day}-skinsType" data-dfield="skinsType" data-day="${day}" ${dis()}>${Object.entries(SKIN_LABEL).map(([k, v]) => `<option value="${k}" ${(dc.skinsType || 'netGrossP3') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
       </div>
-      <div><div class="muted small" style="margin-bottom:6px">Closest to pin &amp; long drive · ${fmt$(cTot)}</div>
+      <div><div class="muted small" style="margin-bottom:6px">Nines &amp; individual games · ${fmt$(sTot)}${dc.format === 'bb2' ? ' · Foursomes are Teams 1 &amp; 2, 3 &amp; 4, and so on' : ''}</div>
+        <div style="display:flex;flex-direction:column;gap:8px">${sideFor.map(([k, label]) => { const arr = (dc.side && dc.side[k]) || [];
+          return `<div class="placelist"><span class="small" style="min-width:150px;align-self:center">${label.replace(' (Friday-style)', '')}</span>${arr.map((v, i) => `<label class="f">${ordinal(i + 1)}<input id="sg-${day}-${k}-${i}" data-sg="${k}" data-i="${i}" data-day="${day}" data-num="1" value="${numFmt(v)}" ${dis()}></label>`).join('')}
+          ${mode === 'live' && canWrite ? `<button class="btn" data-act="sg-add" data-sg="${k}" data-day="${day}">+</button>${arr.length ? `<button class="btn" data-act="sg-rm" data-sg="${k}" data-day="${day}">−</button>` : ''}` : ''}</div>`; }).join('')}</div></div>
+      <div><div class="muted small" style="margin-bottom:6px">Closest to pin · ${fmt$(cTot)}</div>
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th>Hole</th><th>Pays</th><th></th></tr></thead><tbody>
         ${(dc.contests || []).map((x, i) => `<tr><td><select id="ct-${day}-${i}-type" data-contest="${i}" data-cfield="type" data-day="${day}" ${dis()}><option value="CTP" ${x.type === 'CTP' ? 'selected' : ''}>Closest to pin</option><option value="LD" ${x.type === 'LD' ? 'selected' : ''}>Long drive</option></select></td>
           <td><select id="ct-${day}-${i}-hole" data-contest="${i}" data-cfield="hole" data-day="${day}" ${dis()}>${course.pars.map((p, h) => `<option value="${h + 1}" ${h + 1 == x.hole ? 'selected' : ''}>#${h + 1} · par ${p}</option>`).join('')}</select></td>
@@ -1236,6 +1325,8 @@ function viewSetup() {
       <label class="f">Buy-in per player<input id="buyIn" data-gfield="buyIn" data-num="1" value="${numFmt(c.buyIn)}" style="width:100px" ${dis()}></label>
       <label class="f">Ties for a paid place<select id="tieBreak" data-gfield="tieBreak" ${dis()}><option value="split" ${c.tieBreak !== 'cards' ? 'selected' : ''}>Split the money</option><option value="cards" ${c.tieBreak === 'cards' ? 'selected' : ''}>Match cards (back 9, 6, 3, 18th)</option></select></label>
     </div>
+    ${mode === 'live' && canWrite ? (ui.tplAsk ? `<div class="banner"><p><b>Are you sure?</b> This replaces every payout amount, the skins pots and the closest-to-pin list with the 2024-style split for 32 players ($3,360). Courses, players, teams and scores stay.</p><div class="row"><button class="btn" data-act="tpl-no">Cancel</button><button class="btn primary" data-act="tpl-yes">Yes, use 2024-style payouts</button></div></div>`
+      : `<div class="row"><button class="btn" data-act="tpl-ask">Use 2024-style payouts</button></div>`) : ''}
     <div class="muted small">Skins: one low score wins the full skin; two tied for low split it (half skin each); three or more tied means no skin and the hole carries to the next. The skins pot is divided by the number of skins won. Course handicap = Index × Slope ÷ 113 + (Rating − Par), rounded.</div></section>
   ${days}
   ${weekendSec}
@@ -1346,6 +1437,11 @@ document.getElementById('main').addEventListener('click', async (e) => {
   const cfg = clone(S.config);
   if (act === 'add-wplace') { cfg.weekend = cfg.weekend || { places: [] }; cfg.weekend.places.push(0); return saveConfig(cfg); }
   if (act === 'rm-wplace') { cfg.weekend.places.pop(); return saveConfig(cfg); }
+  if (act === 'tpl-ask') { ui.tplAsk = true; return render(); }
+  if (act === 'tpl-no') { ui.tplAsk = false; return render(); }
+  if (act === 'tpl-yes') { ui.tplAsk = false; await saveConfig(applyPayoutTemplate(S.config)); toast('2024-style payouts applied.'); return render(); }
+  if (act === 'sg-add') { const dd = cfg.days[day]; dd.side = dd.side || {}; (dd.side[b.dataset.sg] = dd.side[b.dataset.sg] || []).push(0); return saveConfig(cfg); }
+  if (act === 'sg-rm') { cfg.days[day].side[b.dataset.sg].pop(); return saveConfig(cfg); }
   if (act === 'add-place') { cfg.days[day].places.push(0); return saveConfig(cfg); }
   if (act === 'rm-place') { cfg.days[day].places.pop(); return saveConfig(cfg); }
   if (act === 'add-contest') { (cfg.days[day].contests = cfg.days[day].contests || []).push({ id: uid('c'), type: 'CTP', hole: 1, amt: 0 }); return saveConfig(cfg); }
@@ -1406,6 +1502,7 @@ document.getElementById('main').addEventListener('change', async (e) => {
   if (ds.gfield) cfg[ds.gfield] = val;
   else if (ds.dfield) { cfg.days[ds.day][ds.dfield] = val; }
   else if (ds.place != null) cfg.days[ds.day].places[Number(ds.place)] = val;
+  else if (ds.sg) { const dd = cfg.days[ds.day]; dd.side = dd.side || {}; (dd.side[ds.sg] = dd.side[ds.sg] || [])[Number(ds.i)] = val; }
   else if (ds.wplace != null) { cfg.weekend = cfg.weekend || { places: [] }; cfg.weekend.places[Number(ds.wplace)] = val; }
   else if (ds.contest != null) { const c = cfg.days[ds.day].contests[Number(ds.contest)]; c[ds.cfield] = ds.cfield === 'hole' ? Number(el.value) : val; if (ds.cfield !== 'amt') c.id = c.id || uid('c'); }
   else if (ds.tfield) cfg.courses[ds.course].tees[Number(ds.teeI)][ds.tfield] = val;
