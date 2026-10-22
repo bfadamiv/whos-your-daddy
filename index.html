@@ -179,7 +179,7 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .bd-row.hdr { background: var(--m-frame); color: #fff; min-height: 1.9em; }
 .bd-row.hdr .c { border-left-color: rgba(255,255,255,.18); font-size: .85em; letter-spacing: .06em; text-overflow: clip; text-transform: uppercase; line-height: 2.2; }
 .bd-row.par .c { color: var(--m-dim); font-size: .95em; }
-.bd-row.inmoney .c.nm { box-shadow: inset .3em 0 0 var(--m-gold); }
+
 .bd-row .pz { font-style: normal; color: #8a6410; font-size: .85em; letter-spacing: 0; }
 .bd-row.flash { animation: bdflash 3.5s ease-out; }
 @keyframes bdflash { 0%, 30% { background: var(--m-flash); } 100% { background: var(--m-slat); } }
@@ -966,7 +966,7 @@ function viewBoard() {
   const day = ui.bday === 'auto' ? autoBoardDay() : ui.bday;
   const which = ['weekend', 'pairs'].includes(ui.bview) ? ui.bview : 'day';
   const controls = `<div class="bd-ctl">
-    <div class="chips">${['auto', ...DAYS].map(d => `<button class="chip" aria-pressed="${ui.bday === d && which === 'day'}" data-act="bday" data-day="${d}">${d === 'auto' ? 'Today' : DAY_LABEL[d]}<small>${d === 'auto' ? 'Latest day with scores' : esc(S.config.courses[S.config.days[d].course].name)}</small></button>`).join('')}
+    <div class="chips">${DAYS.map(d => `<button class="chip" aria-pressed="${day === d && which === 'day'}" data-act="bday" data-day="${d}">${DAY_LABEL[d]}<small>${esc(S.config.courses[S.config.days[d].course].name)}</small></button>`).join('')}
       <button class="chip" aria-pressed="${which === 'weekend'}" data-act="bweek">Weekend &amp; Money<small>Standings + winnings</small></button>
       <button class="chip" aria-pressed="${which === 'pairs'}" data-act="bpairs">Sunday Pairings<small>Live projection</small></button></div>
     <div class="row"><label class="row small"><input type="checkbox" id="b-rotate" data-brot="1" ${ui.rotate ? 'checked' : ''}> Rotate views every 20 s</label>
@@ -974,7 +974,7 @@ function viewBoard() {
   const board = `<section class="bd ${ui.tv ? 'tv' : ''}" id="board">${which === 'weekend' ? boardWeekend() : which === 'pairs' ? boardPairs() : which === 'money' ? boardMoney() : boardDay(day)}</section>`;
   const seg = (act, label, on, extra = '') => `<button class="tvb ${on ? 'on' : ''}" data-act="${act}" ${extra} aria-pressed="${on}">${label}</button>`;
   const tvBar = `<div class="bd-tvbar" role="toolbar" aria-label="Scoreboard views">
-    <div class="tvseg">${seg('bday', 'Today', which === 'day' && ui.bday === 'auto', 'data-day="auto"')}${DAYS.map(d => seg('bday', DAY_LABEL[d].slice(0, 3), which === 'day' && ui.bday === d, `data-day="${d}"`)).join('')}</div>
+    <div class="tvseg">${DAYS.map(d => seg('bday', DAY_LABEL[d].slice(0, 3), which === 'day' && day === d, `data-day="${d}"`)).join('')}</div>
     <div class="tvseg">${seg('bweek', 'Weekend & Money', which === 'weekend')}${seg('bpairs', 'Pairings', which === 'pairs')}</div>
     <div class="tvseg">${seg('brot', ui.rotate ? 'Auto-rotate on' : 'Auto-rotate off', ui.rotate)}</div>
     <div class="tvseg">${seg('fs', 'Full screen', false)}${seg('tv-off', 'Exit', false)}</div></div>`;
