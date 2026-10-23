@@ -1111,8 +1111,8 @@ function render() {
   }
 }
 
-// Test tools (Clear scores, Fill test scores, Reset trip) switch off for good at 5:00 AM Central on Friday, Oct 23, 2026.
-const TEST_TOOLS_OFF_AT = Date.parse('2026-10-23T05:00:00-05:00');
+// Test tools (Clear scores, Fill test scores, Reset trip) switch off for good at 9:00 PM Central on Friday, Oct 23, 2026.
+const TEST_TOOLS_OFF_AT = Date.parse('2026-10-23T21:00:00-05:00');
 const testToolsOn = () => Date.now() < TEST_TOOLS_OFF_AT;
 
 function installTip() {
@@ -1613,7 +1613,7 @@ async function boot() {
     canWrite = me.exists; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261022105007';
+const APP_VERSION = '20261023165444';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
