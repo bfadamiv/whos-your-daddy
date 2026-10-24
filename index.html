@@ -98,6 +98,10 @@ td.wrap-cell { white-space: normal; min-width: 180px; }
 tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .each { display: block; font-size: 12px; color: var(--muted); font-family: var(--font-body); font-weight: 400; }
 
+.sortbtn { background: none; border: 0; padding: 0; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
+.sortbtn.on { color: var(--ink); }
+.pscores th.grp { text-align: center; border-left: 1px solid var(--line); }
+.pscores td:nth-child(3), .pscores td:nth-child(5), .pscores td:nth-child(7), .pscores td:nth-child(9) { border-left: 1px solid var(--line); }
 /* Scorecard grid */
 .card { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
 .card th, .card td { padding: 4px 3px; text-align: center; border-bottom: 1px solid var(--line); }
@@ -1157,6 +1161,7 @@ const disS = () => (mode !== 'live' || !canWrite) ? 'disabled' : '';
 function dayChips(sel, act, withTrip) {
   const c = S.config;
   const chips = DAYS.map(d => `<button class="chip" aria-pressed="${sel === d}" data-act="${act}" data-day="${d}">${DAY_LABEL[d]}<small>${esc(c.courses[c.days[d].course].name)}</small></button>`);
+  if (withTrip) chips.push(`<button class="chip" aria-pressed="${sel === 'players'}" data-act="${act}" data-day="players">Player Scores<small>Gross &amp; net by day</small></button>`);
   if (withTrip) chips.push(`<button class="chip" aria-pressed="${sel === 'trip'}" data-act="${act}" data-day="trip">Trip Totals<small>Money list &amp; seeding</small></button>`);
   return `<div class="chips">${chips.join('')}</div>`;
 }
@@ -1164,6 +1169,7 @@ function dayChips(sel, act, withTrip) {
 function viewResults() {
   if (!Object.keys(S.players).length) return dayChips(ui.rday, 'rday', true) + `<div class="panel empty">No players yet. Add them under Players &amp; Teams.</div>`;
   if (ui.rday === 'trip') return dayChips('trip', 'rday', true) + viewTrip();
+  if (ui.rday === 'players') return dayChips('players', 'rday', true) + viewPlayerScores();
   const r = computeDay(S, ui.rday), dc = S.config.days[ui.rday];
   const status = r.cardsTotal === 0 ? `<span class="pill live">No teams set</span>` : r.complete ? `<span class="pill final">Final</span>` : `<span class="pill live">${r.cardsIn} of ${r.cardsTotal} cards in</span>`;
   const scr = r.fmt.scramble;
@@ -1209,6 +1215,49 @@ function weekendPanel(w) {
   const rows = w.list.map(r => `<tr class="${r.payout ? 'paid' : ''}"><td class="pos">${r.pos ? (r.tied ? 'T' : '') + r.pos : '–'}</td><td>${esc(r.name)}</td><td class="num">${r.fri ?? dash}</td><td class="num">${r.sat ?? dash}</td><td class="num">${r.sun ?? dash}</td><td class="num score">${r.rounds === 3 ? r.total : ''}</td><td class="num">${r.payout ? `<span class="money">${fmt$(r.payout)}</span>` : ''}</td></tr>`).join('');
   return `<section class="panel"><div class="row between"><div><h3>Weekend individual · top ${places.length}</h3><div class="muted small">Friday individual net + Saturday individual net + his Sunday scramble team's net. Pays ${places.map((p, i) => ordinal(i + 1) + ' ' + fmt$(p)).join(', ')}. Ties split.</div></div>${w.complete ? '<span class="pill final">Final</span>' : '<span class="pill live">In progress</span>'}</div>
     <div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Player</th><th class="num">Fri net</th><th class="num">Sat net</th><th class="num">Sun team net</th><th class="num">Total</th><th class="num">Payout</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
+// Every player's own gross and net for each day. Sunday is a team scramble, so it shows the team's card.
+function viewPlayerScores() {
+  const parOf = (d) => S.config.courses[S.config.days[d].course].pars.reduce((a, b) => a + b, 0);
+  const sun = computeDay(S, 'sun');
+  const sunBy = {};
+  sun.standings.forEach(t => t.pids.forEach(pid => { sunBy[pid] = t; }));
+  const dayCell = (pid, d) => {
+    const card = (S.scores[d] && S.scores[d][pid]) || [];
+    const holes = card.filter(v => v != null && v !== '').length;
+    if (!holes) return { g: null, n: null, holes: 0 };
+    const g = card.reduce((s, v) => s + (Number(v) || 0), 0);
+    const ph = computeDayPH(pid, d);
+    if (holes === 18) return { g, n: g - ph, ph, holes, tp: g - ph - parOf(d) };
+    const course = S.config.courses[S.config.days[d].course];
+    let net = 0, par = 0; card.forEach((v, h) => { if (v != null && v !== '') { net += Number(v) - pops(ph, course.si[h]); par += course.pars[h]; } });
+    return { g, n: net, ph, holes, tp: net - par };
+  };
+  const rows = Object.keys(S.players).map(pid => {
+    const fri = dayCell(pid, 'fri'), sat = dayCell(pid, 'sat'), t = sunBy[pid];
+    const sunC = t && t.thru ? { g: t.grossTotal, n: t.thru === 18 ? t.total : null, holes: t.thru, tp: t.thru === 18 ? t.toPar : null } : { g: null, n: null, holes: 0 };
+    const both = fri.holes === 18 && sat.holes === 18 ? fri.n + sat.n : null;
+    return { pid, name: S.players[pid].name, index: Number(S.players[pid].index) || 0, fri, sat, sun: sunC, both };
+  });
+  const sort = ui.psort || 'name';
+  const key = { name: r => r.name, fri: r => r.fri.holes === 18 ? r.fri.n : 999, sat: r => r.sat.holes === 18 ? r.sat.n : 999, sun: r => r.sun.n ?? 999, both: r => r.both ?? 999, index: r => r.index }[sort];
+  rows.sort((a, b) => { const x = key(a), y = key(b); return typeof x === 'string' ? x.localeCompare(y) : (x - y) || a.name.localeCompare(b.name); });
+  const tp = (n) => n == null ? '' : `<span class="muted small"> ${toParStr(n)}</span>`;
+  const g = (c) => c.holes ? (c.holes < 18 ? `${c.g}<span class="muted small"> thru ${c.holes}</span>` : c.g) : '<span class="muted">–</span>';
+  const n = (c) => c.holes === 18 ? `<b>${c.n}</b>${tp(c.tp)}` : c.holes ? `<span class="muted small">${toParStr(c.tp)} so far</span>` : '<span class="muted">–</span>';
+  const sunN = (c) => c.n != null ? `<b>${c.n}</b>${tp(c.tp)}` : c.holes ? '<span class="muted small">playing</span>' : '<span class="muted">–</span>';
+  const th = (k, label, cls = 'num') => `<th class="${cls}"><button class="sortbtn ${sort === k ? 'on' : ''}" data-act="psort" data-k="${k}">${label}${sort === k ? ' ▾' : ''}</button></th>`;
+  const body = rows.map(r => `<tr><td>${esc(r.name)}</td><td class="num">${r.index.toFixed(1)}</td>
+    <td class="num">${g(r.fri)}</td><td class="num">${n(r.fri)}</td>
+    <td class="num">${g(r.sat)}</td><td class="num">${n(r.sat)}</td>
+    <td class="num">${g(r.sun)}</td><td class="num">${sunN(r.sun)}</td>
+    <td class="num">${r.both != null ? '<b>' + r.both + '</b>' : '<span class="muted">–</span>'}</td></tr>`).join('');
+  return `<section class="panel"><div class="row between"><div><h2>Player Scores</h2><div class="muted small">Each player's own gross and net (gross minus his course handicap for that day's tees). Sunday is the scramble, so it shows his team's card. Tap a column to sort.</div></div></div>
+    <div class="tbl-wrap"><table class="pscores"><thead>
+      <tr><th></th><th></th><th class="num grp" colspan="2">Friday · ${esc(S.config.courses[S.config.days.fri.course].name)}</th><th class="num grp" colspan="2">Saturday · ${esc(S.config.courses[S.config.days.sat.course].name)}</th><th class="num grp" colspan="2">Sunday team · ${esc(S.config.courses[S.config.days.sun.course].name)}</th><th></th></tr>
+      <tr>${th('name', 'Player', '')}${th('index', 'Index')}<th class="num">Gross</th>${th('fri', 'Net')}<th class="num">Gross</th>${th('sat', 'Net')}<th class="num">Gross</th>${th('sun', 'Net')}${th('both', 'Fri + Sat net')}</tr>
+    </thead><tbody>${body}</tbody></table></div></section>`;
 }
 
 function viewTrip() {
@@ -1427,6 +1476,7 @@ document.getElementById('main').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const act = b.dataset.act, day = b.dataset.day;
   if (act === 'rday') { ui.rday = day; return render(); }
+  if (act === 'psort') { ui.psort = b.dataset.k; return render(); }
   if (act === 'reload') { location.reload(); return; }
   if (act === 'pin-open') return askPin();
   if (act === 'tip-no') { try { localStorage.setItem('wyd-install-tip', 'no'); } catch (x) {} return render(); }
@@ -1644,7 +1694,7 @@ async function boot() {
     role = me.exists ? ((me.data() || {}).role || 'score') : null; canWrite = !!role; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261024155106';
+const APP_VERSION = '20261024161003';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
