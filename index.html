@@ -782,7 +782,9 @@ let backend = null;      // 'db' | 'local'
 let db = null;
 let canWrite = false;   // may enter scores (scorekeeper or admin)
 let role = null;        // 'admin' | 'score' | null
-const isAdmin = () => backend === 'local' || role === 'admin';
+// Single PIN for now: anyone who has entered the PIN can change everything.
+// (To bring back a separate admin PIN: return backend === 'local' || role === 'admin'.)
+const isAdmin = () => backend === 'local' || canWrite;
 let authId = null;
 const ui = { tab: 'results', rday: 'fri', sday: 'fri', team: null, drafts: {}, armed: null, bday: 'auto', bview: 'day', rotate: true, tv: false };
 try { const t = localStorage.getItem('wyd-tab'); if (t) ui.tab = t; } catch (e) {}
@@ -1084,7 +1086,7 @@ async function submitPin() {
     catch (x) { return toast("That PIN didn't work. Check with the host."); }
   }
   canWrite = true; ui.pinOpen = false;
-  toast(role === 'admin' ? 'Admin mode is on for this device.' : 'Scorekeeper mode is on for this device.'); render();
+  toast('Scorekeeper mode is on for this device.'); render();
 }
 function exportTrip() {
   const out = {}; DOC_IDS.forEach(id => { if (docs[id]) out[id] = docs[id]; });
@@ -1105,7 +1107,7 @@ const saveConfig = (cfg) => writeDoc('config', { cfg }, false);
 // ---- render ----
 function render() {
   const st = $('#status');
-  st.textContent = mode === 'loading' ? 'Loading' : backend === 'local' ? 'Offline · this device only' : (role === 'admin' ? 'Live · Admin' : canWrite ? 'Live · Scorekeeper' : mode === 'sample' ? 'Sample data' : 'Live · watching');
+  st.textContent = mode === 'loading' ? 'Loading' : backend === 'local' ? 'Offline · this device only' : (canWrite ? 'Live · Scorekeeper' : mode === 'sample' ? 'Sample data' : 'Live · watching');
   document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
   if (mode === 'loading') return;
   // keep focus + typed text across re-renders
@@ -1139,7 +1141,7 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); wind
 
 function banner() {
   let out = (ui.updateReady ? `<div class="banner"><p><b>A newer version is ready.</b></p><div class="row"><button class="btn primary" data-act="reload">Update now</button></div></div>` : '') + installTip();
-  if (ui.pinOpen && !isAdmin()) out += `<section class="banner" role="dialog" aria-labelledby="pin-h"><p id="pin-h">${canWrite ? '<b>Admin PIN.</b> Needed to change players, teams, setup and payouts.' : '<b>Enter your PIN.</b> Scorekeepers can enter scores and contest winners. The admin PIN unlocks everything. Each phone or computer only needs it once.'}</p>
+  if (ui.pinOpen && !isAdmin()) out += `<section class="banner" role="dialog" aria-labelledby="pin-h"><p id="pin-h">${canWrite ? '<b>Admin PIN.</b> Needed to change players, teams, setup and payouts.' : '<b>Scorekeeper PIN.</b> Enter it once and this phone or computer can make changes for the rest of the trip.'}</p>
     <form class="row" data-form="pin"><input id="pin-in" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="PIN" style="width:110px"><button class="btn primary" type="submit">Unlock</button><button class="btn" type="button" data-act="pin-cancel">Cancel</button></form></section>`;
   if (ui.importData) out += `<section class="banner" role="alertdialog" aria-labelledby="imp-h"><p id="imp-h"><b>Are you sure?</b> Importing <b>${esc(ui.importName || 'this file')}</b> replaces all players, teams, scores and setup with what's in the file.</p>
     <div class="row"><button class="btn" data-act="imp-cancel">Cancel</button><button class="btn primary" data-act="imp-yes">Yes, import it</button></div></section>`;
@@ -1642,7 +1644,7 @@ async function boot() {
     role = me.exists ? ((me.data() || {}).role || 'score') : null; canWrite = !!role; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261023214424';
+const APP_VERSION = '20261024155106';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
