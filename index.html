@@ -780,7 +780,9 @@ let S = null;            // derived state
 let mode = 'loading';    // loading | sample | live
 let backend = null;      // 'db' | 'local'
 let db = null;
-let canWrite = false;
+let canWrite = false;   // may enter scores (scorekeeper or admin)
+let role = null;        // 'admin' | 'score' | null
+const isAdmin = () => backend === 'local' || role === 'admin';
 let authId = null;
 const ui = { tab: 'results', rday: 'fri', sday: 'fri', team: null, drafts: {}, armed: null, bday: 'auto', bview: 'day', rotate: true, tv: false };
 try { const t = localStorage.getItem('wyd-tab'); if (t) ui.tab = t; } catch (e) {}
@@ -1053,14 +1055,15 @@ function deepMerge(a, b) {
 }
 function saveLocal() { try { localStorage.setItem('bgt-docs', JSON.stringify(docs)); } catch (e) {} }
 async function writeDoc(id, body, merge) {
-  if (!canWrite) { askPin(); return; }
+  const scoreDoc = /^scores_(fri|sat|sun)$|^extras$/.test(id);
+  if (!(scoreDoc ? canWrite : isAdmin())) { if (canWrite) toast('That change needs the admin PIN.'); askPin(); return; }
   if (backend === 'local') {
     docs[id] = merge ? deepMerge(docs[id], body) : body;
     saveLocal(); deriveState(); render(); return;
   }
   try { await db.collection('trip').doc(id).set(body, merge ? { merge: true } : {}); }
   catch (e) {
-    if (e && e.code === 'permission-denied') { canWrite = false; render(); toast('Enter the scorekeeper PIN to make changes.'); askPin(); }
+    if (e && e.code === 'permission-denied') { toast(canWrite ? 'That change needs the admin PIN.' : 'Enter a PIN to make changes.'); askPin(); }
     else toast('Could not save: ' + ((e && e.message) || 'unknown error'));
   }
 }
@@ -1073,10 +1076,15 @@ async function submitPin() {
   const el = document.getElementById('pin-in'); const pin = el ? el.value.trim() : '';
   if (!pin) return toast('Type the PIN first.');
   if (!authId) return toast('Still connecting. Try again in a moment.');
-  try {
-    await db.collection('editors').doc(authId).set({ pin });
-    canWrite = true; ui.pinOpen = false; toast('Scorekeeper mode is on for this device.'); render();
-  } catch (e) { toast("That PIN didn't work. Check with the host."); }
+  const ref = db.collection('editors').doc(authId);
+  try { await ref.set({ pin, role: 'admin' }); role = 'admin'; }
+  catch (e) {
+    if (role) return toast("That's not the admin PIN.");
+    try { await ref.set({ pin, role: 'score' }); role = 'score'; }
+    catch (x) { return toast("That PIN didn't work. Check with the host."); }
+  }
+  canWrite = true; ui.pinOpen = false;
+  toast(role === 'admin' ? 'Admin mode is on for this device.' : 'Scorekeeper mode is on for this device.'); render();
 }
 function exportTrip() {
   const out = {}; DOC_IDS.forEach(id => { if (docs[id]) out[id] = docs[id]; });
@@ -1097,14 +1105,16 @@ const saveConfig = (cfg) => writeDoc('config', { cfg }, false);
 // ---- render ----
 function render() {
   const st = $('#status');
-  st.textContent = mode === 'loading' ? 'Loading' : backend === 'local' ? 'Offline · this device only' : (canWrite ? 'Live · Scorekeeper' : mode === 'sample' ? 'Sample data' : 'Live · watching');
+  st.textContent = mode === 'loading' ? 'Loading' : backend === 'local' ? 'Offline · this device only' : (role === 'admin' ? 'Live · Admin' : canWrite ? 'Live · Scorekeeper' : mode === 'sample' ? 'Sample data' : 'Live · watching');
   document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
   if (mode === 'loading') return;
   // keep focus + typed text across re-renders
   const a = document.activeElement, keep = a && a.id && $('#main').contains(a) ? { id: a.id, v: a.value, s: a.selectionStart, e: a.selectionEnd } : null;
   const views = { board: viewBoard, results: viewResults, scores: viewScores, players: viewPlayers, setup: viewSetup };
   document.body.classList.toggle('tv-mode', !!ui.tv && ui.tab === 'board');
+  const y = window.scrollY, sameTab = render.lastTab === ui.tab; render.lastTab = ui.tab;
   $('#main').innerHTML = (ui.tv && ui.tab === 'board' ? '' : banner()) + views[ui.tab]();
+  if (sameTab && y) window.scrollTo(0, y);
   if (keep) {
     const el = document.getElementById(keep.id);
     if (el) { if ('value' in el && el.tagName !== 'SELECT' && el.value !== keep.v) el.value = keep.v; el.focus(); try { if (keep.s != null) el.setSelectionRange(keep.s, keep.e); } catch (e) {} }
@@ -1129,16 +1139,18 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); wind
 
 function banner() {
   let out = (ui.updateReady ? `<div class="banner"><p><b>A newer version is ready.</b></p><div class="row"><button class="btn primary" data-act="reload">Update now</button></div></div>` : '') + installTip();
-  if (ui.pinOpen && !canWrite) out += `<section class="banner" role="dialog" aria-labelledby="pin-h"><p id="pin-h"><b>Scorekeeper PIN.</b> Enter it once and this phone or computer can enter scores for the rest of the trip.</p>
+  if (ui.pinOpen && !isAdmin()) out += `<section class="banner" role="dialog" aria-labelledby="pin-h"><p id="pin-h">${canWrite ? '<b>Admin PIN.</b> Needed to change players, teams, setup and payouts.' : '<b>Enter your PIN.</b> Scorekeepers can enter scores and contest winners. The admin PIN unlocks everything. Each phone or computer only needs it once.'}</p>
     <form class="row" data-form="pin"><input id="pin-in" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="PIN" style="width:110px"><button class="btn primary" type="submit">Unlock</button><button class="btn" type="button" data-act="pin-cancel">Cancel</button></form></section>`;
   if (ui.importData) out += `<section class="banner" role="alertdialog" aria-labelledby="imp-h"><p id="imp-h"><b>Are you sure?</b> Importing <b>${esc(ui.importName || 'this file')}</b> replaces all players, teams, scores and setup with what's in the file.</p>
     <div class="row"><button class="btn" data-act="imp-cancel">Cancel</button><button class="btn primary" data-act="imp-yes">Yes, import it</button></div></section>`;
   if (mode === 'sample') return out + `<div class="banner"><p><b>You're looking at a made-up sample trip</b> (32 fake players, all three rounds scored) so you can see how results and payouts come out.${canWrite ? ' Start your real trip, or import a trip file.' : ' The host will load the real trip soon.'}</p>
-    <div class="row">${canWrite ? `<button class="btn primary" data-act="start">Start my trip</button><label class="btn" for="imp-file">Import a trip file</label><input type="file" id="imp-file" accept=".json,application/json" hidden><button class="btn" data-act="load-sample">Save sample to test with</button>` : `<button class="btn" data-act="pin-open">Scorekeeper? Enter PIN</button>`}</div></div>`;
+    <div class="row">${isAdmin() ? `<button class="btn primary" data-act="start">Start my trip</button><label class="btn" for="imp-file">Import a trip file</label><input type="file" id="imp-file" accept=".json,application/json" hidden><button class="btn" data-act="load-sample">Save sample to test with</button>` : `<button class="btn" data-act="pin-open">Scorekeeper? Enter PIN</button>`}</div></div>`;
+  if (canWrite && !isAdmin() && !ui.pinOpen && ['players', 'setup'].includes(ui.tab)) return out + `<div class="banner"><p>You're signed in as a scorekeeper. Changes on this page need the admin PIN.</p><div class="row"><button class="btn" data-act="pin-open">Enter admin PIN</button></div></div>`;
   if (!canWrite && !ui.pinOpen) return out + `<div class="banner"><p>Watching live. Results update as cards are entered.</p><div class="row"><button class="btn" data-act="pin-open">Scorekeeper? Enter PIN</button></div></div>`;
   return out;
 }
-const dis = () => (mode !== 'live' || !canWrite) ? 'disabled' : '';
+const dis = () => (mode !== 'live' || !isAdmin()) ? 'disabled' : '';
+const disS = () => (mode !== 'live' || !canWrite) ? 'disabled' : '';
 
 function dayChips(sel, act, withTrip) {
   const c = S.config;
@@ -1242,7 +1254,7 @@ function viewScores() {
       const vals = cardValues(day, key);
       const tot = (a) => a.reduce((s, v) => s + (Number(v) || 0), 0) || '';
       const cell = (h) => { const p = pops(ph, course.si[h]); return `<td><span class="cell"><input id="sc-${esc(key)}-${h}" data-score="${esc(key)}" data-h="${h}" class="${markClass(vals[h], course.pars[h])}" inputmode="numeric" maxlength="2" value="${esc(vals[h])}" aria-label="${esc(label)} hole ${h + 1}" ${canWrite && mode === 'live' ? '' : 'disabled'}>${p > 0 ? `<span class="pop">${'●'.repeat(p)}</span>` : p < 0 ? '<span class="pop">+</span>' : ''}</span></td>`; };
-      return `<tr><td><span class="pname">${esc(label)}</span><span class="pmeta">${sub}</span></td>${H.slice(0, 9).map(cell).join('')}<td class="tot">${tot(vals.slice(0, 9))}</td>${H.slice(9).map(cell).join('')}<td class="tot">${tot(vals.slice(9))}</td><td class="tot">${tot(vals)}</td></tr>`;
+      return `<tr><td><span class="pname">${esc(label)}</span><span class="pmeta">${sub}</span></td>${H.slice(0, 9).map(cell).join('')}<td class="tot" data-tot="${esc(key)}|out">${tot(vals.slice(0, 9))}</td>${H.slice(9).map(cell).join('')}<td class="tot" data-tot="${esc(key)}|in">${tot(vals.slice(9))}</td><td class="tot" data-tot="${esc(key)}|all">${tot(vals)}</td></tr>`;
     };
     let body = '';
     if (fmt.scramble) {
@@ -1260,13 +1272,13 @@ function viewScores() {
     const keys = fmt.scramble ? [team.id] : team.pids;
     const dirty = keys.some(k => ui.drafts[draftKey(day, k)]);
     editor = `<section class="panel"><div class="row between"><h3>Team ${teams.indexOf(team) + 1} card</h3>
-      <div class="row">${dirty ? '<span class="pill live">Unsaved changes</span><button class="btn" data-act="discard">Discard</button>' : ''}<button class="btn primary" data-act="save-card" ${dis()} ${dirty ? '' : 'disabled'}>Save card</button></div></div>
+      <div class="row">${dirty ? '<span class="pill live">Unsaved changes</span><button class="btn" data-act="discard">Discard</button>' : ''}<button class="btn" data-act="save-card" ${disS()} ${dirty ? '' : 'disabled'}>Save</button><button class="btn primary" data-act="save-next" ${disS()} ${dirty ? '' : 'disabled'}>Save &amp; next team</button></div></div>
       <div class="tbl-wrap"><table class="card"><thead>${head}</thead><tbody>${meta('Par', course.pars, true)}${meta('Hdcp', course.si, false)}${body}</tbody></table></div>
-      <div class="muted small">Enter gross scores. Dots mark holes where a player gets a stroke. Circles are birdies, squares are bogeys. The best net row updates after you save.</div></section>`;
+      <div class="muted small">Enter gross scores. Dots mark holes where a player gets a stroke. Circles are birdies, squares are bogeys. The best net row updates after you save. On a computer, press <b>Tab</b> or <b>Enter</b> to move to the next hole.</div></section>`;
   }
   const opts = (sel) => `<option value="">— not entered —</option>` + Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([pid, p]) => `<option value="${pid}" ${pid === sel ? 'selected' : ''}>${esc(p.name)}</option>`).join('');
-  const contests = (dc.contests || []).map(c => `<label class="f">${c.type === 'LD' ? 'Long drive' : 'Closest to pin'} · #${c.hole} · ${fmt$(c.amt)}<select id="ex-${day}-${c.id}" data-extra="${c.id}" ${dis()}>${opts(S.extras[day] && S.extras[day][c.id])}</select></label>`).join('');
-  const clearBox = (mode === 'live' && canWrite && testToolsOn()) ? (ui.clearing
+  const contests = (dc.contests || []).map(c => `<label class="f">${c.type === 'LD' ? 'Long drive' : 'Closest to pin'} · #${c.hole} · ${fmt$(c.amt)}<select id="ex-${day}-${c.id}" data-extra="${c.id}" ${disS()}>${opts(S.extras[day] && S.extras[day][c.id])}</select></label>`).join('');
+  const clearBox = (mode === 'live' && isAdmin() && testToolsOn()) ? (ui.clearing
     ? `<section class="banner" role="alertdialog" aria-labelledby="clr-h"><p id="clr-h"><b>Are you sure?</b> This erases every score entered for Friday, Saturday and Sunday${ui.clearExtras ? ', plus all closest-to-pin and long-drive winners' : ''}. Players, teams and payouts stay. This can't be undone.</p>
         <div class="row"><label class="row small"><input type="checkbox" id="clr-extras" data-clrx="1" ${ui.clearExtras ? 'checked' : ''}> Also clear contest winners</label><button class="btn" data-act="clear-cancel">Cancel</button><button class="btn danger armed" data-act="clear-yes">Yes, clear all scores</button></div></section>`
     : ui.filling
@@ -1293,7 +1305,7 @@ function viewPlayers() {
     return `<tr><td><input id="pn-${pid}" data-pfield="name" data-pid="${pid}" value="${esc(p.name)}" ${dis()} style="width:150px"></td>
       <td><input id="pi-${pid}" data-pfield="index" data-pid="${pid}" value="${esc(p.index)}" inputmode="decimal" ${dis()} style="width:64px"></td>
       ${DAYS.map(d => `<td>${teeSel(pid, d)}<span class="muted small"> CH ${computeDayPH(pid, d)}</span></td>`).join('')}
-      <td>${canWrite && mode === 'live' ? `<button class="link" data-act="del-player" data-pid="${pid}">${ui.armed === 'del-' + pid ? 'Tap to confirm' : 'Remove'}</button>` : ''}</td></tr>`; }).join('');
+      <td>${isAdmin() && mode === 'live' ? `<button class="link" data-act="del-player" data-pid="${pid}">${ui.armed === 'del-' + pid ? 'Tap to confirm' : 'Remove'}</button>` : ''}</td></tr>`; }).join('');
   const teamSection = (day) => {
     const dc = c.days[day], size = FORMATS[dc.format].size;
     const cur = S.teams[day] || [];
@@ -1310,7 +1322,7 @@ function viewPlayers() {
     return `<section class="panel"><div class="row between"><div><h3>${DAY_LABEL[day]} teams · ${esc(FORMATS[dc.format].label)}</h3><div class="muted small">${note}${unassigned.length ? ` <b class="bad">${unassigned.length} unassigned:</b> ${unassigned.map(p => esc(S.players[p].name)).join(', ')}` : ''}</div></div><div class="row">${tools}</div></div><div class="teamcards">${cards}</div></section>`;
   };
   return `<section class="panel"><div class="row between"><h2>Players · ${ids.length}</h2><span class="muted small">CH = course handicap from index, slope, rating and par for the tees played</span></div>
-    ${canWrite && mode === 'live' ? `<label class="f">Add players · one per line: Name, Index<textarea id="bulk" placeholder="Player 1, 12.4&#10;Player 2, 8.1"></textarea></label><div class="row"><button class="btn primary" data-act="bulk-add">Add players</button></div>` : ''}
+    ${isAdmin() && mode === 'live' ? `<label class="f">Add players · one per line: Name, Index<textarea id="bulk" placeholder="Player 1, 12.4&#10;Player 2, 8.1"></textarea></label><div class="row"><button class="btn primary" data-act="bulk-add">Add players</button></div>` : ''}
     ${ids.length ? `<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Index</th>${DAYS.map(d => `<th>${DAY_LABEL[d]} tees</th>`).join('')}<th></th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}</section>
   ${DAYS.map(teamSection).join('')}`;
 }
@@ -1337,7 +1349,7 @@ function viewSetup() {
       </div>
       <div><div class="muted small" style="margin-bottom:6px">Team places paid (${places.length}) · ${fmt$(pTot)}, split evenly among teammates</div>
         <div class="placelist">${places.map((v, i) => `<label class="f">${ordinal(i + 1)}<input id="pl-${day}-${i}" data-place="${i}" data-day="${day}" data-num="1" value="${numFmt(v)}" ${dis()}></label>`).join('')}
-        ${mode === 'live' && canWrite ? `<button class="btn" data-act="add-place" data-day="${day}">+ Place</button>${places.length ? `<button class="btn" data-act="rm-place" data-day="${day}">− Place</button>` : ''}` : ''}</div></div>
+        ${mode === 'live' && isAdmin() ? `<button class="btn" data-act="add-place" data-day="${day}">+ Place</button>${places.length ? `<button class="btn" data-act="rm-place" data-day="${day}">− Place</button>` : ''}` : ''}</div></div>
       <div class="row">
         <label class="f">Skins pot<input id="d-${day}-skinsPot" data-dfield="skinsPot" data-day="${day}" data-num="1" value="${numFmt(dc.skinsPot)}" style="width:90px" ${dis()}></label>
         <label class="f">Skins scored<select id="d-${day}-skinsType" data-dfield="skinsType" data-day="${day}" ${dis()}>${Object.entries(SKIN_LABEL).map(([k, v]) => `<option value="${k}" ${(dc.skinsType || 'netGrossP3') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
@@ -1345,15 +1357,15 @@ function viewSetup() {
       <div><div class="muted small" style="margin-bottom:6px">Nines &amp; individual games · ${fmt$(sTot)}${dc.format === 'bb2' ? ' · Foursomes are Teams 1 &amp; 2, 3 &amp; 4, and so on' : ''}</div>
         <div style="display:flex;flex-direction:column;gap:8px">${sideFor.map(([k, label]) => { const arr = (dc.side && dc.side[k]) || [];
           return `<div class="placelist"><span class="small" style="min-width:150px;align-self:center">${label.replace(' (Friday-style)', '')}</span>${arr.map((v, i) => `<label class="f">${ordinal(i + 1)}<input id="sg-${day}-${k}-${i}" data-sg="${k}" data-i="${i}" data-day="${day}" data-num="1" value="${numFmt(v)}" ${dis()}></label>`).join('')}
-          ${mode === 'live' && canWrite ? `<button class="btn" data-act="sg-add" data-sg="${k}" data-day="${day}">+</button>${arr.length ? `<button class="btn" data-act="sg-rm" data-sg="${k}" data-day="${day}">−</button>` : ''}` : ''}</div>`; }).join('')}</div></div>
+          ${mode === 'live' && isAdmin() ? `<button class="btn" data-act="sg-add" data-sg="${k}" data-day="${day}">+</button>${arr.length ? `<button class="btn" data-act="sg-rm" data-sg="${k}" data-day="${day}">−</button>` : ''}` : ''}</div>`; }).join('')}</div></div>
       <div><div class="muted small" style="margin-bottom:6px">Closest to pin · ${fmt$(cTot)}</div>
         <div class="tbl-wrap"><table><thead><tr><th>Contest</th><th>Hole</th><th>Pays</th><th></th></tr></thead><tbody>
         ${(dc.contests || []).map((x, i) => `<tr><td><select id="ct-${day}-${i}-type" data-contest="${i}" data-cfield="type" data-day="${day}" ${dis()}><option value="CTP" ${x.type === 'CTP' ? 'selected' : ''}>Closest to pin</option><option value="LD" ${x.type === 'LD' ? 'selected' : ''}>Long drive</option></select></td>
           <td><select id="ct-${day}-${i}-hole" data-contest="${i}" data-cfield="hole" data-day="${day}" ${dis()}>${course.pars.map((p, h) => `<option value="${h + 1}" ${h + 1 == x.hole ? 'selected' : ''}>#${h + 1} · par ${p}</option>`).join('')}</select></td>
           <td><input id="ct-${day}-${i}-amt" data-contest="${i}" data-cfield="amt" data-day="${day}" data-num="1" value="${numFmt(x.amt)}" style="width:80px" ${dis()}></td>
-          <td>${mode === 'live' && canWrite ? `<button class="link" data-act="rm-contest" data-day="${day}" data-i="${i}">Remove</button>` : ''}</td></tr>`).join('')}
+          <td>${mode === 'live' && isAdmin() ? `<button class="link" data-act="rm-contest" data-day="${day}" data-i="${i}">Remove</button>` : ''}</td></tr>`).join('')}
         </tbody></table></div>
-        ${mode === 'live' && canWrite ? `<div class="row" style="margin-top:8px"><button class="btn" data-act="add-contest" data-day="${day}">+ Contest</button></div>` : ''}</div>
+        ${mode === 'live' && isAdmin() ? `<div class="row" style="margin-top:8px"><button class="btn" data-act="add-contest" data-day="${day}">+ Contest</button></div>` : ''}</div>
     </section>`;
   };
   const days = DAYS.map(daySection).join('');
@@ -1363,7 +1375,7 @@ function viewSetup() {
   const weekendSec = `<section class="panel"><div class="row between"><h3>Weekend individual</h3><span class="money">${fmt$(wTot)}</span></div>
     <div class="muted small">Fri individual net + Sat individual net + Sunday team net. Ties split.</div>
     <div class="placelist">${wk.map((v, i) => `<label class="f">${ordinal(i + 1)}<input id="wk-${i}" data-wplace="${i}" data-num="1" value="${numFmt(v)}" ${dis()}></label>`).join('')}
-    ${mode === 'live' && canWrite ? `<button class="btn" data-act="add-wplace">+ Place</button>${wk.length ? '<button class="btn" data-act="rm-wplace">− Place</button>' : ''}` : ''}</div></section>`;
+    ${mode === 'live' && isAdmin() ? `<button class="btn" data-act="add-wplace">+ Place</button>${wk.length ? '<button class="btn" data-act="rm-wplace">− Place</button>' : ''}` : ''}</div></section>`;
   const left = pot - allocated;
   const courses = Object.entries(c.courses).map(([k, co]) => {
     const H = [...Array(18).keys()];
@@ -1375,7 +1387,7 @@ function viewSetup() {
         <td class="num"><input id="te-${k}-${i}-par" data-course="${k}" data-tee-i="${i}" data-tfield="par" data-num="1" value="${t.par}" style="width:56px" ${dis()}></td>
         <td><input type="radio" name="def-${k}" id="te-${k}-${i}-def" data-course="${k}" data-default="${t.id}" ${t.id === co.defaultTee ? 'checked' : ''} ${dis()} aria-label="Default tee"></td></tr>`).join('')}
       </tbody></table></div>
-      ${mode === 'live' && canWrite ? `<div class="row"><button class="btn" data-act="add-tee" data-course="${k}">+ Tee</button></div>` : ''}
+      ${mode === 'live' && isAdmin() ? `<div class="row"><button class="btn" data-act="add-tee" data-course="${k}">+ Tee</button></div>` : ''}
       <div class="tbl-wrap"><table class="card"><thead><tr><th>Hole</th>${H.map(h => `<th>${h + 1}</th>`).join('')}</tr></thead><tbody>
         <tr><td>Par</td>${H.map(h => `<td><input class="siinput" id="cp-${k}-${h}" data-course="${k}" data-hole="${h}" data-hfield="pars" data-num="1" value="${co.pars[h]}" ${dis()}></td>`).join('')}</tr>
         <tr><td>Hdcp</td>${H.map(h => `<td><input class="siinput" id="cs-${k}-${h}" data-course="${k}" data-hole="${h}" data-hfield="si" data-num="1" value="${co.si[h]}" ${dis()}></td>`).join('')}</tr>
@@ -1387,7 +1399,7 @@ function viewSetup() {
       <label class="f">Buy-in per player<input id="buyIn" data-gfield="buyIn" data-num="1" value="${numFmt(c.buyIn)}" style="width:100px" ${dis()}></label>
       <label class="f">Ties for a paid place<select id="tieBreak" data-gfield="tieBreak" ${dis()}><option value="split" ${c.tieBreak !== 'cards' ? 'selected' : ''}>Split the money</option><option value="cards" ${c.tieBreak === 'cards' ? 'selected' : ''}>Match cards (back 9, 6, 3, 18th)</option></select></label>
     </div>
-    ${mode === 'live' && canWrite ? (ui.tplAsk ? `<div class="banner"><p><b>Are you sure?</b> This replaces every payout amount, the skins pots and the closest-to-pin list with the 2024-style split for 32 players ($3,360). Courses, players, teams and scores stay.</p><div class="row"><button class="btn" data-act="tpl-no">Cancel</button><button class="btn primary" data-act="tpl-yes">Yes, use 2024-style payouts</button></div></div>`
+    ${mode === 'live' && isAdmin() ? (ui.tplAsk ? `<div class="banner"><p><b>Are you sure?</b> This replaces every payout amount, the skins pots and the closest-to-pin list with the 2024-style split for 32 players ($3,360). Courses, players, teams and scores stay.</p><div class="row"><button class="btn" data-act="tpl-no">Cancel</button><button class="btn primary" data-act="tpl-yes">Yes, use 2024-style payouts</button></div></div>`
       : `<div class="row"><button class="btn" data-act="tpl-ask">Use 2024-style payouts</button></div>`) : ''}
     <div class="muted small">Skins: one low score wins the full skin; two tied for low split it (half skin each); three or more tied means no skin and the hole carries to the next. The skins pot is divided by the number of skins won. Course handicap = Index × Slope ÷ 113 + (Rating − Par), rounded.</div></section>
   ${days}
@@ -1395,9 +1407,9 @@ function viewSetup() {
   <h2 style="margin-top:8px">Courses</h2>
   <div class="muted small">Ratings, slopes and hole handicaps were pulled from public scorecards. Check them against the card at each course before play.</div>
   ${courses}
-  ${canWrite ? `<section class="panel"><h3>Backup</h3><div class="muted small">Save a copy of everything to a file, or load one back in.</div>
+  ${isAdmin() ? `<section class="panel"><h3>Backup</h3><div class="muted small">Save a copy of everything to a file, or load one back in.</div>
     <div class="row"><button class="btn" data-act="export">Download backup file</button><label class="btn" for="imp-file2">Import a trip file</label><input type="file" id="imp-file2" accept=".json,application/json" hidden></div></section>` : ''}
-  ${mode === 'live' && canWrite && testToolsOn() ? `<section class="panel"><h3>Reset</h3><div class="muted small">Erases all players, teams, scores and setup for this trip.</div><div class="row"><button class="btn danger ${ui.armed === 'reset' ? 'armed' : ''}" data-act="reset">${ui.armed === 'reset' ? 'Tap again to erase everything' : 'Reset trip'}</button></div></section>` : ''}`;
+  ${mode === 'live' && isAdmin() && testToolsOn() ? `<section class="panel"><h3>Reset</h3><div class="muted small">Erases all players, teams, scores and setup for this trip.</div><div class="row"><button class="btn danger ${ui.armed === 'reset' ? 'armed' : ''}" data-act="reset">${ui.armed === 'reset' ? 'Tap again to erase everything' : 'Reset trip'}</button></div></section>` : ''}`;
 }
 
 // ---- events ----
@@ -1466,13 +1478,20 @@ document.getElementById('main').addEventListener('click', async (e) => {
     toast(ui.clearExtras ? 'All scores and contest winners cleared.' : 'All scores cleared.'); return render();
   }
   if (act === 'discard') { const team = teamsFor(ui.sday).find(t => t.id === ui.team); const keys = FORMATS[S.config.days[ui.sday].format].scramble ? [team.id] : team.pids; keys.forEach(k => delete ui.drafts[draftKey(ui.sday, k)]); return render(); }
-  if (act === 'save-card') {
+  if (act === 'save-next' || act === 'save-card') {
     const d = ui.sday, h = {};
     Object.keys(ui.drafts).forEach(k => { const [dd, key] = k.split('|'); if (dd === d) h[key] = ui.drafts[k].map(v => v === '' ? null : Number(v)); });
     const bad = Object.values(h).some(a => a.some(v => v != null && (isNaN(v) || v < 1 || v > 15)));
     if (bad) return toast('Scores must be whole numbers from 1 to 15.');
     Object.keys(ui.drafts).forEach(k => { if (k.startsWith(d + '|')) delete ui.drafts[k]; });
-    await writeDoc('scores_' + d, { h }, true); toast('Card saved.'); return render();
+    await writeDoc('scores_' + d, { h }, true);
+    if (act === 'save-next') {
+      const ts = teamsFor(d), i = ts.findIndex(t => t.id === ui.team);
+      const nxt = ts.slice(i + 1).concat(ts.slice(0, i)).find(t => { const keys = FORMATS[S.config.days[d].format].scramble ? [t.id] : t.pids; return keys.some(k => { const c = S.scores[d] && S.scores[d][k]; return !Array.isArray(c) || c.some(v => v == null); }); });
+      if (nxt) { ui.team = nxt.id; render(); toast('Card saved. Now Team ' + (ts.indexOf(nxt) + 1) + '.'); const f = document.querySelector('input[data-score]'); if (f) { f.focus(); f.select(); } return; }
+      toast('Card saved. Every card for this day is in.'); return render();
+    }
+    toast('Card saved.'); return render();
   }
   if (act === 'bulk-add') {
     const lines = ($('#bulk').value || '').split(/\n+/).map(l => l.trim()).filter(Boolean);
@@ -1526,13 +1545,23 @@ document.getElementById('main').addEventListener('input', (e) => {
   vals[h] = el.value; ui.drafts[dk] = vals;
   const course = S.config.courses[S.config.days[ui.sday].course];
   el.className = markClass(el.value, course.pars[h]);
-  const saveBtn = $('[data-act="save-card"]'); if (saveBtn) saveBtn.disabled = false;
-  if (el.value.length === 2 || (el.value.length === 1 && el.value !== '1')) {
-    const next = document.getElementById(`sc-${key}-${h + 1}`); if (next) { next.focus(); next.select(); }
-  }
+  document.querySelectorAll('[data-act="save-card"],[data-act="save-next"]').forEach(b => { b.disabled = false; });
+  const t = (a) => a.reduce((s, v) => s + (Number(v) || 0), 0) || '';
+  document.querySelectorAll('[data-tot]').forEach(td => { const [k, part] = td.dataset.tot.split('|'); if (k !== key) return; td.textContent = t(part === 'out' ? vals.slice(0, 9) : part === 'in' ? vals.slice(9) : vals); });
+  // Phones jump to the next hole after each score; on a computer, use Tab or Enter.
+  const touch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+  if (touch && (el.value.length === 2 || (el.value.length === 1 && el.value !== '1'))) moveScore(el, 1);
+});
+function moveScore(el, dir) {
+  const all = [...document.querySelectorAll('input[data-score]')];
+  const next = all[all.indexOf(el) + dir];
+  if (next) { next.focus({ preventScroll: false }); next.select(); }
+}
+document.getElementById('main').addEventListener('keydown', (e) => {
+  const el = e.target; if (!el.dataset || !el.dataset.score) return;
+  if (e.key === 'Enter') { e.preventDefault(); moveScore(el, e.shiftKey ? -1 : 1); }
 });
 document.getElementById('main').addEventListener('focusin', (e) => { if (e.target.dataset && e.target.dataset.score) e.target.select(); });
-document.getElementById('main').addEventListener('focusout', (e) => { if (e.target.dataset && e.target.dataset.score && !$('#main').contains(e.relatedTarget)) render(); });
 
 document.getElementById('main').addEventListener('submit', (e) => {
   if (e.target.dataset.form === 'pin') { e.preventDefault(); submitPin(); }
@@ -1549,7 +1578,7 @@ document.getElementById('main').addEventListener('change', async (e) => {
     } catch (x) { toast("That file isn't a Who's Your Daddy trip file."); }
     el.value = ''; return;
   }
-  if (ds.score) return render();
+  if (ds.score) return;
   if (ds.brot) { ui.rotate = el.checked; setRotation(); return; }
   if (ds.clrx) { ui.clearExtras = el.checked; return render(); }
   const num = (v) => { const n = Number(String(v).replace(/[$,]/g, '')); return isNaN(n) ? 0 : n; };
@@ -1590,7 +1619,7 @@ const FIREBASE_CONFIG = {
 };
 async function boot() {
   const fallback = () => {
-    backend = 'local'; canWrite = true;
+    backend = 'local'; canWrite = true; role = 'admin';
     try { docs = JSON.parse(localStorage.getItem('bgt-docs') || '{}') || {}; } catch (e) { docs = {}; }
     deriveState(); render();
     toast("Couldn't reach the live scoreboard. Working offline on this device.");
@@ -1610,10 +1639,10 @@ async function boot() {
     const cred = await firebase.auth().signInAnonymously();
     authId = cred.user.uid;
     const me = await db.collection('editors').doc(authId).get();
-    canWrite = me.exists; render();
+    role = me.exists ? ((me.data() || {}).role || 'score') : null; canWrite = !!role; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261023165444';
+const APP_VERSION = '20261023214424';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
