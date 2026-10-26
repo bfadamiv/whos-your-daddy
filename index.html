@@ -102,6 +102,45 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .sortbtn.on { color: var(--ink); }
 .pscores th.grp { text-align: center; border-left: 1px solid var(--line); }
 .pscores td:nth-child(3), .pscores td:nth-child(5), .pscores td:nth-child(7), .pscores td:nth-child(9) { border-left: 1px solid var(--line); }
+/* Mode chooser + Keep Score */
+.hdr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.modesw { font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--band-ink); background: none; border: 0; text-decoration: underline; cursor: pointer; padding: 2px 0; }
+.welcome { align-items: stretch; }
+.welcome-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.welcome-btn { text-align: left; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 8px; padding: 18px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; font: inherit; }
+.welcome-btn b { font-family: var(--font-display); font-size: 24px; letter-spacing: .03em; text-transform: uppercase; }
+.welcome-btn.primary { background: var(--pine); border-color: var(--pine); color: var(--pine-ink); }
+.kp-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px; }
+.kp-group { display: flex; justify-content: space-between; align-items: center; gap: 10px; text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 12px; cursor: pointer; font: inherit; }
+.kp-group b { display: block; font-family: var(--font-display); font-size: 18px; letter-spacing: .04em; }
+.kp-names { display: block; font-size: 14px; color: var(--muted); }
+.kp { gap: 14px; }
+.kp-head { display: flex; gap: 16px; align-items: center; }
+.kp-hole { width: 88px; height: auto; flex: none; }
+.kp-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kp-hn { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1; text-transform: uppercase; }
+.kp-par { font-family: var(--font-display); font-weight: 600; font-size: 22px; color: var(--pine); }
+.kp-rows { display: flex; flex-direction: column; gap: 10px; }
+.kp-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: var(--surface-2); }
+.kp-who { display: flex; flex-direction: column; min-width: 0; gap: 2px; }
+.kp-who b { font-size: 17px; }
+.kp-who span { font-size: 12.5px; color: var(--muted); }
+.kp-pop { font-style: normal; color: var(--pine); letter-spacing: -1px; }
+.kp-run { color: var(--ink) !important; font-weight: 600; }
+.kp-ctl { display: flex; align-items: center; gap: 8px; flex: none; }
+.kp-btn { width: 52px; height: 52px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-size: 30px; line-height: 1; cursor: pointer; touch-action: manipulation; }
+.kp-btn:active { background: var(--pine-soft); }
+.kp-score { width: 64px; text-align: center; display: flex; flex-direction: column; }
+.kp-score b { font-family: var(--font-display); font-size: 38px; line-height: 1; }
+.kp-score small { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.kp-score.u b { color: var(--red); }
+.kp-score.default b { color: var(--muted); }
+.kp-nav { display: flex; gap: 10px; justify-content: space-between; }
+.kp-next { flex: 1; font-size: 16px !important; padding: 14px !important; }
+.kp-dots { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+.kp-dot { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 4px; padding: 6px 0; font: 600 13px var(--font-body); cursor: pointer; }
+.kp-dot.done { background: var(--pine-soft); color: var(--ink); }
+.kp-dot.on { outline: 2px solid var(--pine); color: var(--ink); }
 /* Scorecard grid */
 .card { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; }
 .card th, .card td { padding: 4px 3px; text-align: center; border-bottom: 1px solid var(--line); }
@@ -263,9 +302,10 @@ body.tv-mode main { max-width: none; padding-block: 0; }
         <h1>Who's Your Daddy 2026</h1>
         <div class="sub">Fallen Oak · Shell Landing · Windance</div>
       </div>
-      <span class="status" id="status">Loading</span>
+      <div class="hdr-right"><span class="status" id="status">Loading</span><button class="modesw" id="modeSwitch" hidden></button></div>
     </div>
     <nav class="tabs" role="tablist" id="tabs">
+      <button role="tab" data-tab="keep" aria-selected="false" hidden>Keep Score</button>
       <button role="tab" data-tab="board" aria-selected="false">Scoreboard</button>
       <button role="tab" data-tab="results" aria-selected="true">Results</button>
       <button role="tab" data-tab="scores" aria-selected="false">Enter Scores</button>
@@ -792,7 +832,10 @@ const isAdmin = () => backend === 'local' || canWrite;
 let authId = null;
 const ui = { tab: 'results', rday: 'fri', sday: 'fri', team: null, drafts: {}, armed: null, bday: 'auto', bview: 'day', rotate: true, tv: false };
 try { const t = localStorage.getItem('wyd-tab'); if (t) ui.tab = t; } catch (e) {}
-if (location.hash === '#scoreboard') { ui.tab = 'board'; ui.tv = true; }
+try { ui.mode = localStorage.getItem('wyd-mode') || null; } catch (e) { ui.mode = null; }
+if (location.hash === '#scoreboard') { ui.tab = 'board'; ui.tv = true; ui.mode = ui.mode || 'viewer'; }
+const MODE_TABS = { viewer: ['board', 'results'], keeper: ['keep', 'board', 'results', 'scores', 'players', 'setup'] };
+function setMode(m) { ui.mode = m; try { localStorage.setItem('wyd-mode', m); } catch (e) {} ui.tab = m === 'keeper' ? 'keep' : 'board'; try { localStorage.setItem('wyd-tab', ui.tab); } catch (e) {} }
 // ===== Clubhouse scoreboard (Who's Your Daddy) =====
 // Expects: S, ui, DAYS, DAY_LABEL, computeDay, individualNet, esc, fmt$ in scope.
 const boardPrev = {};
@@ -1025,6 +1068,154 @@ function setRotation() {
   }, 20000);
 }
 
+// ===== Keep Score: pick your group, then one hole at a time =====
+// Expects: S, ui, DAYS, DAY_LABEL, FORMATS, esc, fmt$, toast, render, writeDoc, teamsFor,
+// computeDayPH, scrambleTeamHcp, pops, teeObj, canWrite, askPin in scope.
+
+// Hole yardages by tee, from public scorecards (approximate; check the card at the course).
+const YARDS = {
+  fallen: {
+    t1: [596, 479, 224, 423, 488, 548, 330, 203, 459, 468, 396, 382, 575, 161, 604, 418, 240, 493],
+    t2: [537, 455, 193, 395, 461, 520, 315, 176, 422, 416, 379, 353, 541, 150, 565, 384, 206, 470],
+    t3: [516, 432, 168, 382, 426, 500, 305, 154, 405, 393, 352, 344, 510, 133, 532, 370, 198, 429],
+    t4: [507, 425, 154, 355, 390, 480, 290, 135, 372, 363, 328, 300, 500, 114, 495, 335, 178, 412],
+  },
+  shell: {
+    snap: [413, 176, 555, 367, 418, 412, 513, 228, 398, 394, 220, 417, 512, 414, 396, 559, 193, 439],
+    leat: [392, 163, 531, 347, 395, 382, 483, 172, 367, 357, 201, 387, 492, 384, 374, 524, 167, 413],
+    hawk: [372, 146, 514, 320, 370, 311, 467, 151, 341, 325, 159, 334, 473, 351, 341, 504, 139, 392],
+    goph: [353, 125, 480, 298, 337, 279, 452, 138, 302, 314, 117, 320, 415, 338, 310, 488, 130, 355],
+  },
+  windance: {
+    blue: [396, 231, 542, 170, 379, 354, 503, 160, 382, 388, 400, 513, 379, 390, 170, 549, 341, 423],
+    white: [379, 209, 521, 144, 340, 307, 482, 139, 360, 373, 375, 460, 359, 377, 145, 492, 315, 378],
+    green: [325, 174, 468, 136, 320, 260, 464, 111, 308, 340, 318, 436, 303, 335, 123, 475, 283, 327],
+  },
+};
+function holeYards(day, pid, h) {
+  const ck = S.config.days[day].course, t = teeObj(pid, day);
+  return YARDS[ck] && YARDS[ck][t.id] ? YARDS[ck][t.id][h] : null;
+}
+
+// Groups: Friday & Sunday = Teams 1+2, 3+4, ... (the foursome). Saturday = the 4-man team.
+function keepGroups(day) {
+  const dc = S.config.days[day], fmt = FORMATS[dc.format], teams = teamsFor(day);
+  const groups = [];
+  const step = dc.format === 'bb4x2' ? 1 : 2;
+  for (let i = 0; i < teams.length; i += step) {
+    const ts = teams.slice(i, i + step);
+    let units;
+    if (fmt.scramble) {
+      units = ts.map((t, j) => ({ key: t.id, name: t.pids.filter(p => S.players[p]).map(p => S.players[p].name).join(' & '), sub: 'Team ' + (i + j + 1) + ' · team hcp ' + scrambleTeamHcp(S, t.pids, day), ph: scrambleTeamHcp(S, t.pids, day), pid: t.pids[0] }));
+    } else {
+      units = ts.flatMap(t => t.pids.filter(p => S.players[p]).map(p => ({ key: p, name: S.players[p].name, sub: 'CH ' + computeDayPH(p, day), ph: computeDayPH(p, day), pid: p })));
+    }
+    groups.push({ n: groups.length + 1, teams: ts, units, label: ts.map(t => t.pids.filter(p => S.players[p]).map(p => lastName(S.players[p].name)).join(' / ')).join('  +  ') });
+  }
+  return groups;
+}
+function savedScore(day, key, h) { const c = S.scores[day] && S.scores[day][key]; const v = Array.isArray(c) ? c[h] : null; return v == null || v === '' ? null : Number(v); }
+function groupThru(day, g) { let n = 0; for (let h = 0; h < 18; h++) if (g.units.every(u => savedScore(day, u.key, h) != null)) n++; return n; }
+function firstOpenHole(day, g) { for (let h = 0; h < 18; h++) if (g.units.some(u => savedScore(day, u.key, h) == null)) return h; return 17; }
+
+// A simple drawn hole: tee at the bottom, green at the top. Illustration only, not the real layout.
+function holeSvg(par, h) {
+  const W = 120, H = 210, gy = 34, ty = par === 3 ? 150 : par === 4 ? 182 : 196;
+  const sway = ((h * 37) % 5 - 2) * 7;          // gentle, varied bend so holes don't all look alike
+  const fw = par === 3 ? '' : `<path d="M60 ${ty - 10} C ${60 + sway} ${ty - 60}, ${60 - sway} ${gy + 70}, 60 ${gy + 22}" stroke="#6fbf73" stroke-width="${par === 5 ? 30 : 34}" stroke-linecap="round" fill="none"/>`;
+  const bunk = [[60 + 20 + sway / 2, gy + 12], [60 - 24, gy + 4]].slice(0, 1 + (h % 2)).map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="9" ry="5" fill="#e8d9a8"/>`).join('');
+  const water = par === 3 && h % 3 === 0 ? `<ellipse cx="60" cy="${(gy + ty) / 2 + 10}" rx="34" ry="14" fill="#5aa7d6" opacity=".9"/>` : '';
+  return `<svg class="kp-hole" viewBox="0 0 ${W} ${H}" role="img" aria-label="Illustration of a par ${par} hole">
+    <rect x="4" y="4" width="${W - 8}" height="${H - 8}" rx="16" fill="#2f6b3f"/>
+    ${water}${fw}
+    <ellipse cx="60" cy="${gy}" rx="22" ry="15" fill="#8fd694"/>${bunk}
+    <line x1="64" y1="${gy - 2}" x2="64" y2="${gy - 26}" stroke="#fff" stroke-width="2"/><path d="M64 ${gy - 26} l14 5 -14 5z" fill="#e9c869"/>
+    <rect x="50" y="${ty}" width="20" height="9" rx="2" fill="#8fd694" stroke="#24552f"/>
+  </svg>`;
+}
+
+function viewKeep() {
+  const day = ui.kday || (typeof autoBoardDay === 'function' ? autoBoardDay() : 'fri');
+  ui.kday = day;
+  const dc = S.config.days[day], course = S.config.courses[dc.course];
+  const groups = keepGroups(day);
+  const dayChips = `<div class="chips">${DAYS.map(d => `<button class="chip" aria-pressed="${day === d}" data-act="kday" data-day="${d}">${DAY_LABEL[d]}<small>${esc(S.config.courses[S.config.days[d].course].name)}</small></button>`).join('')}</div>`;
+  if (!canWrite) return dayChips + `<section class="panel"><h2>Keep score</h2><p class="muted">Enter the scorekeeper PIN to keep score for your group.</p><div class="row"><button class="btn primary" data-act="pin-open">Enter PIN</button></div></section>`;
+  const g = groups.find(x => x.n === ui.kgroup);
+  if (!g) {
+    const list = groups.map(x => { const thru = groupThru(day, x); return `<button class="kp-group" data-act="kgroup" data-n="${x.n}"><span><b>Group ${x.n}</b><span class="kp-names">${esc(x.label)}</span></span><span class="thru ${thru === 18 ? 'done' : ''}">${thru === 18 ? '✓ Done' : thru ? 'Thru ' + thru : 'Start'}</span></button>`; }).join('');
+    return dayChips + `<section class="panel"><div><h2>Who are you keeping score for?</h2><div class="muted small">${DAY_LABEL[day]} · ${esc(course.name)} · ${esc(FORMATS[dc.format].label)}. ${dc.format === 'bb4x2' ? 'Pick your 4-man team.' : 'Pick your foursome (Teams 1 & 2 play together, 3 & 4, and so on).'}</div></div>
+      ${groups.length ? `<div class="kp-groups">${list}</div>` : '<div class="empty">No teams set for this day yet.</div>'}</section>`;
+  }
+  const h = ui.khole == null ? firstOpenHole(day, g) : ui.khole;
+  ui.khole = h;
+  const par = course.pars[h], si = course.si[h];
+  ui.kvals = ui.kvals || {};
+  const val = (u) => { const k = day + '|' + u.key + '|' + h; return ui.kvals[k] != null ? ui.kvals[k] : savedScore(day, u.key, h) ?? par; };
+  const isSet = (u) => ui.kvals[day + '|' + u.key + '|' + h] != null || savedScore(day, u.key, h) != null;
+  const yards = [...new Set(g.units.map(u => holeYards(day, u.pid, h)).filter(Boolean))];
+  const thruLine = (u) => {
+    let gross = 0, net = 0, parT = 0, n = 0;
+    for (let k = 0; k < 18; k++) { const s = k === h ? (isSet(u) ? val(u) : null) : savedScore(day, u.key, k); if (s == null) continue; gross += s; net += s - pops(u.ph, course.si[k]); parT += course.pars[k]; n++; }
+    return n ? `Thru ${n}: ${gross} · net ${toParStr(net - parT)}` : '';
+  };
+  const rows = g.units.map(u => {
+    const p = pops(u.ph, si), v = val(u), d = v - par;
+    const word = d <= -2 ? 'Eagle' : d === -1 ? 'Birdie' : d === 0 ? 'Par' : d === 1 ? 'Bogey' : d === 2 ? 'Double' : '+' + d;
+    return `<div class="kp-row">
+      <div class="kp-who"><b>${esc(u.name)}</b><span>${p > 0 ? '<i class="kp-pop">' + '●'.repeat(p) + '</i> gets ' + p + ' stroke' + (p > 1 ? 's' : '') : p < 0 ? 'gives a stroke' : 'no stroke'} · ${esc(u.sub)}</span><span class="kp-run">${thruLine(u)}</span></div>
+      <div class="kp-ctl">
+        <button class="kp-btn" data-act="kminus" data-key="${esc(u.key)}" aria-label="One less for ${esc(u.name)}">−</button>
+        <div class="kp-score ${isSet(u) ? '' : 'default'} ${d < 0 ? 'u' : d > 0 ? 'o' : ''}"><b>${v}</b><small>${word}${p > 0 ? ' · net ' + (v - p) : ''}</small></div>
+        <button class="kp-btn" data-act="kplus" data-key="${esc(u.key)}" aria-label="One more for ${esc(u.name)}">+</button>
+      </div></div>`;
+  }).join('');
+  const dots = course.pars.map((pp, k) => { const done = g.units.every(u => savedScore(day, u.key, k) != null); return `<button class="kp-dot ${k === h ? 'on' : ''} ${done ? 'done' : ''}" data-act="khole" data-h="${k}" aria-label="Hole ${k + 1}">${k + 1}</button>`; }).join('');
+  return `<div class="row between"><button class="btn" data-act="kback">← Groups</button><span class="muted small">${DAY_LABEL[day]} · ${esc(course.name)} · Group ${g.n}</span></div>
+  <section class="panel kp">
+    <div class="kp-head">${holeSvg(par, h)}
+      <div class="kp-meta"><div class="kp-hn">Hole ${h + 1}</div><div class="kp-par">Par ${par}</div>
+        <div class="muted">${yards.length ? yards.map(y => y + ' yds').join(' / ') + ' · ' : ''}Handicap ${si}</div>
+        <div class="muted small">Scores start at par. Tap − or + to change, then save.</div></div></div>
+    <div class="kp-rows">${rows}</div>
+    <div class="kp-nav">
+      ${h > 0 ? `<button class="btn" data-act="kprev">← Hole ${h}</button>` : ''}
+      <button class="btn primary kp-next" data-act="ksave">${h === 17 ? 'Save hole 18 · finish' : 'Save · go to hole ' + (h + 2) + ' →'}</button>
+    </div>
+    <div class="kp-dots">${dots}</div>
+  </section>`;
+}
+
+async function keepAction(act, b) {
+  const day = ui.kday;
+  if (act === 'kday') { ui.kday = b.dataset.day; ui.kgroup = null; ui.khole = null; return render(); }
+  if (act === 'kgroup') { ui.kgroup = Number(b.dataset.n); ui.khole = null; render(); window.scrollTo(0, 0); return; }
+  if (act === 'kback') { ui.kgroup = null; ui.khole = null; return render(); }
+  if (act === 'khole') { ui.khole = Number(b.dataset.h); return render(); }
+  if (act === 'kprev') { ui.khole = Math.max(0, ui.khole - 1); return render(); }
+  const g = keepGroups(day).find(x => x.n === ui.kgroup); if (!g) return render();
+  const h = ui.khole, course = S.config.courses[S.config.days[day].course], par = course.pars[h];
+  const cur = (key) => { const k = day + '|' + key + '|' + h; return ui.kvals[k] != null ? ui.kvals[k] : savedScore(day, key, h) ?? par; };
+  if (act === 'kminus' || act === 'kplus') {
+    const key = b.dataset.key, k = day + '|' + key + '|' + h;
+    ui.kvals[k] = Math.max(1, Math.min(15, cur(key) + (act === 'kplus' ? 1 : -1)));
+    return render();
+  }
+  if (act === 'ksave') {
+    const out = {};
+    g.units.forEach(u => {
+      const arr = ((S.scores[day] && S.scores[day][u.key]) || new Array(18).fill(null)).slice();
+      while (arr.length < 18) arr.push(null);
+      arr[h] = cur(u.key); out[u.key] = arr;
+      delete ui.kvals[day + '|' + u.key + '|' + h];
+    });
+    await writeDoc('scores_' + day, { h: out }, true);
+    if (h < 17) { ui.khole = h + 1; toast('Hole ' + (h + 1) + ' saved.'); }
+    else { toast('Hole 18 saved. Card complete.'); ui.kgroup = null; ui.khole = null; }
+    render(); window.scrollTo(0, 0); return;
+  }
+}
+
 
 const $ = (s) => document.querySelector(s);
 const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1116,7 +1307,19 @@ function render() {
   if (mode === 'loading') return;
   // keep focus + typed text across re-renders
   const a = document.activeElement, keep = a && a.id && $('#main').contains(a) ? { id: a.id, v: a.value, s: a.selectionStart, e: a.selectionEnd } : null;
-  const views = { board: viewBoard, results: viewResults, scores: viewScores, players: viewPlayers, setup: viewSetup };
+  const views = { keep: viewKeep, board: viewBoard, results: viewResults, scores: viewScores, players: viewPlayers, setup: viewSetup };
+  const allowed = MODE_TABS[ui.mode] || MODE_TABS.viewer;
+  document.querySelectorAll('#tabs button').forEach(b => { b.hidden = !allowed.includes(b.dataset.tab); });
+  if (!allowed.includes(ui.tab)) ui.tab = allowed[0];
+  const ms = $('#modeSwitch'); ms.hidden = !ui.mode; ms.textContent = ui.mode === 'keeper' ? 'Switch to viewing' : 'Keep score';
+  if (!ui.mode) {
+    document.querySelectorAll('#tabs button').forEach(b => { b.hidden = true; });
+    $('#main').innerHTML = `<section class="panel welcome"><h2>How are you using the app?</h2><div class="welcome-opts">
+      <button class="welcome-btn" data-act="mode-view"><b>I'm watching</b><span>Live scoreboard, results and money</span></button>
+      <button class="welcome-btn primary" data-act="mode-keep"><b>I'm keeping score</b><span>Enter scores for my group, hole by hole</span></button></div>
+      <p class="muted small">You can switch any time with the button at the top.</p></section>`;
+    return;
+  }
   document.body.classList.toggle('tv-mode', !!ui.tv && ui.tab === 'board');
   const y = window.scrollY, sameTab = render.lastTab === ui.tab; render.lastTab = ui.tab;
   $('#main').innerHTML = (ui.tv && ui.tab === 'board' ? '' : banner()) + views[ui.tab]();
@@ -1466,6 +1669,7 @@ function viewSetup() {
 // ---- events ----
 function arm(key) { ui.armed = key; clearTimeout(arm.t); arm.t = setTimeout(() => { ui.armed = null; render(); }, 4000); }
 
+document.getElementById('modeSwitch').addEventListener('click', () => { setMode(ui.mode === 'keeper' ? 'viewer' : 'keeper'); render(); if (ui.mode === 'keeper' && !canWrite) askPin(); window.scrollTo(0, 0); });
 document.getElementById('tabs').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-tab]'); if (!b) return;
   ui.tab = b.dataset.tab; try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {}
@@ -1475,6 +1679,9 @@ document.getElementById('tabs').addEventListener('click', (e) => {
 document.getElementById('main').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const act = b.dataset.act, day = b.dataset.day;
+  if (act === 'mode-view') { setMode('viewer'); return render(); }
+  if (act === 'mode-keep') { setMode('keeper'); render(); if (!canWrite) askPin(); return; }
+  if (['kday', 'kgroup', 'kback', 'khole', 'kprev', 'kminus', 'kplus', 'ksave'].includes(act)) return keepAction(act, b);
   if (act === 'rday') { ui.rday = day; return render(); }
   if (act === 'psort') { ui.psort = b.dataset.k; return render(); }
   if (act === 'reload') { location.reload(); return; }
@@ -1694,7 +1901,7 @@ async function boot() {
     role = me.exists ? ((me.data() || {}).role || 'score') : null; canWrite = !!role; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261024161003';
+const APP_VERSION = '20261025223631';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
