@@ -116,8 +116,9 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .kp-names { display: block; font-size: 14px; color: var(--muted); }
 .kp { gap: 14px; }
 .kp-head { display: flex; gap: 16px; align-items: center; }
-.kp-hole { width: 88px; height: auto; flex: none; }
+.kp-hole { width: 120px; height: auto; flex: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.25)); }
 .kp-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kp-map { align-self: flex-start; margin-top: 6px; text-decoration: none; font-size: 13px !important; padding: 6px 12px !important; }
 .kp-hn { font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1; text-transform: uppercase; }
 .kp-par { font-family: var(--font-display); font-weight: 600; font-size: 22px; color: var(--pine); }
 .kp-rows { display: flex; flex-direction: column; gap: 10px; }
@@ -1118,20 +1119,53 @@ function savedScore(day, key, h) { const c = S.scores[day] && S.scores[day][key]
 function groupThru(day, g) { let n = 0; for (let h = 0; h < 18; h++) if (g.units.every(u => savedScore(day, u.key, h) != null)) n++; return n; }
 function firstOpenHole(day, g) { for (let h = 0; h < 18; h++) if (g.units.some(u => savedScore(day, u.key, h) == null)) return h; return 17; }
 
-// A simple drawn hole: tee at the bottom, green at the top. Illustration only, not the real layout.
-function holeSvg(par, h) {
-  const W = 120, H = 210, gy = 34, ty = par === 3 ? 150 : par === 4 ? 182 : 196;
-  const sway = ((h * 37) % 5 - 2) * 7;          // gentle, varied bend so holes don't all look alike
-  const fw = par === 3 ? '' : `<path d="M60 ${ty - 10} C ${60 + sway} ${ty - 60}, ${60 - sway} ${gy + 70}, 60 ${gy + 22}" stroke="#6fbf73" stroke-width="${par === 5 ? 30 : 34}" stroke-linecap="round" fill="none"/>`;
-  const bunk = [[60 + 20 + sway / 2, gy + 12], [60 - 24, gy + 4]].slice(0, 1 + (h % 2)).map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="9" ry="5" fill="#e8d9a8"/>`).join('');
-  const water = par === 3 && h % 3 === 0 ? `<ellipse cx="60" cy="${(gy + ty) / 2 + 10}" rx="34" ry="14" fill="#5aa7d6" opacity=".9"/>` : '';
-  return `<svg class="kp-hole" viewBox="0 0 ${W} ${H}" role="img" aria-label="Illustration of a par ${par} hole">
-    <rect x="4" y="4" width="${W - 8}" height="${H - 8}" rx="16" fill="#2f6b3f"/>
-    ${water}${fw}
-    <ellipse cx="60" cy="${gy}" rx="22" ry="15" fill="#8fd694"/>${bunk}
-    <line x1="64" y1="${gy - 2}" x2="64" y2="${gy - 26}" stroke="#fff" stroke-width="2"/><path d="M64 ${gy - 26} l14 5 -14 5z" fill="#e9c869"/>
-    <rect x="50" y="${ty}" width="20" height="9" rx="2" fill="#8fd694" stroke="#24552f"/>
+// Yardage-book style drawing: tee at the bottom, green at the top. Illustration only, not the real layout.
+function holeSvg(par, h, yards) {
+  const W = 140, H = 240, gy = 44;
+  const ty = par === 3 ? 160 : par === 4 ? 188 : 200;
+  const bend = [0, 14, -12, 8, -16, 10, -6, 16, -10][h % 9] * (par === 3 ? 0.3 : 1);
+  const cx = (t) => 70 + bend * Math.sin(Math.PI * t);                 // centerline x at 0..1 from tee to green
+  const yAt = (t) => ty - (ty - gy) * t;
+  const fwW = par === 3 ? 0 : par === 4 ? 30 : 26;
+  const fwStart = par === 3 ? 1 : 0.18, fwEnd = 0.86;
+  const pts = []; for (let i = 0; i <= 20; i++) { const t = fwStart + (fwEnd - fwStart) * i / 20; pts.push([cx(t), yAt(t)]); }
+  const left = pts.map(([x, y], i) => `${(x - fwW / 2 * (i === 0 || i === 20 ? 0.7 : 1)).toFixed(1)},${y.toFixed(1)}`);
+  const right = pts.slice().reverse().map(([x, y], i) => `${(x + fwW / 2 * (i === 0 || i === 20 ? 0.7 : 1)).toFixed(1)},${y.toFixed(1)}`);
+  const fairway = par === 3 ? '' : `<polygon points="${left.concat(right).join(' ')}" fill="url(#fw)" stroke="#3f8a4c" stroke-width="1"/>`;
+  // tree lines down both sides
+  let trees = '';
+  for (let i = 0; i < 9; i++) { const t = 0.05 + i * 0.11, y = yAt(t), x = cx(t);
+    const r1 = 7 + ((h + i) % 3) * 1.5, r2 = 6 + ((h + i * 2) % 3) * 1.5;
+    trees += `<circle cx="${(x - 42 - (i % 2) * 4).toFixed(1)}" cy="${y.toFixed(1)}" r="${r1}" fill="#1f5230"/><circle cx="${(x + 42 + ((i + 1) % 2) * 4).toFixed(1)}" cy="${(y + 5).toFixed(1)}" r="${r2}" fill="#1f5230"/>`; }
+  const gx = cx(1);
+  const bunker = (dx, dy, rx, ry) => `<ellipse cx="${(gx + dx).toFixed(1)}" cy="${(gy + dy).toFixed(1)}" rx="${rx}" ry="${ry}" fill="#efe2b8" stroke="#d6c58f" stroke-width=".8"/>`;
+  const bunkers = (h % 2 ? bunker(24, 6, 8, 5) : bunker(-24, 4, 8, 5)) + (par > 3 && h % 3 !== 1 ? bunker(h % 2 ? -21 : 21, 15, 6, 4) : '');
+  const marker = (t, label) => { const y = yAt(t); return `<g><circle cx="${cx(t).toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="#fff"/><text x="${(cx(t) + 8).toFixed(1)}" y="${(y + 3).toFixed(1)}" font-size="8" fill="#fff" font-family="Arial,sans-serif" opacity=".85">${label}</text></g>`; };
+  const markers = par === 3 ? '' : marker(0.62, '150') + marker(0.76, '100');
+  return `<svg class="kp-hole" viewBox="0 0 ${W} ${H}" role="img" aria-label="Illustration of hole ${h + 1}, par ${par}">
+    <defs>
+      <pattern id="rough" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#2e6a3d"/><rect width="10" height="5" fill="#2b643a"/></pattern>
+      <pattern id="fw" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(-8)"><rect width="12" height="12" fill="#6cbf72"/><rect width="12" height="6" fill="#62b569"/></pattern>
+    </defs>
+    <rect x="2" y="2" width="${W - 4}" height="${H - 4}" rx="14" fill="url(#rough)"/>
+    ${trees}${fairway}
+    <ellipse cx="${gx.toFixed(1)}" cy="${gy}" rx="27" ry="19" fill="#5fae66"/>
+    <ellipse cx="${gx.toFixed(1)}" cy="${gy}" rx="22" ry="15" fill="#93dc97"/>
+    ${bunkers}${markers}
+    <line x1="${(gx + 3).toFixed(1)}" y1="${gy + 2}" x2="${(gx + 3).toFixed(1)}" y2="${gy - 24}" stroke="#fff" stroke-width="1.6"/>
+    <path d="M${(gx + 3).toFixed(1)} ${gy - 24} h15 v10 h-15z" fill="#e9c869"/>
+    <text x="${(gx + 10.5).toFixed(1)}" y="${gy - 16}" font-size="8" font-weight="700" text-anchor="middle" fill="#10301e" font-family="Arial,sans-serif">${h + 1}</text>
+    <rect x="${(cx(0) - 9).toFixed(1)}" y="${ty + 2}" width="18" height="8" rx="2" fill="#8fd694" stroke="#24552f"/>
+    <rect x="${(cx(0) - 7).toFixed(1)}" y="${ty + 13}" width="14" height="6" rx="2" fill="#8fd694" stroke="#24552f"/>
+    ${yards ? `<text x="${W / 2}" y="${H - 8}" font-size="10" font-weight="700" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif">${yards} YDS · PAR ${par}</text>` : ''}
   </svg>`;
+}
+
+const COURSE_MAP_QUERY = { fallen: 'Fallen Oak Golf Club, 24400 MS-15, Saucier, MS', shell: 'Shell Landing Golf Club, 3499 Shell Landing Blvd, Gautier, MS', windance: 'Windance Country Club, 19385 Champion Cir, Gulfport, MS' };
+function courseMapUrl(ck) {
+  const q = COURSE_MAP_QUERY[ck] || (S.config.courses[ck] && S.config.courses[ck].name + ' golf course') || 'golf course';
+  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent || '');
+  return ios ? 'https://maps.apple.com/?q=' + encodeURIComponent(q) + '&t=k' : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
 }
 
 function viewKeep() {
@@ -1173,16 +1207,18 @@ function viewKeep() {
   const dots = course.pars.map((pp, k) => { const done = g.units.every(u => savedScore(day, u.key, k) != null); return `<button class="kp-dot ${k === h ? 'on' : ''} ${done ? 'done' : ''}" data-act="khole" data-h="${k}" aria-label="Hole ${k + 1}">${k + 1}</button>`; }).join('');
   return `<div class="row between"><button class="btn" data-act="kback">← Groups</button><span class="muted small">${DAY_LABEL[day]} · ${esc(course.name)} · Group ${g.n}</span></div>
   <section class="panel kp">
-    <div class="kp-head">${holeSvg(par, h)}
+    <div class="kp-dots">${dots}</div>
+    <div class="kp-head">${holeSvg(par, h, yards[0])}
       <div class="kp-meta"><div class="kp-hn">Hole ${h + 1}</div><div class="kp-par">Par ${par}</div>
         <div class="muted">${yards.length ? yards.map(y => y + ' yds').join(' / ') + ' · ' : ''}Handicap ${si}</div>
-        <div class="muted small">Scores start at par. Tap − or + to change, then save.</div></div></div>
+        <div class="muted small">Scores start at par. Tap − or + to change, then save.</div>
+        <a class="btn kp-map" href="${courseMapUrl(dc.course)}" target="_blank" rel="noopener">Course map ↗</a></div></div>
     <div class="kp-rows">${rows}</div>
     <div class="kp-nav">
       ${h > 0 ? `<button class="btn" data-act="kprev">← Hole ${h}</button>` : ''}
       <button class="btn primary kp-next" data-act="ksave">${h === 17 ? 'Save hole 18 · finish' : 'Save · go to hole ' + (h + 2) + ' →'}</button>
     </div>
-    <div class="kp-dots">${dots}</div>
+    <div class="muted small">Hole drawing is an illustration, not the actual layout.</div>
   </section>`;
 }
 
@@ -1901,7 +1937,7 @@ async function boot() {
     role = me.exists ? ((me.data() || {}).role || 'score') : null; canWrite = !!role; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261025223631';
+const APP_VERSION = '20261025231905';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
