@@ -138,6 +138,18 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .kp-score.default b { color: var(--muted); }
 .kp-nav { display: flex; gap: 10px; justify-content: space-between; }
 .kp-next { flex: 1; font-size: 16px !important; padding: 14px !important; }
+.kp-mini { display: flex; gap: 14px; margin-top: 2px; }
+.kp-mini .link { color: var(--pine); font-weight: 700; padding: 2px 0; font-size: 13px; }
+.kp-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+.kp-ctp .row select { flex: 1 1 100%; }
+.kp-row.atmax { border-color: var(--warn); }
+.kp-btn:disabled { opacity: .35; }
+.kp-out-ask { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--line); padding-top: 8px; font-size: 14px; }
+.kp-ctp { border: 1px dashed var(--pine); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.kp-dist { display: flex; align-items: center; gap: 4px; font-size: 14px; }
+.kp-dist input { width: 52px; text-align: center; }
+.kp-group.mine { border-color: var(--pine); box-shadow: inset 0 0 0 1px var(--pine); }
+.kp-cell { background: none; border: 0; font: 600 15px var(--font-display); color: var(--ink); cursor: pointer; padding: 4px 2px; }
 .kp-dots { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
 .kp-dot { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 4px; padding: 6px 0; font: 600 13px var(--font-body); cursor: pointer; }
 .kp-dot.done { background: var(--pine-soft); color: var(--ink); }
@@ -374,6 +386,37 @@ function scrambleTeamHcp(state, pids, day) {
   return Math.round(sum(chs) / chs.length * pct / 100);
 }
 
+// ---- Max score per hole. Trip setting with optional per-day override.
+// Types: none, netDoublePar (2×par + strokes), netDoubleBogey (par + 2 + strokes), doublePar, tripleBogey, fixed.
+const MAX_RULES = {
+  none: 'No max',
+  netDoublePar: 'Net double par',
+  netDoubleBogey: 'Net double bogey',
+  doublePar: 'Double par',
+  tripleBogey: 'Triple bogey',
+  fixed: 'A set number',
+};
+function maxRule(state, day) {
+  const dc = state.config.days[day] || {};
+  const r = dc.maxScore && dc.maxScore.type && dc.maxScore.type !== 'trip' ? dc.maxScore : (state.config.maxScore || { type: 'netDoublePar' });
+  return r;
+}
+function maxFor(state, day, ph, h) {
+  const r = maxRule(state, day), course = state.config.courses[state.config.days[day].course];
+  const par = course.pars[h], st = pops(ph || 0, course.si[h]);
+  switch (r.type) {
+    case 'netDoublePar': return 2 * par + st;
+    case 'netDoubleBogey': return par + 2 + st;
+    case 'doublePar': return 2 * par;
+    case 'tripleBogey': return par + 3;
+    case 'fixed': return Number(r.value) > 0 ? Number(r.value) : 99;
+    default: return 99;
+  }
+}
+function cappedCard(state, day, key, ph) {
+  return cardOf(state, day, key).map((g, h) => g == null ? null : Math.min(g, maxFor(state, day, ph, h)));
+}
+
 function cardOf(state, day, key) {
   const c = state.scores[day] && state.scores[day][key];
   return Array.isArray(c) ? c.map(v => (v === '' || v == null || isNaN(Number(v))) ? null : Number(v)) : new Array(18).fill(null);
@@ -434,7 +477,7 @@ function computeDay(state, day) {
     const row = { id: t.id, pids: t.pids, name: teamLabel(state, t), holes: new Array(18).fill(null), members: [] };
     if (fmt.scramble) {
       const ph = scrambleTeamHcp(state, t.pids, day);
-      const gross = cardOf(state, day, t.id);
+      const gross = cappedCard(state, day, t.id, ph);
       const net = gross.map((g, h) => g == null ? null : g - pops(ph, si[h]));
       row.ph = ph;
       row.gross = gross;
@@ -447,7 +490,7 @@ function computeDay(state, day) {
     } else {
       row.members = t.pids.map(pid => {
         const ph = playerPH(state, pid, day);
-        const gross = cardOf(state, day, pid);
+        const gross = cappedCard(state, day, pid, ph);
         const net = gross.map((g, h) => g == null ? null : g - pops(ph, si[h]));
         units.push({ key: pid, pids: [pid], name: state.players[pid].name, gross, net });
         return { pid, ph, gross, net };
@@ -527,10 +570,15 @@ function computeDay(state, day) {
 
   // Contests (CTP / LD) — winners entered manually.
   const contests = (dc.contests || []).map(c => {
-    const pid = state.extras && state.extras[day] && state.extras[day][c.id];
+    const ex = (state.extras && state.extras[day]) || {};
+    let pid = ex[c.id], dist = null;
+    if (!pid && ex.ctp && ex.ctp[c.id]) {
+      const best = Object.values(ex.ctp[c.id]).filter(x => x && x.pid && state.players[x.pid]).map(x => ({ pid: x.pid, d: (Number(x.ft) || 0) * 12 + (Number(x.inch) || 0) })).sort((a, b) => a.d - b.d)[0];
+      if (best) { pid = best.pid; dist = Math.floor(best.d / 12) + "' " + (best.d % 12) + '"'; }
+    }
     const winner = pid && state.players[pid] ? pid : null;
     if (winner) add(winner, Number(c.amt) || 0, `${c.type} #${c.hole}`);
-    return { ...c, winner };
+    return { ...c, winner, dist };
   });
 
   // ---- Side games: team nines, individual nines/18, Friday foursomes ----
@@ -605,7 +653,7 @@ function individualNet(state, days) {
     const p = state.players[pid];
     let total = 0, rounds = 0, detail = {};
     for (const day of days) {
-      const card = cardOf(state, day, pid);
+      const card = cappedCard(state, day, pid, playerPH(state, pid, day));
       if (card.some(v => v == null)) { detail[day] = null; continue; }
       const net = sum(card) - playerPH(state, pid, day);
       detail[day] = net; total += net; rounds++;
@@ -829,14 +877,14 @@ let canWrite = false;   // may enter scores (scorekeeper or admin)
 let role = null;        // 'admin' | 'score' | null
 // Single PIN for now: anyone who has entered the PIN can change everything.
 // (To bring back a separate admin PIN: return backend === 'local' || role === 'admin'.)
-const isAdmin = () => backend === 'local' || canWrite;
+const isAdmin = () => backend === 'local' || role === 'admin';
 let authId = null;
 const ui = { tab: 'results', rday: 'fri', sday: 'fri', team: null, drafts: {}, armed: null, bday: 'auto', bview: 'day', rotate: true, tv: false };
 try { const t = localStorage.getItem('wyd-tab'); if (t) ui.tab = t; } catch (e) {}
 try { ui.mode = localStorage.getItem('wyd-mode') || null; } catch (e) { ui.mode = null; }
 if (location.hash === '#scoreboard') { ui.tab = 'board'; ui.tv = true; ui.mode = ui.mode || 'viewer'; }
-const MODE_TABS = { viewer: ['board', 'results'], keeper: ['keep', 'board', 'results', 'scores', 'players', 'setup'] };
-function setMode(m) { ui.mode = m; try { localStorage.setItem('wyd-mode', m); } catch (e) {} ui.tab = m === 'keeper' ? 'keep' : 'board'; try { localStorage.setItem('wyd-tab', ui.tab); } catch (e) {} }
+const MODE_TABS = { viewer: ['board', 'results'], keeper: ['keep', 'board', 'results'], admin: ['keep', 'board', 'results', 'scores', 'players', 'setup'] };
+function setMode(m) { ui.mode = m; try { if (m) localStorage.setItem('wyd-mode', m); else localStorage.removeItem('wyd-mode'); } catch (e) {} ui.tab = m === 'keeper' ? 'keep' : m === 'admin' ? 'setup' : 'board'; try { localStorage.setItem('wyd-tab', ui.tab); } catch (e) {} }
 // ===== Clubhouse scoreboard (Who's Your Daddy) =====
 // Expects: S, ui, DAYS, DAY_LABEL, computeDay, individualNet, esc, fmt$ in scope.
 const boardPrev = {};
@@ -944,7 +992,7 @@ function boardDay(day) {
 </div>
     ${r.games.length ? `<div class="bd-box"><div class="bd-box-h">Nines &amp; Individuals</div><table class="bd-gt"><colgroup><col class="c1"><col><col class="c3"></colgroup><tbody>${r.games.map(gameLine).join('')}</tbody></table></div>` : ''}
     ${r.contests.length ? `<div class="bd-box"><div class="bd-box-h">Closest to Pin</div>
-      ${r.contests.map(c => `<div class="bd-li s ${c.winner ? '' : 'dim'}"><span><b>#${c.hole}</b> ${c.winner ? esc(shortName(S.players[c.winner].name)) : '—'}</span><em>${c.winner ? fmt$(c.amt) : ''}</em></div>`).join('')}</div>` : ''}
+      ${r.contests.map(c => `<div class="bd-li s ${c.winner ? '' : 'dim'}"><span><b>#${c.hole}</b> ${c.winner ? esc(shortName(S.players[c.winner].name)) + (c.dist ? ' <i>' + c.dist + '</i>' : '') : '—'}</span><em>${c.winner ? fmt$(c.amt) : ''}</em></div>`).join('')}</div>` : ''}
   </div>`;
   const right = `<span class="bd-dot ${r.complete ? 'done' : ''}"></span>${r.complete ? 'Final' : 'Live'}<small>${finished} of ${rows.length} in · ${new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</small>`;
   const sub = `${DAY_LABEL[day]} · ${esc(r.course.name)} · ${esc(r.fmt.label)}`;
@@ -989,7 +1037,7 @@ function liveSeeds() {
     for (const d of ['fri', 'sat']) {
       const course = S.config.courses[S.config.days[d].course];
       const ph = playerPH(S, pid, d);
-      const card = (S.scores[d] && S.scores[d][pid]) || [];
+      const card = cappedCard(S, d, pid, ph);
       for (let h = 0; h < 18; h++) {
         const g = card[h]; if (g == null || g === '' || isNaN(Number(g))) continue;
         tp += Number(g) - pops(ph, course.si[h]) - course.pars[h]; holes++;
@@ -1168,76 +1216,148 @@ function courseMapUrl(ck) {
   return ios ? 'https://maps.apple.com/?q=' + encodeURIComponent(q) + '&t=k' : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
 }
 
+function todayISO() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function defaultKeepDay() {
+  const t = todayISO(), byDate = DAYS.find(d => S.config.days[d].date === t);
+  return byDate || (typeof autoBoardDay === 'function' ? autoBoardDay() : 'fri');
+}
+function myGroups() { try { return JSON.parse(localStorage.getItem('wyd-mygroup') || '{}') || {}; } catch (e) { return {}; } }
+function rememberGroup(day, n) { const m = myGroups(); m[day] = n; try { localStorage.setItem('wyd-mygroup', JSON.stringify(m)); } catch (e) {} }
+function ctpContest(day, h) { return (S.config.days[day].contests || []).find(c => c.type === 'CTP' && Number(c.hole) === h + 1); }
+function ctpSaved(day, cid, n) { const e = S.extras && S.extras[day] && S.extras[day].ctp && S.extras[day].ctp[cid]; return e && e['g' + n] ? e['g' + n] : null; }
+const fmtDist = (e) => e && e.pid ? (Number(e.ft) || 0) + "' " + (Number(e.inch) || 0) + '"' : '';
+
 function viewKeep() {
-  const day = ui.kday || (typeof autoBoardDay === 'function' ? autoBoardDay() : 'fri');
-  ui.kday = day;
+  if (!ui.kday) ui.kday = defaultKeepDay();
+  const day = ui.kday;
   const dc = S.config.days[day], course = S.config.courses[dc.course];
   const groups = keepGroups(day);
   const dayChips = `<div class="chips">${DAYS.map(d => `<button class="chip" aria-pressed="${day === d}" data-act="kday" data-day="${d}">${DAY_LABEL[d]}<small>${esc(S.config.courses[S.config.days[d].course].name)}</small></button>`).join('')}</div>`;
   if (!canWrite) return dayChips + `<section class="panel"><h2>Keep score</h2><p class="muted">Enter the scorekeeper PIN to keep score for your group.</p><div class="row"><button class="btn primary" data-act="pin-open">Enter PIN</button></div></section>`;
+  if (ui.kgroup == null && !ui.kpick) { const m = myGroups()[day]; if (m && groups.some(x => x.n === m)) { ui.kgroup = m; ui.khole = null; } }
   const g = groups.find(x => x.n === ui.kgroup);
   if (!g) {
-    const list = groups.map(x => { const thru = groupThru(day, x); return `<button class="kp-group" data-act="kgroup" data-n="${x.n}"><span><b>Group ${x.n}</b><span class="kp-names">${esc(x.label)}</span></span><span class="thru ${thru === 18 ? 'done' : ''}">${thru === 18 ? '✓ Done' : thru ? 'Thru ' + thru : 'Start'}</span></button>`; }).join('');
-    return dayChips + `<section class="panel"><div><h2>Who are you keeping score for?</h2><div class="muted small">${DAY_LABEL[day]} · ${esc(course.name)} · ${esc(FORMATS[dc.format].label)}. ${dc.format === 'bb4x2' ? 'Pick your 4-man team.' : 'Pick your foursome (Teams 1 & 2 play together, 3 & 4, and so on).'}</div></div>
+    const mine = myGroups()[day];
+    const list = groups.map(x => { const thru = groupThru(day, x); return `<button class="kp-group ${mine === x.n ? 'mine' : ''}" data-act="kgroup" data-n="${x.n}"><span><b>Group ${x.n}${mine === x.n ? ' · yours' : ''}</b><span class="kp-names">${esc(x.label)}</span></span><span class="thru ${thru === 18 ? 'done' : ''}">${thru === 18 ? '✓ Done' : thru ? 'Thru ' + thru : 'Start'}</span></button>`; }).join('');
+    return dayChips + `<section class="panel"><div><h2>Who are you keeping score for?</h2><div class="muted small">${DAY_LABEL[day]} · ${esc(course.name)} · ${esc(FORMATS[dc.format].label)}. ${dc.format === 'bb4x2' ? 'Pick your 4-man team.' : 'Pick your foursome (Teams 1 & 2 play together, 3 & 4, and so on).'} This phone remembers your pick.</div></div>
       ${groups.length ? `<div class="kp-groups">${list}</div>` : '<div class="empty">No teams set for this day yet.</div>'}</section>`;
   }
+  const head = `<div class="row between"><button class="btn" data-act="kback">← Groups</button><span class="muted small">${DAY_LABEL[day]} · ${esc(course.name)} · Group ${g.n}</span></div>`;
+  if (ui.kreview) return head + reviewCard(day, g, course);
   const h = ui.khole == null ? firstOpenHole(day, g) : ui.khole;
   ui.khole = h;
   const par = course.pars[h], si = course.si[h];
   ui.kvals = ui.kvals || {};
-  const val = (u) => { const k = day + '|' + u.key + '|' + h; return ui.kvals[k] != null ? ui.kvals[k] : savedScore(day, u.key, h) ?? par; };
+  const capOf = (u) => maxFor(S, day, u.ph, h);
+  const val = (u) => { const k = day + '|' + u.key + '|' + h; const v = ui.kvals[k] != null ? ui.kvals[k] : savedScore(day, u.key, h) ?? par; return Math.min(v, capOf(u)); };
   const isSet = (u) => ui.kvals[day + '|' + u.key + '|' + h] != null || savedScore(day, u.key, h) != null;
   const yards = [...new Set(g.units.map(u => holeYards(day, u.pid, h)).filter(Boolean))];
   const thruLine = (u) => {
     let gross = 0, net = 0, parT = 0, n = 0;
-    for (let k = 0; k < 18; k++) { const s = k === h ? (isSet(u) ? val(u) : null) : savedScore(day, u.key, k); if (s == null) continue; gross += s; net += s - pops(u.ph, course.si[k]); parT += course.pars[k]; n++; }
+    for (let k = 0; k < 18; k++) { let s = k === h ? (isSet(u) ? val(u) : null) : savedScore(day, u.key, k); if (s == null) continue; s = Math.min(s, maxFor(S, day, u.ph, k)); gross += s; net += s - pops(u.ph, course.si[k]); parT += course.pars[k]; n++; }
     return n ? `Thru ${n}: ${gross} · net ${toParStr(net - parT)}` : '';
   };
+  const rule = maxRule(S, day);
   const rows = g.units.map(u => {
-    const p = pops(u.ph, si), v = val(u), d = v - par;
-    const word = d <= -2 ? 'Eagle' : d === -1 ? 'Birdie' : d === 0 ? 'Par' : d === 1 ? 'Bogey' : d === 2 ? 'Double' : '+' + d;
-    return `<div class="kp-row">
-      <div class="kp-who"><b>${esc(u.name)}</b><span>${p > 0 ? '<i class="kp-pop">' + '●'.repeat(p) + '</i> gets ' + p + ' stroke' + (p > 1 ? 's' : '') : p < 0 ? 'gives a stroke' : 'no stroke'} · ${esc(u.sub)}</span><span class="kp-run">${thruLine(u)}</span></div>
+    const p = pops(u.ph, si), v = val(u), d = v - par, cap = capOf(u), atMax = rule.type !== 'none' && v >= cap;
+    const word = atMax ? 'Max' : d <= -2 ? 'Eagle' : d === -1 ? 'Birdie' : d === 0 ? 'Par' : d === 1 ? 'Bogey' : d === 2 ? 'Double' : '+' + d;
+    const outAsk = ui.kout === u.key ? `<div class="kp-out-ask"><span>Mark <b>${esc(u.name)}</b> out for the rest of the round? He gets the max on this hole and every hole after it.</span><span class="row"><button class="btn" data-act="kout-no">Cancel</button><button class="btn danger armed" data-act="kout-yes" data-key="${esc(u.key)}">Yes, he's out</button></span></div>` : '';
+    return `<div class="kp-row ${atMax ? 'atmax' : ''}">
+      <div class="kp-who"><b>${esc(u.name)}</b><span>${p > 0 ? '<i class="kp-pop">' + '●'.repeat(p) + '</i> gets ' + p + ' stroke' + (p > 1 ? 's' : '') : p < 0 ? 'gives a stroke' : 'no stroke'} · ${esc(u.sub)}${rule.type !== 'none' ? ' · max ' + cap : ''}</span><span class="kp-run">${thruLine(u)}</span>
+        <span class="kp-mini"><button class="link" data-act="kmax" data-key="${esc(u.key)}">MAX</button>${FORMATS[dc.format].scramble ? '' : `<button class="link" data-act="kout" data-key="${esc(u.key)}">Out</button>`}</span></div>
       <div class="kp-ctl">
         <button class="kp-btn" data-act="kminus" data-key="${esc(u.key)}" aria-label="One less for ${esc(u.name)}">−</button>
         <div class="kp-score ${isSet(u) ? '' : 'default'} ${d < 0 ? 'u' : d > 0 ? 'o' : ''}"><b>${v}</b><small>${word}${p > 0 ? ' · net ' + (v - p) : ''}</small></div>
-        <button class="kp-btn" data-act="kplus" data-key="${esc(u.key)}" aria-label="One more for ${esc(u.name)}">+</button>
-      </div></div>`;
+        <button class="kp-btn" data-act="kplus" data-key="${esc(u.key)}" ${v >= cap ? 'disabled' : ''} aria-label="One more for ${esc(u.name)}">+</button>
+      </div>${outAsk}</div>`;
   }).join('');
+  // Closest to the pin on par 3s with a contest
+  const cc = ctpContest(day, h);
+  let ctp = '';
+  if (cc) {
+    ui.kctp = ui.kctp || {};
+    const ck = day + '|' + cc.id + '|' + g.n, draft = ui.kctp[ck] || ctpSaved(day, cc.id, g.n) || {};
+    const opts = `<option value="">Nobody on the green</option>` + g.units.flatMap(u => FORMATS[dc.format].scramble ? (S.teams[day].find(t => t.id === u.key) || { pids: [] }).pids : [u.key]).filter(p => S.players[p]).map(p => `<option value="${p}" ${draft.pid === p ? 'selected' : ''}>${esc(S.players[p].name)}</option>`).join('');
+    ctp = `<div class="kp-ctp"><b>Closest to the pin · ${fmt$(cc.amt)}</b><span class="muted small">Who in your group is closest, and how far? The app keeps the best one across all groups.</span>
+      <div class="row"><select id="kctp-p" data-kctp="pid">${opts}</select>
+      <label class="kp-dist"><input id="kctp-ft" data-kctp="ft" inputmode="numeric" value="${esc(draft.ft ?? '')}" placeholder="0"> ft</label>
+      <label class="kp-dist"><input id="kctp-in" data-kctp="inch" inputmode="numeric" value="${esc(draft.inch ?? '')}" placeholder="0"> in</label></div></div>`;
+  }
+  const flagged = g.units.filter(u => val(u) <= par - 2);
+  const flagAsk = ui.kflag === h && flagged.length ? `<div class="banner"><p><b>Double-check:</b> ${flagged.map(u => esc(u.name) + ' ' + val(u)).join(', ')} on a par ${par}. That right?</p><div class="row"><button class="btn" data-act="kflag-no">Let me fix it</button><button class="btn primary" data-act="ksave" data-ok="1">Yes, save it</button></div></div>` : '';
   const dots = course.pars.map((pp, k) => { const done = g.units.every(u => savedScore(day, u.key, k) != null); return `<button class="kp-dot ${k === h ? 'on' : ''} ${done ? 'done' : ''}" data-act="khole" data-h="${k}" aria-label="Hole ${k + 1}">${k + 1}</button>`; }).join('');
-  return `<div class="row between"><button class="btn" data-act="kback">← Groups</button><span class="muted small">${DAY_LABEL[day]} · ${esc(course.name)} · Group ${g.n}</span></div>
+  const allDone = groupThru(day, g) === 18;
+  return head + `
   <section class="panel kp">
     <div class="kp-dots">${dots}</div>
     <div class="kp-head">${holeSvg(par, h, yards[0])}
       <div class="kp-meta"><div class="kp-hn">Hole ${h + 1}</div><div class="kp-par">Par ${par}</div>
         <div class="muted">${yards.length ? yards.map(y => y + ' yds').join(' / ') + ' · ' : ''}Handicap ${si}</div>
-        <div class="muted small">Scores start at par. Tap − or + to change, then save.</div>
+        <div class="muted small">Scores start at par. Tap − or + to change, then save.${rule.type !== 'none' ? ' Max is ' + MAX_RULES[rule.type].toLowerCase() + (rule.type === 'fixed' ? ' (' + rule.value + ')' : '') + '.' : ''}</div>
         <a class="btn kp-map" href="${courseMapUrl(dc.course)}" target="_blank" rel="noopener">Course map ↗</a></div></div>
     <div class="kp-rows">${rows}</div>
+    ${ctp}${flagAsk}
     <div class="kp-nav">
       ${h > 0 ? `<button class="btn" data-act="kprev">← Hole ${h}</button>` : ''}
-      <button class="btn primary kp-next" data-act="ksave">${h === 17 ? 'Save hole 18 · finish' : 'Save · go to hole ' + (h + 2) + ' →'}</button>
+      <button class="btn primary kp-next" data-act="ksave">${h === 17 ? 'Save hole 18 · review card' : 'Save · go to hole ' + (h + 2) + ' →'}</button>
     </div>
+    ${allDone ? '<div class="row"><button class="btn" data-act="kreview">Review the full card</button></div>' : ''}
     <div class="muted small">Hole drawing is an illustration, not the actual layout.</div>
   </section>`;
 }
 
+function reviewCard(day, g, course) {
+  const rows = g.units.map(u => {
+    const arr = cappedCard(S, day, u.key, u.ph);
+    const sumR = (a, b) => arr.slice(a, b).reduce((s, v) => s + (v || 0), 0);
+    const missing = arr.filter(v => v == null).length;
+    const gross = sumR(0, 18), net = gross - u.ph;
+    return `<tr><td><b>${esc(u.name)}</b></td><td class="num">${sumR(0, 9)}</td><td class="num">${sumR(9, 18)}</td><td class="num"><b>${gross}</b></td><td class="num">${missing ? '<span class="bad">' + missing + ' missing</span>' : net + ' <span class="muted small">' + toParStr(net - course.pars.reduce((a, b) => a + b, 0)) + '</span>'}</td></tr>`;
+  }).join('');
+  const holes = [...Array(18).keys()];
+  const grid = `<div class="tbl-wrap"><table class="card"><thead><tr><th>Hole</th>${holes.map(h => `<th>${h + 1}</th>`).join('')}</tr></thead><tbody>
+    <tr class="meta"><td>Par</td>${course.pars.map(p => `<td>${p}</td>`).join('')}</tr>
+    ${g.units.map(u => { const arr = cappedCard(S, day, u.key, u.ph); return `<tr><td>${esc(u.name.split(' ').slice(-1)[0])}</td>${arr.map((v, h) => `<td><button class="kp-cell" data-act="khole-fix" data-h="${h}">${v == null ? '–' : v}</button></td>`).join('')}</tr>`; }).join('')}
+  </tbody></table></div>`;
+  return `<section class="panel"><h2>Check the card</h2><div class="muted small">Compare with the paper card. Tap any score to fix that hole.</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="num">Out</th><th class="num">In</th><th class="num">Gross</th><th class="num">Net</th></tr></thead><tbody>${rows}</tbody></table></div>
+    ${grid}
+    <div class="row"><button class="btn primary" data-act="kdone">Looks right · done</button></div></section>`;
+}
+
 async function keepAction(act, b) {
   const day = ui.kday;
-  if (act === 'kday') { ui.kday = b.dataset.day; ui.kgroup = null; ui.khole = null; return render(); }
-  if (act === 'kgroup') { ui.kgroup = Number(b.dataset.n); ui.khole = null; render(); window.scrollTo(0, 0); return; }
-  if (act === 'kback') { ui.kgroup = null; ui.khole = null; return render(); }
-  if (act === 'khole') { ui.khole = Number(b.dataset.h); return render(); }
-  if (act === 'kprev') { ui.khole = Math.max(0, ui.khole - 1); return render(); }
+  if (act === 'kday') { ui.kday = b.dataset.day; ui.kgroup = null; ui.khole = null; ui.kpick = false; ui.kreview = false; return render(); }
+  if (act === 'kgroup') { ui.kgroup = Number(b.dataset.n); rememberGroup(day, ui.kgroup); ui.khole = null; ui.kpick = false; ui.kreview = false; render(); window.scrollTo(0, 0); return; }
+  if (act === 'kback') { ui.kgroup = null; ui.khole = null; ui.kpick = true; ui.kreview = false; return render(); }
+  if (act === 'khole' || act === 'khole-fix') { ui.khole = Number(b.dataset.h); ui.kreview = false; ui.kflag = null; render(); window.scrollTo(0, 0); return; }
+  if (act === 'kprev') { ui.khole = Math.max(0, ui.khole - 1); ui.kflag = null; return render(); }
+  if (act === 'kreview') { ui.kreview = true; render(); window.scrollTo(0, 0); return; }
+  if (act === 'kdone') { ui.kreview = false; ui.kgroup = null; ui.khole = null; ui.kpick = true; toast('Card done. Thanks!'); return render(); }
+  if (act === 'kout-no') { ui.kout = null; return render(); }
+  if (act === 'kflag-no') { ui.kflag = null; return render(); }
   const g = keepGroups(day).find(x => x.n === ui.kgroup); if (!g) return render();
   const h = ui.khole, course = S.config.courses[S.config.days[day].course], par = course.pars[h];
-  const cur = (key) => { const k = day + '|' + key + '|' + h; return ui.kvals[k] != null ? ui.kvals[k] : savedScore(day, key, h) ?? par; };
+  const unit = (key) => g.units.find(u => u.key === key);
+  const cur = (key) => { const k = day + '|' + key + '|' + h; const v = ui.kvals[k] != null ? ui.kvals[k] : savedScore(day, key, h) ?? par; return Math.min(v, maxFor(S, day, unit(key).ph, h)); };
   if (act === 'kminus' || act === 'kplus') {
-    const key = b.dataset.key, k = day + '|' + key + '|' + h;
-    ui.kvals[k] = Math.max(1, Math.min(15, cur(key) + (act === 'kplus' ? 1 : -1)));
+    const key = b.dataset.key, k = day + '|' + key + '|' + h, cap = maxFor(S, day, unit(key).ph, h);
+    ui.kvals[k] = Math.max(1, Math.min(cap, cur(key) + (act === 'kplus' ? 1 : -1)));
     return render();
   }
+  if (act === 'kmax') { const key = b.dataset.key; ui.kvals[day + '|' + key + '|' + h] = maxFor(S, day, unit(key).ph, h); return render(); }
+  if (act === 'kout') { ui.kout = b.dataset.key; return render(); }
+  const save = (out) => { writeDoc('scores_' + day, { h: out }, true); };      // not awaited: works offline, sends when back online
+  if (act === 'kout-yes') {
+    const u = unit(b.dataset.key); ui.kout = null;
+    const arr = ((S.scores[day] && S.scores[day][u.key]) || new Array(18).fill(null)).slice(); while (arr.length < 18) arr.push(null);
+    for (let k = h; k < 18; k++) if (arr[k] == null || k === h) arr[k] = maxFor(S, day, u.ph, k);
+    S.scores[day] = S.scores[day] || {}; S.scores[day][u.key] = arr;
+    save({ [u.key]: arr }); toast(u.name + ' marked out. Max scores entered for the rest of the round.'); return render();
+  }
   if (act === 'ksave') {
+    if (!b.dataset.ok && g.units.some(u => cur(u.key) <= par - 2)) { ui.kflag = h; return render(); }
+    ui.kflag = null;
     const out = {};
     g.units.forEach(u => {
       const arr = ((S.scores[day] && S.scores[day][u.key]) || new Array(18).fill(null)).slice();
@@ -1245,12 +1365,28 @@ async function keepAction(act, b) {
       arr[h] = cur(u.key); out[u.key] = arr;
       delete ui.kvals[day + '|' + u.key + '|' + h];
     });
-    await writeDoc('scores_' + day, { h: out }, true);
+    S.scores[day] = Object.assign({}, S.scores[day], out);          // show it right away, even offline
+    save(out);
+    const cc = ctpContest(day, h);
+    if (cc) {
+      const ck = day + '|' + cc.id + '|' + g.n, d = (ui.kctp && ui.kctp[ck]) || ctpSaved(day, cc.id, g.n);
+      if (d) writeDoc('extras', { [day]: { ctp: { [cc.id]: { ['g' + g.n]: d.pid ? { pid: d.pid, ft: Number(d.ft) || 0, inch: Number(d.inch) || 0 } : null } } } }, true);
+      if (ui.kctp) delete ui.kctp[ck];
+    }
     if (h < 17) { ui.khole = h + 1; toast('Hole ' + (h + 1) + ' saved.'); }
-    else { toast('Hole 18 saved. Card complete.'); ui.kgroup = null; ui.khole = null; }
+    else { ui.kreview = true; toast('Hole 18 saved. Check the card.'); }
     render(); window.scrollTo(0, 0); return;
   }
 }
+// CTP fields on the hole screen keep a draft until the hole is saved.
+document.addEventListener('input', (e) => {
+  const f = e.target.dataset && e.target.dataset.kctp; if (!f || !ui.kgroup) return;
+  const cc = ctpContest(ui.kday, ui.khole); if (!cc) return;
+  ui.kctp = ui.kctp || {};
+  const ck = ui.kday + '|' + cc.id + '|' + ui.kgroup, d = ui.kctp[ck] = ui.kctp[ck] || Object.assign({}, ctpSaved(ui.kday, cc.id, ui.kgroup) || {});
+  d[f] = f === 'pid' ? e.target.value : e.target.value.replace(/[^0-9]/g, '');
+});
+document.addEventListener('change', (e) => { if (e.target.dataset && e.target.dataset.kctp === 'pid') e.target.dispatchEvent(new Event('input', { bubbles: true })); });
 
 
 const $ = (s) => document.querySelector(s);
@@ -1317,7 +1453,9 @@ async function submitPin() {
     catch (x) { return toast("That PIN didn't work. Check with the host."); }
   }
   canWrite = true; ui.pinOpen = false;
-  toast('Scorekeeper mode is on for this device.'); render();
+  if (ui.mode === 'admin' && role !== 'admin') { setMode('keeper'); toast("That's the scorekeeper PIN, so you're set up to keep score. Admin needs the admin PIN."); }
+  else toast(role === 'admin' ? 'Admin is on for this device.' : 'Scorekeeper is on for this device.');
+  render();
 }
 function exportTrip() {
   const out = {}; DOC_IDS.forEach(id => { if (docs[id]) out[id] = docs[id]; });
@@ -1338,7 +1476,7 @@ const saveConfig = (cfg) => writeDoc('config', { cfg }, false);
 // ---- render ----
 function render() {
   const st = $('#status');
-  st.textContent = mode === 'loading' ? 'Loading' : backend === 'local' ? 'Offline · this device only' : (canWrite ? 'Live · Scorekeeper' : mode === 'sample' ? 'Sample data' : 'Live · watching');
+  st.textContent = (ui.pending || (navigator.onLine === false && backend === 'db')) ? (navigator.onLine === false ? 'No signal · scores saved, will send' : 'Sending scores…') : mode === 'loading' ? 'Loading' : backend === 'local' ? 'Offline · this device only' : (role === 'admin' ? 'Live · Admin' : canWrite ? 'Live · Scorekeeper' : mode === 'sample' ? 'Sample data' : 'Live · watching');
   document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === ui.tab)));
   if (mode === 'loading') return;
   // keep focus + typed text across re-renders
@@ -1347,13 +1485,14 @@ function render() {
   const allowed = MODE_TABS[ui.mode] || MODE_TABS.viewer;
   document.querySelectorAll('#tabs button').forEach(b => { b.hidden = !allowed.includes(b.dataset.tab); });
   if (!allowed.includes(ui.tab)) ui.tab = allowed[0];
-  const ms = $('#modeSwitch'); ms.hidden = !ui.mode; ms.textContent = ui.mode === 'keeper' ? 'Switch to viewing' : 'Keep score';
+  const ms = $('#modeSwitch'); ms.hidden = !ui.mode || ui.tv; ms.textContent = ({ viewer: 'Viewing', keeper: 'Scorekeeper', admin: 'Admin' }[ui.mode] || '') + ' · change';
   if (!ui.mode) {
     document.querySelectorAll('#tabs button').forEach(b => { b.hidden = true; });
     $('#main').innerHTML = `<section class="panel welcome"><h2>How are you using the app?</h2><div class="welcome-opts">
-      <button class="welcome-btn" data-act="mode-view"><b>I'm watching</b><span>Live scoreboard, results and money</span></button>
-      <button class="welcome-btn primary" data-act="mode-keep"><b>I'm keeping score</b><span>Enter scores for my group, hole by hole</span></button></div>
-      <p class="muted small">You can switch any time with the button at the top.</p></section>`;
+      <button class="welcome-btn" data-act="mode-view"><b>View only</b><span>Live scoreboard, results and money. No PIN.</span></button>
+      <button class="welcome-btn primary" data-act="mode-keep"><b>Scorekeeper</b><span>Enter scores for my group, hole by hole. Scorekeeper PIN.</span></button>
+      <button class="welcome-btn" data-act="mode-admin"><b>Admin</b><span>Players, teams, courses, payouts and everything else. Admin PIN.</span></button></div>
+      <p class="muted small">You can change this any time from the link at the top.</p></section>`;
     return;
   }
   document.body.classList.toggle('tv-mode', !!ui.tv && ui.tab === 'board');
@@ -1384,14 +1523,15 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); wind
 
 function banner() {
   let out = (ui.updateReady ? `<div class="banner"><p><b>A newer version is ready.</b></p><div class="row"><button class="btn primary" data-act="reload">Update now</button></div></div>` : '') + installTip();
-  if (ui.pinOpen && !isAdmin()) out += `<section class="banner" role="dialog" aria-labelledby="pin-h"><p id="pin-h">${canWrite ? '<b>Admin PIN.</b> Needed to change players, teams, setup and payouts.' : '<b>Scorekeeper PIN.</b> Enter it once and this phone or computer can make changes for the rest of the trip.'}</p>
+  if (ui.pinOpen && (ui.mode === 'admin' ? !isAdmin() : !canWrite)) out += `<section class="banner" role="dialog" aria-labelledby="pin-h"><p id="pin-h">${ui.mode === 'admin' ? '<b>Admin PIN.</b> Unlocks players, teams, courses, payouts and everything else.' : '<b>Scorekeeper PIN.</b> Enter it once and this phone can keep score for the rest of the trip.'}</p>
     <form class="row" data-form="pin"><input id="pin-in" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="PIN" style="width:110px"><button class="btn primary" type="submit">Unlock</button><button class="btn" type="button" data-act="pin-cancel">Cancel</button></form></section>`;
   if (ui.importData) out += `<section class="banner" role="alertdialog" aria-labelledby="imp-h"><p id="imp-h"><b>Are you sure?</b> Importing <b>${esc(ui.importName || 'this file')}</b> replaces all players, teams, scores and setup with what's in the file.</p>
     <div class="row"><button class="btn" data-act="imp-cancel">Cancel</button><button class="btn primary" data-act="imp-yes">Yes, import it</button></div></section>`;
   if (mode === 'sample') return out + `<div class="banner"><p><b>You're looking at a made-up sample trip</b> (32 fake players, all three rounds scored) so you can see how results and payouts come out.${canWrite ? ' Start your real trip, or import a trip file.' : ' The host will load the real trip soon.'}</p>
     <div class="row">${isAdmin() ? `<button class="btn primary" data-act="start">Start my trip</button><label class="btn" for="imp-file">Import a trip file</label><input type="file" id="imp-file" accept=".json,application/json" hidden><button class="btn" data-act="load-sample">Save sample to test with</button>` : `<button class="btn" data-act="pin-open">Scorekeeper? Enter PIN</button>`}</div></div>`;
+  if (ui.mode === 'admin' && !isAdmin() && !ui.pinOpen) return out + `<div class="banner"><p>Admin tools are locked on this device.</p><div class="row"><button class="btn" data-act="pin-open">Enter admin PIN</button></div></div>`;
   if (canWrite && !isAdmin() && !ui.pinOpen && ['players', 'setup'].includes(ui.tab)) return out + `<div class="banner"><p>You're signed in as a scorekeeper. Changes on this page need the admin PIN.</p><div class="row"><button class="btn" data-act="pin-open">Enter admin PIN</button></div></div>`;
-  if (!canWrite && !ui.pinOpen) return out + `<div class="banner"><p>Watching live. Results update as cards are entered.</p><div class="row"><button class="btn" data-act="pin-open">Scorekeeper? Enter PIN</button></div></div>`;
+  if (!canWrite && !ui.pinOpen && ui.mode !== 'viewer') return out + `<div class="banner"><p>Enter your PIN to make changes.</p><div class="row"><button class="btn" data-act="pin-open">Enter PIN</button></div></div>`;
   return out;
 }
 const dis = () => (mode !== 'live' || !isAdmin()) ? 'disabled' : '';
@@ -1427,7 +1567,7 @@ function viewResults() {
   const skinLine = (s) => s.winners.map(w => `<div class="skin"><span><span class="hole">#${s.hole}</span>${esc(w.name)} <span class="muted small">${s.gross ? 'gross' : 'net'} ${s.score}${!s.gross && w.grossScore !== s.score ? ' (gross ' + w.grossScore + ')' : ''} on par ${s.par}${s.worth > 1 ? ' · worth ' + s.worth + ' skins with carryover' : ''}${s.winners.length === 2 ? ' · half skin, tied' : ''}</span>${s.final ? '' : ' <span class="pill live">pending</span>'}</span><span class="money">${fmt$(w.amt)}</span></div>`).join('');
   const carryNote = r.carries.length ? `<div class="muted small">Carried: ${r.carries.map(c => '#' + c.hole + ' (' + c.tied + '-way tie at ' + c.score + ')').join(', ')}${r.carryOut ? `. ${r.carryOut} skin${r.carryOut > 1 ? 's' : ''} still carrying after the last hole scored.` : '.'}</div>` : '';
   const skins = (r.skins.length ? r.skins.map(skinLine).join('') : `<div class="muted">No skins won yet.</div>`) + carryNote;
-  const contests = r.contests.length ? r.contests.map(c => `<div class="skin"><span><span class="hole">${c.type} #${c.hole}</span>${c.winner ? esc(S.players[c.winner].name) : '<span class="muted">Not entered</span>'}</span><span class="money ${c.winner ? '' : 'zero'}">${fmt$(c.amt)}</span></div>`).join('') : `<div class="muted">None set for this day.</div>`;
+  const contests = r.contests.length ? r.contests.map(c => `<div class="skin"><span><span class="hole">${c.type} #${c.hole}</span>${c.winner ? esc(S.players[c.winner].name) + (c.dist ? ' <span class="muted small">' + c.dist + '</span>' : '') : '<span class="muted">Not entered</span>'}</span><span class="money ${c.winner ? '' : 'zero'}">${fmt$(c.amt)}</span></div>`).join('') : `<div class="muted">None set for this day.</div>`;
   const money = Object.entries(r.money).sort((a, b) => b[1].total - a[1].total).map(([pid, m]) =>
     `<tr><td>${esc(S.players[pid].name)}</td><td class="wrap-cell muted small">${m.items.map(i => esc(i.why) + ' ' + fmt$(i.amt)).join(' · ')}</td><td class="num money">${fmt$(m.total)}</td></tr>`).join('');
   const paidOut = Object.values(r.money).reduce((s, m) => s + m.total, 0);
@@ -1463,11 +1603,11 @@ function viewPlayerScores() {
   const sunBy = {};
   sun.standings.forEach(t => t.pids.forEach(pid => { sunBy[pid] = t; }));
   const dayCell = (pid, d) => {
-    const card = (S.scores[d] && S.scores[d][pid]) || [];
-    const holes = card.filter(v => v != null && v !== '').length;
+    const ph = computeDayPH(pid, d);
+    const card = cappedCard(S, d, pid, ph);
+    const holes = card.filter(v => v != null).length;
     if (!holes) return { g: null, n: null, holes: 0 };
     const g = card.reduce((s, v) => s + (Number(v) || 0), 0);
-    const ph = computeDayPH(pid, d);
     if (holes === 18) return { g, n: g - ph, ph, holes, tp: g - ph - parOf(d) };
     const course = S.config.courses[S.config.days[d].course];
     let net = 0, par = 0; card.forEach((v, h) => { if (v != null && v !== '') { net += Number(v) - pops(ph, course.si[h]); par += course.pars[h]; } });
@@ -1618,6 +1758,12 @@ function viewPlayers() {
 }
 
 // ---- setup ----
+function maxControls(scope, rule, allowTrip) {
+  const t = rule && rule.type ? rule.type : (allowTrip ? 'trip' : 'netDoublePar');
+  const opts = (allowTrip ? [['trip', 'Same as trip setting']] : []).concat(Object.entries(MAX_RULES));
+  return `<label class="f">Max score per hole<select id="mx-${scope}" data-max="${scope}" data-mfield="type" ${dis()}>${opts.map(([k, v]) => `<option value="${k}" ${t === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+    ${t === 'fixed' ? `<label class="f">Max<input id="mxv-${scope}" data-max="${scope}" data-mfield="value" data-num="1" value="${esc(rule.value || 10)}" style="width:70px" ${dis()}></label>` : ''}`;
+}
 function viewSetup() {
   const c = S.config, n = Object.keys(S.players).length, pot = n * (Number(c.buyIn) || 0);
   let allocated = 0;
@@ -1640,6 +1786,10 @@ function viewSetup() {
       <div><div class="muted small" style="margin-bottom:6px">Team places paid (${places.length}) · ${fmt$(pTot)}, split evenly among teammates</div>
         <div class="placelist">${places.map((v, i) => `<label class="f">${ordinal(i + 1)}<input id="pl-${day}-${i}" data-place="${i}" data-day="${day}" data-num="1" value="${numFmt(v)}" ${dis()}></label>`).join('')}
         ${mode === 'live' && isAdmin() ? `<button class="btn" data-act="add-place" data-day="${day}">+ Place</button>${places.length ? `<button class="btn" data-act="rm-place" data-day="${day}">− Place</button>` : ''}` : ''}</div></div>
+      <div class="row">
+        <label class="f">Date played<input type="date" id="d-${day}-date" data-dfield="date" data-day="${day}" value="${esc(dc.date || '')}" ${dis()}></label>
+        ${maxControls(day, dc.maxScore, true)}
+      </div>
       <div class="row">
         <label class="f">Skins pot<input id="d-${day}-skinsPot" data-dfield="skinsPot" data-day="${day}" data-num="1" value="${numFmt(dc.skinsPot)}" style="width:90px" ${dis()}></label>
         <label class="f">Skins scored<select id="d-${day}-skinsType" data-dfield="skinsType" data-day="${day}" ${dis()}>${Object.entries(SKIN_LABEL).map(([k, v]) => `<option value="${k}" ${(dc.skinsType || 'netGrossP3') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
@@ -1687,6 +1837,7 @@ function viewSetup() {
       <div class="kpis"><div class="kpi"><div class="v">${n}</div><div class="l">Players</div></div><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(allocated)}</div><div class="l">Allocated</div></div><div class="kpi"><div class="v ${Math.abs(left) < 0.01 ? 'ok' : 'bad'}">${left >= 0 ? '' : '−'}${fmt$(Math.abs(left))}</div><div class="l">${left >= 0 ? 'Unallocated' : 'Over the pot'}</div></div></div></div>
     <div class="row">
       <label class="f">Buy-in per player<input id="buyIn" data-gfield="buyIn" data-num="1" value="${numFmt(c.buyIn)}" style="width:100px" ${dis()}></label>
+      ${maxControls('trip', c.maxScore || { type: 'netDoublePar' }, false)}
       <label class="f">Ties for a paid place<select id="tieBreak" data-gfield="tieBreak" ${dis()}><option value="split" ${c.tieBreak !== 'cards' ? 'selected' : ''}>Split the money</option><option value="cards" ${c.tieBreak === 'cards' ? 'selected' : ''}>Match cards (back 9, 6, 3, 18th)</option></select></label>
     </div>
     ${mode === 'live' && isAdmin() ? (ui.tplAsk ? `<div class="banner"><p><b>Are you sure?</b> This replaces every payout amount, the skins pots and the closest-to-pin list with the 2024-style split for 32 players ($3,360). Courses, players, teams and scores stay.</p><div class="row"><button class="btn" data-act="tpl-no">Cancel</button><button class="btn primary" data-act="tpl-yes">Yes, use 2024-style payouts</button></div></div>`
@@ -1705,7 +1856,7 @@ function viewSetup() {
 // ---- events ----
 function arm(key) { ui.armed = key; clearTimeout(arm.t); arm.t = setTimeout(() => { ui.armed = null; render(); }, 4000); }
 
-document.getElementById('modeSwitch').addEventListener('click', () => { setMode(ui.mode === 'keeper' ? 'viewer' : 'keeper'); render(); if (ui.mode === 'keeper' && !canWrite) askPin(); window.scrollTo(0, 0); });
+document.getElementById('modeSwitch').addEventListener('click', () => { setMode(null); ui.pinOpen = false; render(); window.scrollTo(0, 0); });
 document.getElementById('tabs').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-tab]'); if (!b) return;
   ui.tab = b.dataset.tab; try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {}
@@ -1717,7 +1868,8 @@ document.getElementById('main').addEventListener('click', async (e) => {
   const act = b.dataset.act, day = b.dataset.day;
   if (act === 'mode-view') { setMode('viewer'); return render(); }
   if (act === 'mode-keep') { setMode('keeper'); render(); if (!canWrite) askPin(); return; }
-  if (['kday', 'kgroup', 'kback', 'khole', 'kprev', 'kminus', 'kplus', 'ksave'].includes(act)) return keepAction(act, b);
+  if (act === 'mode-admin') { setMode('admin'); render(); if (!isAdmin()) askPin(); return; }
+  if (['kday', 'kgroup', 'kback', 'khole', 'khole-fix', 'kprev', 'kminus', 'kplus', 'kmax', 'kout', 'kout-yes', 'kout-no', 'kflag-no', 'ksave', 'kreview', 'kdone'].includes(act)) return keepAction(act, b);
   if (act === 'rday') { ui.rday = day; return render(); }
   if (act === 'psort') { ui.psort = b.dataset.k; return render(); }
   if (act === 'reload') { location.reload(); return; }
@@ -1776,17 +1928,24 @@ document.getElementById('main').addEventListener('click', async (e) => {
   if (act === 'save-next' || act === 'save-card') {
     const d = ui.sday, h = {};
     Object.keys(ui.drafts).forEach(k => { const [dd, key] = k.split('|'); if (dd === d) h[key] = ui.drafts[k].map(v => v === '' ? null : Number(v)); });
-    const bad = Object.values(h).some(a => a.some(v => v != null && (isNaN(v) || v < 1 || v > 15)));
-    if (bad) return toast('Scores must be whole numbers from 1 to 15.');
+    const bad = Object.values(h).some(a => a.some(v => v != null && (isNaN(v) || v < 1 || v > 20)));
+    if (bad) return toast('Scores must be whole numbers from 1 to 20.');
+    let capped = 0;
+    const fmtD = FORMATS[S.config.days[d].format];
+    for (const [key, arr] of Object.entries(h)) {
+      const ph = fmtD.scramble ? scrambleTeamHcp(S, (S.teams[d].find(t => t.id === key) || { pids: [] }).pids, d) : computeDayPH(key, d);
+      h[key] = arr.map((v, hole) => { if (v == null) return v; const m = maxFor(S, d, ph, hole); if (v > m) { capped++; return m; } return v; });
+    }
+    if (capped) toast(capped + (capped === 1 ? ' score was' : ' scores were') + ' above the max and saved at the max.');
     Object.keys(ui.drafts).forEach(k => { if (k.startsWith(d + '|')) delete ui.drafts[k]; });
     await writeDoc('scores_' + d, { h }, true);
-    if (act === 'save-next') {
+    if (act === 'save-next' && !capped) {
       const ts = teamsFor(d), i = ts.findIndex(t => t.id === ui.team);
       const nxt = ts.slice(i + 1).concat(ts.slice(0, i)).find(t => { const keys = FORMATS[S.config.days[d].format].scramble ? [t.id] : t.pids; return keys.some(k => { const c = S.scores[d] && S.scores[d][k]; return !Array.isArray(c) || c.some(v => v == null); }); });
       if (nxt) { ui.team = nxt.id; render(); toast('Card saved. Now Team ' + (ts.indexOf(nxt) + 1) + '.'); const f = document.querySelector('input[data-score]'); if (f) { f.focus(); f.select(); } return; }
       toast('Card saved. Every card for this day is in.'); return render();
     }
-    toast('Card saved.'); return render();
+    if (!capped) toast('Card saved.'); return render();
   }
   if (act === 'bulk-add') {
     const lines = ($('#bulk').value || '').split(/\n+/).map(l => l.trim()).filter(Boolean);
@@ -1893,6 +2052,12 @@ document.getElementById('main').addEventListener('change', async (e) => {
   if (ds.gfield) cfg[ds.gfield] = val;
   else if (ds.dfield) { cfg.days[ds.day][ds.dfield] = val; }
   else if (ds.place != null) cfg.days[ds.day].places[Number(ds.place)] = val;
+  else if (ds.max) {
+    const target = ds.max === 'trip' ? cfg : cfg.days[ds.max];
+    target.maxScore = target.maxScore || { type: ds.max === 'trip' ? 'netDoublePar' : 'trip' };
+    target.maxScore[ds.mfield] = val;
+    if (ds.mfield === 'type' && val === 'fixed' && !target.maxScore.value) target.maxScore.value = 10;
+  }
   else if (ds.sg) { const dd = cfg.days[ds.day]; dd.side = dd.side || {}; (dd.side[ds.sg] = dd.side[ds.sg] || [])[Number(ds.i)] = val; }
   else if (ds.wplace != null) { cfg.weekend = cfg.weekend || { places: [] }; cfg.weekend.places[Number(ds.wplace)] = val; }
   else if (ds.contest != null) { const c = cfg.days[ds.day].contests[Number(ds.contest)]; c[ds.cfield] = ds.cfield === 'hole' ? Number(el.value) : val; if (ds.cfield !== 'amt') c.id = c.id || uid('c'); }
@@ -1924,9 +2089,12 @@ async function boot() {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
     db.settings({ ignoreUndefinedProperties: true });
+    // Keep a copy on the phone so scores entered with no signal save now and send later.
+    try { db.enablePersistence({ synchronizeTabs: true }).catch(() => {}); } catch (e) {}
   } catch (e) { return fallback(); }
   backend = 'db';
-  db.collection('trip').onSnapshot((snap) => {
+  db.collection('trip').onSnapshot({ includeMetadataChanges: true }, (snap) => {
+    ui.pending = !!(snap.metadata && snap.metadata.hasPendingWrites);
     const next = {}; snap.docs.forEach(d => { next[d.id] = d.data(); });
     docs = next; deriveState(); render();
   }, () => toast('Live updates stopped. Reload the page to reconnect.'));
@@ -1934,10 +2102,11 @@ async function boot() {
     const cred = await firebase.auth().signInAnonymously();
     authId = cred.user.uid;
     const me = await db.collection('editors').doc(authId).get();
-    role = me.exists ? ((me.data() || {}).role || 'score') : null; canWrite = !!role; render();
+    // Devices unlocked before roles existed used the admin PIN, so they count as admin.
+    role = me.exists ? ((me.data() || {}).role || 'admin') : null; canWrite = !!role; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261025231915';
+const APP_VERSION = '20261025235051';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
@@ -1951,6 +2120,8 @@ async function checkForUpdate() {
   } catch (e) {}
 }
 setInterval(checkForUpdate, 180000);
+window.addEventListener('online', () => { try { render(); } catch (e) {} });
+window.addEventListener('offline', () => { try { render(); } catch (e) {} });
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 setTimeout(checkForUpdate, 5000);
 setRotation();
