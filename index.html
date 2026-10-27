@@ -611,11 +611,12 @@ function computeDay(state, day) {
   runGame('teamF9', 'Team front 9', teamEntries(0, 9), parSeg(0, 9) * fmt.balls);
   runGame('teamB9', 'Team back 9', teamEntries(9, 18), parSeg(9, 18) * fmt.balls);
   if (!fmt.scramble) {
-    const indiv = rows.flatMap(r => r.members.map(m => ({ pid: m.pid, net: m.net })));
+    const indiv = rows.flatMap(r => r.members.map(m => ({ pid: m.pid, net: m.net, gross: m.gross })));
     const indEntries = (a, b) => indiv.map(m => ({ key: m.pid, pids: [m.pid], name: state.players[m.pid].name, total: seg(m.net, a, b) }));
     runGame('indF9', 'Individual front 9', indEntries(0, 9), parSeg(0, 9));
     runGame('indB9', 'Individual back 9', indEntries(9, 18), parSeg(9, 18));
     runGame('ind18', 'Individual 18', indEntries(0, 18), coursePar);
+    runGame('ind18g', 'Individual 18 gross', indiv.map(m => ({ key: m.pid, pids: [m.pid], name: state.players[m.pid].name, total: seg(m.gross, 0, 18) })), coursePar);
   }
   if (dc.format === 'bb2') {
     // Foursomes: Friday teams 1 & 2 play together, 3 & 4, and so on. Two best net balls of the four.
@@ -733,6 +734,29 @@ function payoutTemplate2024(courses, contests) {
     },
   };
 }
+// The organizer's 2026 sheet ("Bets for 32 players"): $110 buy-in, $3,520 pot.
+function payoutTemplateOrganizer2026() {
+  return {
+    buyIn: 110,
+    weekend: { places: [200] },
+    days: {
+      fri: { places: [160, 110, 80, 70, 50, 40, 30, 20], skinsPot: 270, side: { teamF9: [50], teamB9: [50], indF9: [25], indB9: [25], ind18: [50, 25], ind18g: [50, 25] } },
+      sat: { places: [280, 200, 100, 40], skinsPot: 270, side: { teamF9: [100], teamB9: [100], indF9: [25], indB9: [25], ind18: [50, 25], ind18g: [50, 25] } },
+      sun: { places: [120, 100, 80, 60], skinsPot: 220, side: { teamF9: [40], teamB9: [40] } },
+    },
+  };
+}
+function applyOrganizer2026(cfg) {
+  const par3 = (pars) => pars.map((p, i) => p === 3 ? i + 1 : null).filter(Boolean);
+  const out = JSON.parse(JSON.stringify(cfg)), t = payoutTemplateOrganizer2026();
+  out.buyIn = t.buyIn; out.weekend = t.weekend;
+  for (const d of ['fri', 'sat', 'sun']) {
+    const keep = out.days[d] || {};
+    out.days[d] = { ...keep, ...t.days[d], contests: par3(out.courses[keep.course].pars).map(h => ({ id: 'c' + h, type: 'CTP', hole: h, amt: 20 })) };
+  }
+  return out;
+}
+
 function applyPayoutTemplate(cfg) {
   const par3 = (pars) => pars.map((p, i) => p === 3 ? i + 1 : null).filter(Boolean);
   const out = JSON.parse(JSON.stringify(cfg));
@@ -866,7 +890,7 @@ function makeSample() {
 (function () {
 const DOC_IDS = ['config', 'players', 'teams', 'scores_fri', 'scores_sat', 'scores_sun', 'extras'];
 const DAY_LABEL = { fri: 'Friday', sat: 'Saturday', sun: 'Sunday' };
-const SIDE_GAMES = [['teamF9', 'Team front 9'], ['teamB9', 'Team back 9'], ['group4', 'Foursome 2 best balls (Friday-style)'], ['indF9', 'Individual front 9'], ['indB9', 'Individual back 9'], ['ind18', 'Individual 18']];
+const SIDE_GAMES = [['teamF9', 'Team front 9'], ['teamB9', 'Team back 9'], ['group4', 'Foursome 2 best balls (Friday-style)'], ['indF9', 'Individual front 9'], ['indB9', 'Individual back 9'], ['ind18', 'Individual 18'], ['ind18g', 'Individual 18 gross']];
 const SKIN_LABEL = { netGrossP3: 'Net, gross on par 3s', net: 'Net', gross: 'Gross' };
 let docs = {};           // raw docs as stored
 let S = null;            // derived state
@@ -974,7 +998,7 @@ function boardDay(day) {
   const skinBy = {};
   r.skins.forEach(s => s.winners.forEach(w => { const k = w.pids.join(','); (skinBy[k] = skinBy[k] || { pids: w.pids, amt: 0 }).amt += w.amt; }));
   const skinList = Object.values(skinBy).sort((a, b) => b.amt - a.amt);
-  const shortGame = { teamF9: 'Front 9', teamB9: 'Back 9', indF9: 'Ind. front', indB9: 'Ind. back', ind18: 'Ind. 18', group4: 'Foursome' };
+  const shortGame = { teamF9: 'Front 9', teamB9: 'Back 9', indF9: 'Ind. front', indB9: 'Ind. back', ind18: 'Ind. 18', ind18g: 'Ind. gross', group4: 'Foursome' };
   // Nines & Individuals as a real table so every row's columns line up on every device.
   const gameLine = (g) => {
     const label = shortGame[g.key] || esc(g.label);
@@ -1752,7 +1776,8 @@ function viewPlayers() {
     return `<section class="panel"><div class="row between"><div><h3>${DAY_LABEL[day]} teams · ${esc(FORMATS[dc.format].label)}</h3><div class="muted small">${note}${unassigned.length ? ` <b class="bad">${unassigned.length} unassigned:</b> ${unassigned.map(p => esc(S.players[p].name)).join(', ')}` : ''}</div></div><div class="row">${tools}</div></div><div class="teamcards">${cards}</div></section>`;
   };
   return `<section class="panel"><div class="row between"><h2>Players · ${ids.length}</h2><span class="muted small">CH = course handicap from index, slope, rating and par for the tees played</span></div>
-    ${isAdmin() && mode === 'live' ? `<label class="f">Add players · one per line: Name, Index<textarea id="bulk" placeholder="Player 1, 12.4&#10;Player 2, 8.1"></textarea></label><div class="row"><button class="btn primary" data-act="bulk-add">Add players</button></div>` : ''}
+    ${isAdmin() && mode === 'live' ? `<label class="f">Add players · one per line: Name, Index<textarea id="bulk" placeholder="Player 1, 12.4&#10;Player 2, 8.1"></textarea></label><div class="row"><button class="btn primary" data-act="bulk-add">Add players</button></div>
+      <label class="f">Update indexes · one per line: Name, Index (matches existing players by name)<textarea id="idxupd" placeholder="Player 1, 12.4"></textarea></label><div class="row"><button class="btn" data-act="idx-update">Update indexes</button></div>` : ''}
     ${ids.length ? `<div class="tbl-wrap"><table><thead><tr><th>Name</th><th>Index</th>${DAYS.map(d => `<th>${DAY_LABEL[d]} tees</th>`).join('')}<th></th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}</section>
   ${DAYS.map(teamSection).join('')}`;
 }
@@ -1841,7 +1866,8 @@ function viewSetup() {
       <label class="f">Ties for a paid place<select id="tieBreak" data-gfield="tieBreak" ${dis()}><option value="split" ${c.tieBreak !== 'cards' ? 'selected' : ''}>Split the money</option><option value="cards" ${c.tieBreak === 'cards' ? 'selected' : ''}>Match cards (back 9, 6, 3, 18th)</option></select></label>
     </div>
     ${mode === 'live' && isAdmin() ? (ui.tplAsk ? `<div class="banner"><p><b>Are you sure?</b> This replaces every payout amount, the skins pots and the closest-to-pin list with the 2024-style split for 32 players ($3,360). Courses, players, teams and scores stay.</p><div class="row"><button class="btn" data-act="tpl-no">Cancel</button><button class="btn primary" data-act="tpl-yes">Yes, use 2024-style payouts</button></div></div>`
-      : `<div class="row"><button class="btn" data-act="tpl-ask">Use 2024-style payouts</button></div>`) : ''}
+      : ui.tplAsk2 ? `<div class="banner"><p><b>Are you sure?</b> This sets the buy-in to $110 and replaces every payout amount, the skins pots and the closest-to-pin list with the organizer's 2026 sheet for 32 players ($3,520). Courses, players, teams and scores stay.</p><div class="row"><button class="btn" data-act="tpl-no">Cancel</button><button class="btn primary" data-act="tpl2-yes">Yes, use the organizer's 2026 payouts</button></div></div>`
+      : `<div class="row"><button class="btn" data-act="tpl2-ask">Use organizer's 2026 payouts</button><button class="btn" data-act="tpl-ask">Use 2024-style payouts</button></div>`) : ''}
     <div class="muted small">Skins: one low score wins the full skin; two tied for low split it (half skin each); three or more tied means no skin and the hole carries to the next. The skins pot is divided by the number of skins won. Course handicap = Index × Slope ÷ 113 + (Rating − Par), rounded.</div></section>
   ${days}
   ${weekendSec}
@@ -1947,6 +1973,21 @@ document.getElementById('main').addEventListener('click', async (e) => {
     }
     if (!capped) toast('Card saved.'); return render();
   }
+  if (act === 'idx-update') {
+    const norm = (s) => String(s).toLowerCase().replace(/[^a-z]/g, '');
+    const byName = {}; Object.entries(S.players).forEach(([pid, p]) => { byName[norm(p.name)] = pid; });
+    const list = {}, missed = [];
+    ($('#idxupd').value || '').split(/\n+/).map(l => l.trim()).filter(Boolean).forEach(l => {
+      const m = l.match(/^(.*?)[,\t ]+(\+?-?\d+(?:\.\d+)?)\s*$/); if (!m) { missed.push(l); return; }
+      const pid = byName[norm(m[1])]; if (!pid) { missed.push(m[1].trim()); return; }
+      list[pid] = { index: m[2].startsWith('+') ? -Number(m[2].slice(1)) : Number(m[2]) };
+    });
+    const n = Object.keys(list).length;
+    if (!n) return toast('No names matched. Use one player per line, like: Beau Adam, 20.0');
+    await writeDoc('players', { list }, true);
+    $('#idxupd').value = missed.join('\n');
+    return toast(`Updated ${n} index${n === 1 ? '' : 'es'}.${missed.length ? ' Not matched (left in the box): ' + missed.join(', ') : ''}`);
+  }
   if (act === 'bulk-add') {
     const lines = ($('#bulk').value || '').split(/\n+/).map(l => l.trim()).filter(Boolean);
     const list = {}; let bad = 0;
@@ -1977,8 +2018,10 @@ document.getElementById('main').addEventListener('click', async (e) => {
   const cfg = clone(S.config);
   if (act === 'add-wplace') { cfg.weekend = cfg.weekend || { places: [] }; cfg.weekend.places.push(0); return saveConfig(cfg); }
   if (act === 'rm-wplace') { cfg.weekend.places.pop(); return saveConfig(cfg); }
-  if (act === 'tpl-ask') { ui.tplAsk = true; return render(); }
-  if (act === 'tpl-no') { ui.tplAsk = false; return render(); }
+  if (act === 'tpl-ask') { ui.tplAsk = true; ui.tplAsk2 = false; return render(); }
+  if (act === 'tpl2-ask') { ui.tplAsk2 = true; ui.tplAsk = false; return render(); }
+  if (act === 'tpl2-yes') { ui.tplAsk2 = false; await saveConfig(applyOrganizer2026(S.config)); toast("Organizer's 2026 payouts applied. Buy-in is now $110."); return render(); }
+  if (act === 'tpl-no') { ui.tplAsk = false; ui.tplAsk2 = false; return render(); }
   if (act === 'tpl-yes') { ui.tplAsk = false; await saveConfig(applyPayoutTemplate(S.config)); toast('2024-style payouts applied.'); return render(); }
   if (act === 'sg-add') { const dd = cfg.days[day]; dd.side = dd.side || {}; (dd.side[b.dataset.sg] = dd.side[b.dataset.sg] || []).push(0); return saveConfig(cfg); }
   if (act === 'sg-rm') { cfg.days[day].side[b.dataset.sg].pop(); return saveConfig(cfg); }
@@ -2106,7 +2149,7 @@ async function boot() {
     role = me.exists ? ((me.data() || {}).role || 'admin') : null; canWrite = !!role; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261025235051';
+const APP_VERSION = '20261027093020';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
