@@ -1666,7 +1666,7 @@ function viewNow() {
   }
   const top = rows.slice(0, 5).map(x => lbRow({ rank: x.pos, name: teamName(x.names), sub: thruWord(x), score: tpStr(x.toPar), scoreCls: scoreCls(x.toPar), money: x.payout, me: me && teamPids(day, x.id).includes(me), act: `data-act="sheet-t" data-day="${day}" data-id="${esc(x.id)}"` })).join('');
   const skins = r.skins.length ? r.skins.slice().reverse().slice(0, 6).map(s => `<div class="li"><span><b>Hole ${s.hole}</b> ${s.winners.map(w => esc(w.name)).join(' and ')}${s.winners.length === 2 ? ' <span class="muted">(split)</span>' : ''}</span><span class="amt">${fmt$(s.winners.reduce((a, w) => a + w.amt, 0))}</span></div>`).join('') : '<div class="muted">No skins won yet.</div>';
-  const summary = r.complete ? daySummary(day) : '';
+  const summary = ''; // wrap-up hidden for now (daySummary)
   return head + pick + mine + `
     <section class="panel board"><div class="row between"><h3>Leaders</h3><button class="btn" data-act="go" data-tab="board">Full leaderboard</button></div>
       <div class="lb">${top || '<div class="muted">No teams yet.</div>'}</div></section>` + summary + `
@@ -1715,7 +1715,7 @@ function viewLeaderboard() {
   const status = r.complete ? '<span class="pill final">Final</span>' : dayStarted(day) ? `<span class="pill live">${r.cardsIn} of ${r.cardsTotal} finished</span>` : '';
   const head = `<section class="panel board"><div class="row between"><div><h2>${DAY_LABEL[day]} · ${esc(r.course.name)}</h2><div class="muted">${esc(r.fmt.label)}. Tap a team to see its card.</div></div>${status}${isLocked(day) ? '<span class="pill">Locked</span>' : ''}</div>
     ${pinned}<div class="lb-hdr"><span>Place</span><span>Team</span><span>Score · won</span></div><div class="lb">${list.join('') || '<div class="muted">No teams set yet.</div>'}</div></section>`;
-  return chips + (r.complete ? daySummary(day) : '') + head + dayDetails(day, r, me) + tvBtn;
+  return chips + head + dayDetails(day, r, me) + tvBtn;
 }
 function dayDetails(day, r, me) {
   const scr = r.fmt.scramble;
@@ -2875,7 +2875,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027202632';
+const APP_VERSION = '20261027204944';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
