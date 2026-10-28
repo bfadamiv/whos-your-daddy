@@ -542,6 +542,36 @@ ul.bul li .amt { font-family: var(--font-display); font-weight: 700; font-size: 
   .ml-day ul.bul { margin: 0; }
   .ml-tip { display: none; }
 }
+
+/* Compare players */
+.cmp-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--pine-soft); border-radius: 999px; padding: 6px 6px 6px 12px; font-weight: 600; }
+.cmp-chip button { border: 0; background: var(--surface); border-radius: 50%; width: 26px; height: 26px; cursor: pointer; color: var(--ink); }
+table.cmp th, table.cmp td { text-align: center; padding: 8px 10px; }
+table.cmp tbody th, table.cmp thead th:first-child { text-align: left; position: sticky; left: 0; z-index: 2; background: var(--surface); font-family: var(--font-body); font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--ink); font-size: 15px; box-shadow: 6px 0 6px -6px rgba(0,0,0,.25); }
+table.cmp thead th { font-size: 15px; color: var(--ink); }
+table.cmp td { font-family: var(--font-display); font-weight: 600; font-size: 18px; }
+table.cmp td.best { background: var(--gold-bg); color: var(--gold); box-shadow: inset 0 -3px 0 var(--gold); }
+table.cmp tr.cmp-sec th { background: var(--pine); color: var(--pine-ink); text-transform: uppercase; letter-spacing: .08em; font-size: 13px; font-family: var(--font-display); position: static; box-shadow: none; }
+.h2h { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.h2h-res { font-family: var(--font-display); font-weight: 700; font-size: 22px; color: var(--pine); }
+table.h2h-t th, table.h2h-t td { text-align: center; padding: 6px 8px; }
+table.h2h-t td { font-family: var(--font-display); font-weight: 600; font-size: 18px; }
+table.h2h-t td small { font-size: 13px; color: var(--muted); font-weight: 500; }
+table.h2h-t td.won { background: var(--pine-soft); color: var(--pine); box-shadow: inset 0 0 0 2px var(--pine); }
+table.h2h-t td.st { font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--muted); text-align: left; }
+
+table.cmp, table.h2h-t { width: 100%; }
+table.cmp thead th { white-space: normal; line-height: 1.15; }
+@media (max-width: 600px) {
+  table.cmp { table-layout: fixed; min-width: calc(112px + var(--n, 2) * 84px); }
+  table.cmp th:first-child { width: 112px; }
+  table.cmp th, table.cmp td { padding: 7px 4px; }
+  table.cmp tbody th { font-size: 14px; white-space: normal; line-height: 1.2; }
+  table.cmp td { font-size: 16px; }
+  table.h2h-t th, table.h2h-t td { padding: 6px 4px; }
+  table.h2h-t thead th { white-space: normal; line-height: 1.15; font-size: 12px; }
+  table.h2h-t td.st { font-size: 12.5px; }
+}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1898,7 +1928,7 @@ function sheetPlayer(pid) {
   const isMe = meId() === pid;
   return `<div class="sh-h"><div><h2>${esc(p.name)}</h2><div class="muted">Index ${Number(p.index || 0).toFixed(1)}</div></div></div>
     ${moneyList(pid, p.name.split(' ')[0])}${parts}
-    <div class="row"><button class="btn" data-act="me-set" data-pid="${isMe ? '' : pid}">${isMe ? 'Stop following me' : 'This is me'}</button></div>
+    <div class="row"><button class="btn primary" data-act="cmp-start" data-pid="${pid}">Compare with…</button><button class="btn" data-act="me-set" data-pid="${isMe ? '' : pid}">${isMe ? 'Stop following me' : 'This is me'}</button></div>
     <div class="muted small">Circles are birdies, squares are bogeys. Dots mark holes where he gets a stroke.</div>`;
 }
 function sheetTeam(day, id) {
@@ -1926,7 +1956,7 @@ function sheetSettings() {
 }
 function sheetHtml() {
   const s = ui.sheet; if (!s) return '';
-  const body = s.t === 'p' ? sheetPlayer(s.pid) : s.t === 'team' ? sheetTeam(s.day, s.id) : s.t === 'settings' ? sheetSettings() : '';
+  const body = s.t === 'p' ? sheetPlayer(s.pid) : s.t === 'team' ? sheetTeam(s.day, s.id) : s.t === 'settings' ? sheetSettings() : s.t === 'cmp' ? sheetCompare(s) : '';
   if (!body) return '';
   return `<div class="sheet-bg" data-act="sheet-close"></div><section class="sheet" role="dialog" aria-modal="true"><button class="sheet-x" data-act="sheet-close" aria-label="Close">✕ Close</button>${body}</section>`;
 }
@@ -2125,6 +2155,85 @@ function drawQrs() {
   const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
   s.onload = go; s.onerror = () => document.querySelectorAll('#qr-keep,#qr-view').forEach(el => { el.textContent = el.dataset.url; });
   document.head.appendChild(s);
+}
+
+// ---------- Compare players ----------
+function playerStats(pid) {
+  const indDays = DAYS.filter(d => !FORMATS[S.config.days[d].format].scramble);
+  const mix = { eagle: 0, birdie: 0, par: 0, bogey: 0, dbl: 0, max: 0, holes: 0 };
+  const byPar = { 3: [], 4: [], 5: [] }, front = [], back = [];
+  const day = {};
+  for (const d of DAYS) {
+    const course = courseOf(d), par = course.pars.reduce((a, b) => a + b, 0);
+    if (FORMATS[S.config.days[d].format].scramble) {
+      const t = teamOfPid(d, pid); if (!t) { day[d] = null; continue; }
+      const ph = scrambleTeamHcp(S, t.pids, d, t), arr = cappedCard(S, d, t.id, ph), n = arr.filter(v => v != null).length, g = arr.reduce((a, b) => a + (b || 0), 0);
+      day[d] = n === 18 ? { g, n: Math.round((g - ph) * 100) / 100, tp: Math.round((g - ph - par) * 100) / 100, team: true } : null;
+      continue;
+    }
+    const ph = playerPH(S, pid, d), arr = cappedCard(S, d, pid, ph), raw = (S.scores[d] && S.scores[d][pid]) || [];
+    const n = arr.filter(v => v != null).length, g = arr.reduce((a, b) => a + (b || 0), 0);
+    day[d] = n === 18 ? { g, n: g - ph, tp: g - ph - par, ph } : null;
+    arr.forEach((v, h) => {
+      if (v == null) return;
+      const diff = v - course.pars[h]; mix.holes++;
+      if (diff <= -2) mix.eagle++; else if (diff === -1) mix.birdie++; else if (diff === 0) mix.par++; else if (diff === 1) mix.bogey++; else mix.dbl++;
+      if (v >= maxFor(S, d, ph, h) && maxRule(S, d).type !== 'none') mix.max++;
+      byPar[course.pars[h]] && byPar[course.pars[h]].push(v);
+      (h < 9 ? front : back).push(v);
+    });
+  }
+  const avg = (a) => a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length * 100) / 100 : null;
+  const money = { place: 0, skins: 0, side: 0, ctp: 0, wknd: 0 };
+  moneyItems(pid).forEach(i => { const k = i.day === 'wknd' ? 'wknd' : /skin/i.test(i.why) ? 'skins' : /^(CTP|LD) #/.test(i.why) ? 'ctp' : /place$|place \(tie\)$/.test(i.why) ? 'place' : 'side'; money[k] += i.amt; });
+  const tm = tripMoney(S).list.find(x => x.pid === pid) || { total: 0, net: 0 };
+  const wk = weekendLive().rows.find(x => x.pid === pid);
+  return { pid, mix, p3: avg(byPar[3]), p4: avg(byPar[4]), p5: avg(byPar[5]), f9: front.length ? Math.round(avg(front) * 9 * 10) / 10 : null, b9: back.length ? Math.round(avg(back) * 9 * 10) / 10 : null, day, money, total: tm.total, net: tm.net, wk, indDays };
+}
+function sheetCompare(st) {
+  const pids = (st.pids || []).filter(p => S.players[p]).slice(0, 4);
+  const stats = pids.map(playerStats);
+  const pick = pids.length < 4 ? `<label class="f">Add a player<select id="cmp-add" data-cmpadd="1" class="big"><option value="">Choose</option>${Object.entries(S.players).filter(([p]) => !pids.includes(p)).sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([p, x]) => `<option value="${p}">${esc(x.name)}</option>`).join('')}</select></label>` : '';
+  const chips = `<div class="row">${pids.map(p => `<span class="cmp-chip">${esc(S.players[p].name)}<button data-act="cmp-rm" data-pid="${p}" aria-label="Remove ${esc(S.players[p].name)}">✕</button></span>`).join('')}</div>${pick}`;
+  if (pids.length < 2) return `<div class="sh-h"><h2>Compare players</h2></div>${chips}<div class="muted">Add at least one more player to compare.</div>`;
+  // rows: [label, values[], 'low' | 'high' | null, formatter]
+  const best = (vals, dir) => { const nums = vals.filter(v => typeof v === 'number'); if (!dir || nums.length < 2) return null; const b = dir === 'low' ? Math.min(...nums) : Math.max(...nums); return nums.filter(v => v === b).length === nums.length ? null : b; };
+  const sec = (title, rows) => `<tr class="cmp-sec"><th colspan="${pids.length + 1}">${title}</th></tr>` + rows.map(([lab, vals, dir, f]) => { const b = best(vals, dir); return `<tr><th>${lab}</th>${vals.map(v => `<td class="${b != null && v === b ? 'best' : ''}">${v == null || v === '' ? '–' : f ? f(v) : v}</td>`).join('')}</tr>`; }).join('');
+  const $f = (v) => fmt$(v), tp = (v) => tpStr(v);
+  const dayRows = DAYS.flatMap(d => {
+    const team = FORMATS[S.config.days[d].format].scramble, L = LB_DAYS[d] + (team ? ' team' : '');
+    return [[L + ' gross', stats.map(x => x.day[d] && x.day[d].g), 'low'], [L + ' net', stats.map(x => x.day[d] && x.day[d].n), 'low']];
+  });
+  const table = `<div class="tbl-wrap"><table class="cmp" style="--n:${pids.length}"><thead><tr><th></th>${pids.map(p => `<th>${esc(shortName(S.players[p].name))}</th>`).join('')}</tr></thead><tbody>
+    ${sec('Overview', [['Index', pids.map(p => Number(S.players[p].index) || 0), 'low', v => v.toFixed(1)], ...DAYS.filter(d => !FORMATS[S.config.days[d].format].scramble).map(d => [LB_DAYS[d] + ' handicap', pids.map(p => playerPH(S, p, d)), null]), ['Total won', stats.map(x => x.total), 'high', $f], ['Vs. buy-in', stats.map(x => x.net), 'high', v => (v >= 0 ? '+' : '−') + fmt$(Math.abs(v))]])}
+    ${sec('Day by day', [...dayRows, ['Weekend to par', stats.map(x => x.wk ? x.wk.toPar : null), 'low', tp], ['Weekend place', stats.map(x => x.wk ? x.wk.pos : null), null]])}
+    ${sec('Scoring mix · Fri + Sat', [['Eagles or better', stats.map(x => x.mix.eagle), 'high'], ['Birdies', stats.map(x => x.mix.birdie), 'high'], ['Pars', stats.map(x => x.mix.par), 'high'], ['Bogeys', stats.map(x => x.mix.bogey), 'low'], ['Double or worse', stats.map(x => x.mix.dbl), 'low'], ['Hit the max', stats.map(x => x.mix.max), 'low']])}
+    ${sec('Averages · gross, Fri + Sat', [['Par 3s', stats.map(x => x.p3), 'low'], ['Par 4s', stats.map(x => x.p4), 'low'], ['Par 5s', stats.map(x => x.p5), 'low'], ['Front 9', stats.map(x => x.f9), 'low'], ['Back 9', stats.map(x => x.b9), 'low']])}
+    ${sec('Money', [['Team places', stats.map(x => x.money.place), 'high', $f], ['Skins', stats.map(x => x.money.skins), 'high', $f], ['Nines & individual', stats.map(x => x.money.side), 'high', $f], ['Closest to pin', stats.map(x => x.money.ctp), 'high', $f], ['Weekend', stats.map(x => x.money.wknd), 'high', $f]])}
+  </tbody></table></div><div class="muted small">Gold marks the best in each row.</div>`;
+  return `<div class="sh-h"><h2>Compare players</h2></div>${chips}${table}${pids.length === 2 ? headToHead(pids[0], pids[1]) : '<div class="muted">Pick exactly two players to see a head-to-head card and match play.</div>'}`;
+}
+function headToHead(a, b) {
+  const days = DAYS.filter(d => !FORMATS[S.config.days[d].format].scramble);
+  const day = days.includes(ui.cmpDay) ? ui.cmpDay : days[0], basis = ui.cmpBasis || 'net';
+  const course = courseOf(day);
+  const card = (pid) => { const ph = playerPH(S, pid, day), arr = cappedCard(S, day, pid, ph); return arr.map((v, h) => v == null ? null : basis === 'net' ? v - pops(ph, course.si[h]) : v); };
+  const A = card(a), B = card(b), gA = cappedCard(S, day, a, playerPH(S, a, day)), gB = cappedCard(S, day, b, playerPH(S, b, day));
+  let up = 0, played = 0, result = null;
+  const rows = [...Array(18).keys()].map(h => {
+    let w = '';
+    if (A[h] != null && B[h] != null) { played++; if (A[h] < B[h]) { up++; w = 'a'; } else if (B[h] < A[h]) { up--; w = 'b'; } else w = 'h'; if (!result && Math.abs(up) > 18 - played) result = { up, left: 18 - played }; }
+    const st = up === 0 ? 'AS' : (up > 0 ? lastName(S.players[a].name) : lastName(S.players[b].name)) + ' ' + Math.abs(up) + ' up';
+    const cell = (v, g, win) => v == null ? '<td>–</td>' : `<td class="${win ? 'won' : ''}">${g}${basis === 'net' && v !== g ? `<small> (${v})</small>` : ''}</td>`;
+    return `<tr><th>${h + 1}</th><td class="muted">${course.pars[h]}</td>${cell(A[h], gA[h], w === 'a')}${cell(B[h], gB[h], w === 'b')}<td class="st">${A[h] != null && B[h] != null ? st : ''}</td></tr>`;
+  }).join('');
+  const nm = (p) => lastName(S.players[p].name);
+  const final = result ? `${nm(result.up > 0 ? a : b)} wins ${Math.abs(result.up)} & ${result.left}` : played === 18 ? (up === 0 ? 'Halved' : `${nm(up > 0 ? a : b)} wins ${Math.abs(up)} up`) : played ? (up === 0 ? 'All square' : `${nm(up > 0 ? a : b)} ${Math.abs(up)} up`) + ` through ${played}` : 'Not played yet';
+  return `<div class="h2h"><div class="row between"><h3>Head to head</h3><span class="h2h-res">${esc(final)}</span></div>
+    <div class="row"><div class="chips seg">${days.map(d => `<button class="chip" aria-pressed="${d === day}" data-act="cmp-day" data-day="${d}">${DAY_LABEL[d]}</button>`).join('')}</div>
+      <div class="chips seg"><button class="chip" aria-pressed="${basis === 'net'}" data-act="cmp-basis" data-k="net">Net</button><button class="chip" aria-pressed="${basis === 'gross'}" data-act="cmp-basis" data-k="gross">Gross</button></div></div>
+    <div class="tbl-wrap"><table class="h2h-t"><thead><tr><th>Hole</th><th>Par</th><th>${esc(nm(a))}</th><th>${esc(nm(b))}</th><th>Match</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="muted small">Match play hole by hole${basis === 'net' ? ' on each player\'s own net score (net in brackets)' : ' on gross score'}. Green marks who won the hole.</div></div>`;
 }
 
 
@@ -2672,6 +2781,10 @@ document.getElementById('main').addEventListener('click', async (e) => {
   if (act === 'sheet-p') { ui.sheet = { t: 'p', pid: b.dataset.pid }; return render(); }
   if (act === 'sheet-t') { ui.sheet = { t: 'team', day, id: b.dataset.id }; return render(); }
   if (act === 'sheet-close') { ui.sheet = null; return render(); }
+  if (act === 'cmp-start') { ui.sheet = { t: 'cmp', pids: [b.dataset.pid] }; render(); setTimeout(() => { const el = document.getElementById('cmp-add'); if (el) el.focus(); }, 30); return; }
+  if (act === 'cmp-rm') { ui.sheet.pids = ui.sheet.pids.filter(p => p !== b.dataset.pid); return render(); }
+  if (act === 'cmp-day') { ui.cmpDay = day; return render(); }
+  if (act === 'cmp-basis') { ui.cmpBasis = b.dataset.k; return render(); }
   if (act === 'pref') { setPref(b.dataset.k, b.dataset.v); return render(); }
   if (act === 'me-skip') { ui.meSkip = true; return render(); }
   if (act === 'me-set') { setMe(b.dataset.pid || null); toast(b.dataset.pid ? 'Following ' + S.players[b.dataset.pid].name + '.' : 'Stopped following.'); return render(); }
@@ -2899,6 +3012,7 @@ document.getElementById('main').addEventListener('change', async (e) => {
     el.value = ''; return;
   }
   if (ds.score) return;
+  if (ds.cmpadd) { if (el.value && ui.sheet && ui.sheet.t === 'cmp') ui.sheet.pids = ui.sheet.pids.concat(el.value).slice(0, 4); return render(); }
   if (ds.me) { setMe(el.value || null); ui.meSkip = true; if (el.value) toast('Following ' + S.players[el.value].name + '.'); return render(); }
   if (ds.fix) { ui.fix = ui.fix || {}; ui.fix[ds.fix] = el.value; if (ds.fix === 'day') ui.fix.key = ''; return ds.fix === 'v' ? undefined : render(); }
   if (ds.chover) { const v = String(el.value).trim(); return writeDoc('players', { list: { [ds.chover]: { ch: { [ds.day]: v === '' ? null : Number(v) } } } }, true); }
@@ -2978,7 +3092,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027213107';
+const APP_VERSION = '20261027223855';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
