@@ -583,6 +583,30 @@ table.cmp tbody th { position: static; box-shadow: none; white-space: normal; li
   table.h2h-t thead th { white-space: normal; line-height: 1.15; font-size: 12px; }
   table.h2h-t td.st { font-size: 12.5px; }
 }
+
+/* Payout breakdown */
+.pb-bar { display: flex; height: 26px; border-radius: 6px; overflow: hidden; background: rgba(255,255,255,.12); }
+.pb-bar span { display: block; height: 100%; border-right: 2px solid var(--m-frame); }
+.pb-bar span:last-child { border-right: 0; }
+.pb-legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 18px; }
+.pb-legend li { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; column-gap: 8px; align-items: center; }
+.pb-legend i { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(255,255,255,.5); }
+.pb-legend span { font-weight: 600; } .pb-legend b { font-family: var(--font-display); font-size: 18px; color: var(--m-gold); }
+.pb-legend small { grid-column: 2 / -1; color: #cfe0d4; font-size: 13px; }
+.panel.board .big-check { color: var(--m-gold); }
+.pb-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.pb-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.pb-card > .row b { font-family: var(--font-display); font-size: 18px; letter-spacing: .03em; text-transform: uppercase; color: var(--pine); }
+ol.pb-top { list-style: none; margin: 0; padding: 0; }
+ol.pb-top li { display: grid; grid-template-columns: 2.2em minmax(0, auto) 1fr auto; align-items: baseline; gap: 6px; padding: 5px 0; border-bottom: 1px solid var(--line); }
+ol.pb-top li:last-child { border-bottom: 0; }
+ol.pb-top li.me { background: var(--pine-soft); }
+ol.pb-top .r { font-family: var(--font-display); font-weight: 700; color: var(--muted); text-align: center; }
+ol.pb-top .link.plain { text-decoration: none; color: var(--ink); font-weight: 600; text-align: left; padding: 0; font-size: 16px; }
+ol.pb-top small { color: var(--muted); font-size: 13px; }
+ol.pb-top .amt { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--gold); }
+.pb-table .link.plain { text-decoration: none; color: var(--ink); font-weight: 600; padding: 0; text-align: left; font-size: 15px; }
+.pb-table tr.me td { background: var(--pine-soft); }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1870,8 +1894,9 @@ function weekendBoard(me) {
 // ---------- Money ----------
 function viewMoney() {
   const me = meId(), sec = ui.msec || 'list';
-  const chips = `<div class="chips seg"><button class="chip" aria-pressed="${sec === 'list'}" data-act="msec" data-k="list">Money list</button><button class="chip" aria-pressed="${sec === 'players'}" data-act="msec" data-k="players">Everyone's scores</button><button class="chip" aria-pressed="${sec === 'detail'}" data-act="msec" data-k="detail">By day &amp; seeds</button></div>`;
+  const chips = `<div class="chips seg"><button class="chip" aria-pressed="${sec === 'list'}" data-act="msec" data-k="list">Money list</button><button class="chip" aria-pressed="${sec === 'pay'}" data-act="msec" data-k="pay">Payout breakdown</button><button class="chip" aria-pressed="${sec === 'players'}" data-act="msec" data-k="players">Everyone's scores</button><button class="chip" aria-pressed="${sec === 'detail'}" data-act="msec" data-k="detail">By day &amp; seeds</button></div>`;
   if (sec === 'players') return chips + viewPlayerScores();
+  if (sec === 'pay') return chips + viewPayBreakdown();
   if (sec === 'detail') return chips + viewTrip();
   const tm = tripMoney(S), buyIn = Number(S.config.buyIn) || 0;
   const list = tm.list.slice();
@@ -2245,6 +2270,51 @@ function headToHead(a, b) {
       <div class="chips seg"><button class="chip" aria-pressed="${basis === 'net'}" data-act="cmp-basis" data-k="net">Net</button><button class="chip" aria-pressed="${basis === 'gross'}" data-act="cmp-basis" data-k="gross">Gross</button></div></div>
     <div class="tbl-wrap cmpwrap"><table class="h2h-t"><thead><tr><th>Hole</th><th>Par</th><th>${esc(nm(a))}</th><th>${esc(nm(b))}</th><th>Match</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="muted small">Match play hole by hole${basis === 'net' ? ' on each player\'s own net score (net in brackets)' : ' on gross score'}. Green marks who won the hole.</div></div>`;
+}
+
+// ---------- Payout breakdown ----------
+const PAY_CATS = [['place', 'Team places'], ['skins', 'Skins'], ['ind', 'Individual games'], ['nines', 'Team nines'], ['ctp', 'Closest to pin'], ['wknd', 'Weekend']];
+function payCat(it) {
+  if (it.day === 'wknd') return 'wknd';
+  if (/^(CTP|LD) #/.test(it.why)) return 'ctp';
+  if (/skin/i.test(it.why)) return 'skins';
+  if (/place$/.test(it.why)) return 'place';
+  if (/^Individual/.test(it.why)) return 'ind';
+  return 'nines';
+}
+function viewPayBreakdown() {
+  const me = meId(), dsel = ui.pbDay || 'all';
+  const rows = Object.keys(S.players).map(pid => {
+    const r = { pid, name: S.players[pid].name, total: 0, n: {} };
+    PAY_CATS.forEach(([k]) => { r[k] = 0; r.n[k] = 0; });
+    moneyItems(pid).forEach(it => { if (dsel !== 'all' && it.day !== dsel) return; const k = payCat(it); r[k] += it.amt; r.n[k] += /^Half skin/.test(it.why) ? 0.5 : 1; r.total += it.amt; });
+    return r;
+  });
+  const cats = PAY_CATS.filter(([k]) => dsel === 'all' || k !== 'wknd');
+  const sumK = (k) => rows.reduce((s, r) => s + r[k], 0), paid = rows.reduce((s, r) => s + r.total, 0);
+  const shades = { place: '#f4ead0', skins: '#e2b54a', ind: '#7fc79a', nines: '#3f9f6b', ctp: '#e07b39', wknd: '#ffffff' };
+  const bar = paid ? `<div class="pb-bar">${cats.filter(([k]) => sumK(k)).map(([k, l]) => `<span style="width:${(sumK(k) / paid * 100).toFixed(2)}%;background:${shades[k]}" title="${l} ${fmt$(sumK(k))}"></span>`).join('')}</div>
+    <ul class="pb-legend">${cats.filter(([k]) => sumK(k)).map(([k, l]) => `<li><i style="background:${shades[k]}"></i><span>${l}</span><b>${fmt$(sumK(k))}</b><small>${Math.round(sumK(k) / paid * 100)}% · ${rows.filter(r => r[k]).length} cashed</small></li>`).join('')}</ul>` : '<div class="muted">Nothing paid yet.</div>';
+  const unit = (k, n) => k === 'skins' ? ` · ${n} skin${n === 1 ? '' : 's'}` : k === 'ctp' ? ` · ${n} pin${n === 1 ? '' : 's'}` : '';
+  const cards = cats.filter(([k]) => sumK(k)).map(([k, l]) => {
+    const top = rows.filter(r => r[k]).sort((a, b) => b[k] - a[k] || a.name.localeCompare(b.name));
+    const rk = rankLabels(top, r => r[k]);
+    return `<div class="pb-card"><div class="row between"><b>${l}</b><span class="muted small">${fmt$(sumK(k))}</span></div>
+      <ol class="pb-top">${top.slice(0, 5).map((r, i) => `<li class="${r.pid === me ? 'me' : ''}"><span class="r">${rk[i]}</span><button class="link plain" data-act="sheet-p" data-pid="${r.pid}">${esc(shortName(r.name))}</button><small>${unit(k, r.n[k])}</small><span class="amt">${fmt$(r[k])}</span></li>`).join('')}</ol>
+      ${top.length > 5 ? `<div class="muted small">${top.length - 5} more cashed</div>` : ''}</div>`;
+  }).join('');
+  const sk = ui.pbSort && (ui.pbSort === 'name' || ui.pbSort === 'total' || cats.some(([k]) => k === ui.pbSort)) ? ui.pbSort : (ui.pbSort = 'total');
+  const list = sortRows(rows.slice(), sk === 'name' ? r => r.name : r => r[sk], sk !== 'name');
+  const rkey = sk === 'name' ? r => r.total : r => r[sk];
+  const ranks = rankLabels(sk === 'name' ? sortRows(rows.slice(), r => r.total, true) : list, rkey);
+  const rankOf = {}; (sk === 'name' ? sortRows(rows.slice(), r => r.total, true) : list).forEach((r, i) => { rankOf[r.pid] = rkey(r) ? ranks[i] : ''; });
+  const cell = (v) => v ? fmt$(v) : '<span class="muted">–</span>';
+  const table = `<div class="tbl-wrap"><table class="stick2 pb-table"><thead><tr><th>Rank</th>${sortTh('pbSort', 'name', 'Player', '')}${cats.map(([k, l]) => sortTh('pbSort', k, l.replace('Individual games', 'Individual').replace('Closest to pin', 'CTP'))).join('')}${sortTh('pbSort', 'total', 'Total')}</tr></thead><tbody>
+    ${list.map(r => `<tr class="${r.pid === me ? 'me' : ''}"><td class="pos">${rankOf[r.pid]}</td><td><button class="link plain" data-act="sheet-p" data-pid="${r.pid}">${esc(r.name)}</button></td>${cats.map(([k]) => `<td class="num">${cell(r[k])}</td>`).join('')}<td class="num"><b>${cell(r.total)}</b></td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="chips seg"><button class="chip" aria-pressed="${dsel === 'all'}" data-act="pbday" data-day="all">All</button>${DAYS.map(d => `<button class="chip" aria-pressed="${dsel === d}" data-act="pbday" data-day="${d}">${DAY_LABEL[d]}</button>`).join('')}</div>
+    <section class="panel board"><div class="row between"><h2>Where the money went</h2><span class="big-check">${fmt$(paid)}</span></div>${bar}</section>
+    <section class="panel"><h3>Top earners by category</h3><div class="pb-cards">${cards || '<div class="muted">Nothing paid yet.</div>'}</div></section>
+    <section class="panel"><div class="row between"><h3>Everyone, by category</h3><span class="muted small">Tap a column to sort</span></div>${table}</section>`;
 }
 
 
@@ -2789,6 +2859,7 @@ document.getElementById('main').addEventListener('click', async (e) => {
   // ---- streamlined views ----
   if (act === 'go') { ui.tab = b.dataset.tab; collapseAll(); try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {} render(); window.scrollTo(0, 0); return; }
   if (act === 'lday') { ui.lday = day; collapseAll(); return render(); }
+  if (act === 'pbday') { ui.pbDay = day; return render(); }
   if (act === 'msec') { ui.msec = b.dataset.k; collapseAll(); return render(); }
   if (act === 'ml-toggle') { const pid = b.dataset.pid; if (window.matchMedia('(min-width: 860px)').matches) { ui.sheet = { t: 'p', pid }; return render(); } const was = ui.mlOpen && ui.mlOpen[pid]; ui.mlOpen = was ? {} : { [pid]: true }; render(); const r = document.querySelector('.ml-row.open'); if (r && r.getBoundingClientRect().top < 60) r.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
   if (act === 'sheet-p') { ui.sheet = { t: 'p', pid: b.dataset.pid }; return render(); }
@@ -3105,7 +3176,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027224718';
+const APP_VERSION = '20261027230418';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
