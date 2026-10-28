@@ -378,9 +378,10 @@ details.det2 summary { cursor: pointer; color: var(--pine); font-weight: 600; pa
 .sheet-bg { position: fixed; inset: 0; background: rgba(8,20,14,.45); z-index: 30; }
 .sheet { position: fixed; z-index: 31; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(820px, calc(100% - 24px)); max-height: calc(100% - 40px); overflow: auto; background: var(--surface); color: var(--ink); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
 @media (max-width: 700px) { .sheet { left: 0; right: 0; bottom: 0; top: auto; transform: none; width: 100%; max-height: 88%; border-radius: 16px 16px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); } }
-.sheet-x { position: sticky; top: -8px; align-self: flex-end; margin-bottom: -40px; z-index: 2; font: 600 15px var(--font-body); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer; color: var(--ink); }
+.sheet-top { position: sticky; top: -20px; z-index: 6; margin: -20px -20px 0; padding: 10px 14px 6px; background: var(--surface); display: flex; justify-content: flex-end; }
+.sheet-x { font: 600 15px var(--font-body); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer; color: var(--ink); }
 .sheet > * { flex-shrink: 0; }
-.sheet .sh-h h2 { font-size: 28px; padding-right: 100px; }
+.sheet .sh-h h2 { font-size: 28px; }
 .sheet p { margin: 0; font-size: 16px; }
 .sh-day { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); padding-top: 12px; }
 .sh-day > .row b { font-size: 16px; }
@@ -562,12 +563,22 @@ table.h2h-t td.st { font-family: var(--font-body); font-size: 14px; font-weight:
 
 table.cmp, table.h2h-t { width: 100%; }
 table.cmp thead th { white-space: normal; line-height: 1.15; }
+/* Compare tables never scroll sideways, so the player names can freeze under the Close bar. */
+.cmpwrap { overflow: visible; }
+table.cmp { table-layout: fixed; }
+table.cmp col.lab, table.cmp th:first-child { width: 34%; }
+table.cmp thead th, table.h2h-t thead th { position: sticky; top: 26px; z-index: 4; background: var(--surface-2); box-shadow: 0 2px 0 var(--line); }
+table.cmp thead th:first-child { z-index: 5; }
+table.cmp tbody th { position: static; box-shadow: none; white-space: normal; line-height: 1.2; }
 @media (max-width: 600px) {
-  table.cmp { table-layout: fixed; min-width: calc(112px + var(--n, 2) * 84px); }
-  table.cmp th:first-child { width: 112px; }
-  table.cmp th, table.cmp td { padding: 7px 4px; }
-  table.cmp tbody th { font-size: 14px; white-space: normal; line-height: 1.2; }
+  table.cmp th, table.cmp td { padding: 7px 3px; }
+  table.cmp th:first-child { width: 110px; }
+  table.cmp.n3 th:first-child { width: 88px; } table.cmp.n4 th:first-child { width: 72px; } table.cmp.n4 tbody th { font-size: 12.5px; } table.cmp.n4 th, table.cmp.n4 td { padding-left: 2px; padding-right: 2px; }
+  table.cmp tbody th { font-size: 14px; }
   table.cmp td { font-size: 16px; }
+  table.cmp.n4 td, table.cmp.n3 td { font-size: 14px; }
+  table.cmp thead th { font-size: 12px; letter-spacing: 0; }
+  table.cmp.n3 thead th, table.cmp.n4 thead th { text-transform: none; font-size: 12.5px; }
   table.h2h-t th, table.h2h-t td { padding: 6px 4px; }
   table.h2h-t thead th { white-space: normal; line-height: 1.15; font-size: 12px; }
   table.h2h-t td.st { font-size: 12.5px; }
@@ -1958,7 +1969,7 @@ function sheetHtml() {
   const s = ui.sheet; if (!s) return '';
   const body = s.t === 'p' ? sheetPlayer(s.pid) : s.t === 'team' ? sheetTeam(s.day, s.id) : s.t === 'settings' ? sheetSettings() : s.t === 'cmp' ? sheetCompare(s) : '';
   if (!body) return '';
-  return `<div class="sheet-bg" data-act="sheet-close"></div><section class="sheet" role="dialog" aria-modal="true"><button class="sheet-x" data-act="sheet-close" aria-label="Close">✕ Close</button>${body}</section>`;
+  return `<div class="sheet-bg" data-act="sheet-close"></div><section class="sheet" role="dialog" aria-modal="true"><div class="sheet-top"><button class="sheet-x" data-act="sheet-close" aria-label="Close">✕ Close</button></div>${body}</section>`;
 }
 
 // ---------- preferences (per device) ----------
@@ -2204,8 +2215,8 @@ function sheetCompare(st) {
     const team = FORMATS[S.config.days[d].format].scramble, L = LB_DAYS[d] + (team ? ' team' : '');
     return [[L + ' gross', stats.map(x => x.day[d] && x.day[d].g), 'low'], [L + ' net', stats.map(x => x.day[d] && x.day[d].n), 'low']];
   });
-  const table = `<div class="tbl-wrap"><table class="cmp" style="--n:${pids.length}"><thead><tr><th></th>${pids.map(p => `<th>${esc(shortName(S.players[p].name))}</th>`).join('')}</tr></thead><tbody>
-    ${sec('Overview', [['Index', pids.map(p => Number(S.players[p].index) || 0), 'low', v => v.toFixed(1)], ...DAYS.filter(d => !FORMATS[S.config.days[d].format].scramble).map(d => [LB_DAYS[d] + ' handicap', pids.map(p => playerPH(S, p, d)), null]), ['Total won', stats.map(x => x.total), 'high', $f], ['Vs. buy-in', stats.map(x => x.net), 'high', v => (v >= 0 ? '+' : '−') + fmt$(Math.abs(v))]])}
+  const table = `<div class="tbl-wrap cmpwrap"><table class="cmp n${pids.length}"><thead><tr><th></th>${pids.map(p => `<th>${esc(pids.length > 2 ? lastName(S.players[p].name) : shortName(S.players[p].name))}</th>`).join('')}</tr></thead><tbody>
+    ${sec('Overview', [['Index', pids.map(p => Number(S.players[p].index) || 0), 'low', v => v.toFixed(1)], ...DAYS.filter(d => !FORMATS[S.config.days[d].format].scramble).map(d => [LB_DAYS[d] + ' handicap', pids.map(p => playerPH(S, p, d)), null]), ['Total won', stats.map(x => x.total), 'high', $f]])}
     ${sec('Day by day', [...dayRows, ['Weekend to par', stats.map(x => x.wk ? x.wk.toPar : null), 'low', tp], ['Weekend place', stats.map(x => x.wk ? x.wk.pos : null), null]])}
     ${sec('Scoring mix · Fri + Sat', [['Eagles or better', stats.map(x => x.mix.eagle), 'high'], ['Birdies', stats.map(x => x.mix.birdie), 'high'], ['Pars', stats.map(x => x.mix.par), 'high'], ['Bogeys', stats.map(x => x.mix.bogey), 'low'], ['Double or worse', stats.map(x => x.mix.dbl), 'low'], ['Hit the max', stats.map(x => x.mix.max), 'low']])}
     ${sec('Averages · gross, Fri + Sat', [['Par 3s', stats.map(x => x.p3), 'low'], ['Par 4s', stats.map(x => x.p4), 'low'], ['Par 5s', stats.map(x => x.p5), 'low'], ['Front 9', stats.map(x => x.f9), 'low'], ['Back 9', stats.map(x => x.b9), 'low']])}
@@ -2232,7 +2243,7 @@ function headToHead(a, b) {
   return `<div class="h2h"><div class="row between"><h3>Head to head</h3><span class="h2h-res">${esc(final)}</span></div>
     <div class="row"><div class="chips seg">${days.map(d => `<button class="chip" aria-pressed="${d === day}" data-act="cmp-day" data-day="${d}">${DAY_LABEL[d]}</button>`).join('')}</div>
       <div class="chips seg"><button class="chip" aria-pressed="${basis === 'net'}" data-act="cmp-basis" data-k="net">Net</button><button class="chip" aria-pressed="${basis === 'gross'}" data-act="cmp-basis" data-k="gross">Gross</button></div></div>
-    <div class="tbl-wrap"><table class="h2h-t"><thead><tr><th>Hole</th><th>Par</th><th>${esc(nm(a))}</th><th>${esc(nm(b))}</th><th>Match</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="tbl-wrap cmpwrap"><table class="h2h-t"><thead><tr><th>Hole</th><th>Par</th><th>${esc(nm(a))}</th><th>${esc(nm(b))}</th><th>Match</th></tr></thead><tbody>${rows}</tbody></table></div>
     <div class="muted small">Match play hole by hole${basis === 'net' ? ' on each player\'s own net score (net in brackets)' : ' on gross score'}. Green marks who won the hole.</div></div>`;
 }
 
@@ -2347,7 +2358,9 @@ function render() {
   }
   document.body.classList.toggle('tv-mode', !!ui.tv && ui.tab === 'board');
   const y = window.scrollY, sameTab = render.lastTab === ui.tab; render.lastTab = ui.tab;
+  const oldSheet = document.querySelector('.sheet'), sheetY = oldSheet ? oldSheet.scrollTop : 0;
   $('#main').innerHTML = (ui.tv && ui.tab === 'board' ? '' : banner()) + views[ui.tab]() + (ui.tv ? '' : sheetHtml());
+  { const sh = document.querySelector('.sheet'); if (sh && render.sheetWas === JSON.stringify(ui.sheet || null)) sh.scrollTop = sheetY; }
   document.body.classList.toggle('sheet-open', !!ui.sheet && !ui.tv);
   if (render.sheetWas !== JSON.stringify(ui.sheet || null)) { render.sheetWas = JSON.stringify(ui.sheet || null); const sh = document.querySelector('.sheet'); if (sh) sh.scrollTop = 0; }
   autoBackup();
@@ -3092,7 +3105,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027223855';
+const APP_VERSION = '20261027224718';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
