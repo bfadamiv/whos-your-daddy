@@ -2653,7 +2653,7 @@ function arm(key) { ui.armed = key; clearTimeout(arm.t); arm.t = setTimeout(() =
 document.getElementById('settingsBtn').addEventListener('click', () => { ui.sheet = { t: 'settings' }; render(); });
 document.getElementById('tabs').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-tab]'); if (!b) return;
-  ui.tab = b.dataset.tab; try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {}
+  ui.tab = b.dataset.tab; collapseAll(); try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {}
   render(); try { window.scrollTo(0, 0); } catch (x) {}
 });
 
@@ -2665,10 +2665,10 @@ document.getElementById('main').addEventListener('click', async (e) => {
   if (act === 'mode-admin') { ui.sheet = null; setMode('admin'); render(); if (!isAdmin()) askPin(); return; }
   if (['kday', 'kgroup', 'kback', 'khole', 'khole-fix', 'kprev', 'kminus', 'kplus', 'kmax', 'kout', 'kout-yes', 'kout-no', 'kflag-no', 'ksave', 'kreview', 'kdone', 'kfront-ok', 'kundo', 'kctp-yes', 'kctp-no', 'kchange'].includes(act)) return keepAction(act, b);
   // ---- streamlined views ----
-  if (act === 'go') { ui.tab = b.dataset.tab; ui.sheet = null; try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {} render(); window.scrollTo(0, 0); return; }
-  if (act === 'lday') { ui.lday = day; return render(); }
-  if (act === 'msec') { ui.msec = b.dataset.k; return render(); }
-  if (act === 'ml-toggle') { const pid = b.dataset.pid; if (window.matchMedia('(min-width: 860px)').matches) { ui.sheet = { t: 'p', pid }; return render(); } ui.mlOpen = ui.mlOpen || {}; ui.mlOpen[pid] = !ui.mlOpen[pid]; return render(); }
+  if (act === 'go') { ui.tab = b.dataset.tab; collapseAll(); try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {} render(); window.scrollTo(0, 0); return; }
+  if (act === 'lday') { ui.lday = day; collapseAll(); return render(); }
+  if (act === 'msec') { ui.msec = b.dataset.k; collapseAll(); return render(); }
+  if (act === 'ml-toggle') { const pid = b.dataset.pid; if (window.matchMedia('(min-width: 860px)').matches) { ui.sheet = { t: 'p', pid }; return render(); } const was = ui.mlOpen && ui.mlOpen[pid]; ui.mlOpen = was ? {} : { [pid]: true }; render(); const r = document.querySelector('.ml-row.open'); if (r && r.getBoundingClientRect().top < 60) r.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
   if (act === 'sheet-p') { ui.sheet = { t: 'p', pid: b.dataset.pid }; return render(); }
   if (act === 'sheet-t') { ui.sheet = { t: 'team', day, id: b.dataset.id }; return render(); }
   if (act === 'sheet-close') { ui.sheet = null; return render(); }
@@ -2681,7 +2681,7 @@ document.getElementById('main').addEventListener('click', async (e) => {
     try { await navigator.clipboard.writeText(text); toast('Copied. Paste it into a text.'); } catch (x) { toast('Could not copy on this device.'); }
     return;
   }
-  if (act === 'asec') { ui.asec = b.dataset.k; ui.swap = null; render(); window.scrollTo(0, 0); return; }
+  if (act === 'asec') { ui.asec = b.dataset.k; ui.swap = null; collapseAll(); render(); window.scrollTo(0, 0); return; }
   if (act === 'tday') { ui.tday = day; ui.swap = null; return render(); }
   if (act === 'logday') { ui.logday = day; return render(); }
   if (act === 'swap-cancel') { ui.swap = null; return render(); }
@@ -2876,7 +2876,13 @@ document.getElementById('main').addEventListener('keydown', (e) => {
 });
 document.getElementById('main').addEventListener('focusin', (e) => { if (e.target.dataset && e.target.dataset.score) e.target.select(); });
 
-document.getElementById('main').addEventListener('toggle', (e) => { const k = e.target.dataset && e.target.dataset.det; if (k) { ui.open = ui.open || {}; ui.open[k] = e.target.open; } }, true);
+document.getElementById('main').addEventListener('toggle', (e) => {
+  const el = e.target; if (el.tagName !== 'DETAILS') return;
+  if (el.open) document.querySelectorAll('#main details[open]').forEach(d => { if (d !== el && !d.contains(el) && !el.contains(d)) d.open = false; });
+  const k = el.dataset && el.dataset.det; ui.open = ui.open || {}; if (k) { if (el.open) Object.keys(ui.open).forEach(x => { ui.open[x] = false; }); ui.open[k] = el.open; }
+}, true);
+// Switching tabs or sections starts everything collapsed.
+function collapseAll() { ui.open = {}; ui.mlOpen = {}; ui.sheet = null; }
 document.getElementById('main').addEventListener('submit', (e) => {
   if (e.target.dataset.form === 'pin') { e.preventDefault(); submitPin(); }
 });
@@ -2972,7 +2978,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027212250';
+const APP_VERSION = '20261027213107';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
