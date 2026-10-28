@@ -903,7 +903,7 @@ let role = null;        // 'admin' | 'score' | null
 // (To bring back a separate admin PIN: return backend === 'local' || role === 'admin'.)
 const isAdmin = () => backend === 'local' || role === 'admin';
 let authId = null;
-const ui = { tab: 'results', rday: 'fri', sday: 'fri', team: null, drafts: {}, armed: null, bday: 'auto', bview: 'day', rotate: true, tv: false };
+const ui = { tab: 'results', rday: 'fri', sday: 'fri', team: null, drafts: {}, armed: null, bday: 'auto', bview: 'day', rotate: false, tv: false };
 try { const t = localStorage.getItem('wyd-tab'); if (t) ui.tab = t; } catch (e) {}
 try { ui.mode = localStorage.getItem('wyd-mode') || null; } catch (e) { ui.mode = null; }
 if (location.hash === '#scoreboard') { ui.tab = 'board'; ui.tv = true; ui.mode = ui.mode || 'viewer'; }
@@ -1075,10 +1075,17 @@ function liveSeeds() {
 
 function boardPairs() {
   const seeds = liveSeeds(), n = seeds.length;
-  const pairs = [];
-  for (let i = 0; i < Math.floor(n / 2); i++) pairs.push([i, n - 1 - i]);
-  if (n % 2) pairs.push([Math.floor(n / 2), null]);
-  const allIn = seeds.every(s => s.holes === 36);
+  let pairs = [];
+  // Once Sunday's teams are entered, show those matchups (in team order) instead of the projection.
+  const idx = Object.fromEntries(seeds.map((s, i) => [s.pid, i]));
+  const setTeams = ((S.teams && S.teams.sun) || []).map(t => (t.pids || []).filter(p => p && idx[p] != null)).filter(p => p.length);
+  const entered = setTeams.length > 0;
+  if (entered) pairs = setTeams.map(p => { const a = idx[p[0]], z = p.length > 1 ? idx[p[1]] : null; return z != null && z < a ? [z, a] : [a, z]; });
+  else {
+    for (let i = 0; i < Math.floor(n / 2); i++) pairs.push([i, n - 1 - i]);
+    if (n % 2) pairs.push([Math.floor(n / 2), null]);
+  }
+  const allIn = entered || seeds.every(s => s.holes === 36);
   const cell = (k) => {
     if (k == null) return '<div class="c nm">— solo —</div><div class="c d"></div>';
     const s = seeds[k];
@@ -1088,7 +1095,7 @@ function boardPairs() {
   const col = (list, off) => `<div class="bd-board pr" style="--rows:${half + 1}"><div class="bd-row hdr"><div class="c pos">#</div><div class="c nm">Top half</div><div class="c d">Net</div><div class="c nm">Bottom half</div><div class="c d">Net</div></div>
     ${list.map(([a, z], i) => { const key = 'pr:' + (off + i), sig = seeds[a].pid + '|' + (z == null ? '' : seeds[z].pid); const changed = boardPrev[key] != null && boardPrev[key] !== sig; boardPrev[key] = sig;
       return `<div class="bd-row ${changed ? 'flash' : ''}"><div class="c pos">${off + i + 1}</div>${cell(a)}${cell(z)}</div>`; }).join('')}</div>`;
-  const right = `<span class="bd-dot ${allIn ? 'done' : ''}"></span>${allIn ? 'Set' : 'Projected'}<small>${allIn ? 'All cards in' : 'Until Saturday\'s last card'}</small>`;
+  const right = `<span class="bd-dot ${allIn ? 'done' : ''}"></span>${allIn ? 'Set' : 'Projected'}<small>${entered ? 'Sunday teams entered' : allIn ? 'All cards in' : 'Until Saturday\'s last card'}</small>`;
   return boardHeader('Sunday Pairings', right) + `<div class="bd-main two">${col(pairs.slice(0, half), 0)}${col(pairs.slice(half), half)}</div>`;
 }
 
@@ -1116,7 +1123,7 @@ function viewBoard() {
   const controls = `<div class="bd-ctl">
     <div class="chips">${DAYS.map(d => `<button class="chip" aria-pressed="${day === d && which === 'day'}" data-act="bday" data-day="${d}">${DAY_LABEL[d]}<small>${esc(S.config.courses[S.config.days[d].course].name)}</small></button>`).join('')}
       <button class="chip" aria-pressed="${which === 'weekend'}" data-act="bweek">Weekend &amp; Money<small>Standings + winnings</small></button>
-      <button class="chip" aria-pressed="${which === 'pairs'}" data-act="bpairs">Sunday Pairings<small>Live projection</small></button></div>
+      <button class="chip" aria-pressed="${which === 'pairs'}" data-act="bpairs">Sunday Pairings<small>${(S.teams.sun || []).length ? 'Sunday teams' : 'Live projection'}</small></button></div>
     <div class="row"><label class="row small"><input type="checkbox" id="b-rotate" data-brot="1" ${ui.rotate ? 'checked' : ''}> Rotate views every 20 s</label>
       <button class="btn primary" data-act="tv-on">Show on clubhouse TV</button></div></div>`;
   const board = `<section class="bd ${ui.tv ? 'tv' : ''}" id="board">${which === 'weekend' ? boardWeekend() : which === 'pairs' ? boardPairs() : which === 'money' ? boardMoney() : boardDay(day)}</section>`;
@@ -1314,11 +1321,10 @@ function viewKeep() {
   return head + `
   <section class="panel kp">
     <div class="kp-dots">${dots}</div>
-    <div class="kp-head">${holeSvg(par, h, yards[0])}
+    <div class="kp-head">
       <div class="kp-meta"><div class="kp-hn">Hole ${h + 1}</div><div class="kp-par">Par ${par}</div>
         <div class="muted">${yards.length ? yards.map(y => y + ' yds').join(' / ') + ' · ' : ''}Handicap ${si}</div>
-        <div class="muted small">Scores start at par. Tap − or + to change, then save.${rule.type !== 'none' ? ' Max is ' + MAX_RULES[rule.type].toLowerCase() + (rule.type === 'fixed' ? ' (' + rule.value + ')' : '') + '.' : ''}</div>
-        <a class="btn kp-map" href="${courseMapUrl(dc.course)}" target="_blank" rel="noopener">Course map ↗</a></div></div>
+        <div class="muted small">Scores start at par. Tap − or + to change, then save.${rule.type !== 'none' ? ' Max is ' + MAX_RULES[rule.type].toLowerCase() + (rule.type === 'fixed' ? ' (' + rule.value + ')' : '') + '.' : ''}</div></div></div>
     <div class="kp-rows">${rows}</div>
     ${ctp}${flagAsk}
     <div class="kp-nav">
@@ -1326,7 +1332,6 @@ function viewKeep() {
       <button class="btn primary kp-next" data-act="ksave">${h === 17 ? 'Save hole 18 · review card' : 'Save · go to hole ' + (h + 2) + ' →'}</button>
     </div>
     ${allDone ? '<div class="row"><button class="btn" data-act="kreview">Review the full card</button></div>' : ''}
-    <div class="muted small">Hole drawing is an illustration, not the actual layout.</div>
   </section>`;
 }
 
@@ -1612,12 +1617,40 @@ function viewResults() {
     ${money ? `<div class="tbl-wrap"><table><thead><tr><th>Player</th><th>For</th><th class="num">Won</th></tr></thead><tbody>${money}</tbody></table></div>` : '<div class="muted">Nothing paid yet.</div>'}</section>`;
 }
 
+// Rank labels with ties ("T3") for a list already sorted by val (null values get no rank).
+function rankLabels(list, val) {
+  const out = []; let i = 0;
+  while (i < list.length) {
+    const v = val(list[i]); let j = i + 1;
+    if (v == null) { out.push(''); i++; continue; }
+    while (j < list.length && val(list[j]) === v) j++;
+    for (let k = i; k < j; k++) out.push((j - i > 1 ? 'T' : '') + (i + 1));
+    i = j;
+  }
+  return out;
+}
+// Sortable header button. uiKey holds the active sort for that table.
+function sortTh(uiKey, k, label, cls = 'num') {
+  const on = ui[uiKey] === k;
+  return `<th class="${cls}"><button class="sortbtn ${on ? 'on' : ''}" data-act="tsort" data-t="${uiKey}" data-k="${k}">${label}${on ? ' ▾' : ''}</button></th>`;
+}
+// Sort rows by a numeric key (low first unless desc), blanks last, then by name.
+function sortRows(rows, val, desc) {
+  return rows.sort((a, b) => { const x = val(a), y = val(b);
+    if (typeof x === 'string' || typeof y === 'string') return String(x).localeCompare(String(y));
+    if (x == null || y == null) return (x == null) - (y == null) || a.name.localeCompare(b.name);
+    return (desc ? y - x : x - y) || a.name.localeCompare(b.name); });
+}
+
 function weekendPanel(w) {
   const places = w.places || [];
   const dash = '<span class="muted">–</span>';
-  const rows = w.list.map(r => `<tr class="${r.payout ? 'paid' : ''}"><td class="pos">${r.pos ? (r.tied ? 'T' : '') + r.pos : '–'}</td><td>${esc(r.name)}</td><td class="num">${r.fri ?? dash}</td><td class="num">${r.sat ?? dash}</td><td class="num">${r.sun ?? dash}</td><td class="num score">${r.rounds === 3 ? r.total : ''}</td><td class="num">${r.payout ? `<span class="money">${fmt$(r.payout)}</span>` : ''}</td></tr>`).join('');
-  return `<section class="panel"><div class="row between"><div><h3>Weekend individual · top ${places.length}</h3><div class="muted small">Friday individual net + Saturday individual net + his Sunday scramble team's net. Pays ${places.map((p, i) => ordinal(i + 1) + ' ' + fmt$(p)).join(', ')}. Ties split.</div></div>${w.complete ? '<span class="pill final">Final</span>' : '<span class="pill live">In progress</span>'}</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Player</th><th class="num">Fri net</th><th class="num">Sat net</th><th class="num">Sun team net</th><th class="num">Total</th><th class="num">Payout</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  if (!ui.wsort) ui.wsort = 'total';
+  const keys = { name: r => r.name, fri: r => r.fri, sat: r => r.sat, sun: r => r.sun, total: r => r.rounds === 3 ? r.total : null };
+  const list = ui.wsort === 'total' ? w.list.slice() : sortRows(w.list.slice(), keys[ui.wsort]);
+  const rows = list.map(r => `<tr class="${r.payout ? 'paid' : ''}"><td class="pos">${r.pos ? (r.tied ? 'T' : '') + r.pos : '–'}</td><td>${esc(r.name)}</td><td class="num">${r.fri ?? dash}</td><td class="num">${r.sat ?? dash}</td><td class="num">${r.sun ?? dash}</td><td class="num score">${r.rounds === 3 ? r.total : ''}</td><td class="num">${r.payout ? `<span class="money">${fmt$(r.payout)}</span>` : ''}</td></tr>`).join('');
+  return `<section class="panel"><div class="row between"><div><h3>Weekend individual · top ${places.length}</h3><div class="muted small">Friday individual net + Saturday individual net + his Sunday scramble team's net. Pays ${places.map((p, i) => ordinal(i + 1) + ' ' + fmt$(p)).join(', ')}. Ties split. Tap a column to sort; Pos is always the weekend finish.</div></div>${w.complete ? '<span class="pill final">Final</span>' : '<span class="pill live">In progress</span>'}</div>
+    <div class="tbl-wrap"><table><thead><tr><th>Pos</th>${sortTh('wsort', 'name', 'Player', '')}${sortTh('wsort', 'fri', 'Fri net')}${sortTh('wsort', 'sat', 'Sat net')}${sortTh('wsort', 'sun', 'Sun team net')}${sortTh('wsort', 'total', 'Total')}<th class="num">Payout</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 // Every player's own gross and net for each day. Sunday is a team scramble, so it shows the team's card.
@@ -1641,39 +1674,60 @@ function viewPlayerScores() {
     const fri = dayCell(pid, 'fri'), sat = dayCell(pid, 'sat'), t = sunBy[pid];
     const sunC = t && t.thru ? { g: t.grossTotal, n: t.thru === 18 ? t.total : null, holes: t.thru, tp: t.thru === 18 ? t.toPar : null } : { g: null, n: null, holes: 0 };
     const both = fri.holes === 18 && sat.holes === 18 ? fri.n + sat.n : null;
-    return { pid, name: S.players[pid].name, index: Number(S.players[pid].index) || 0, fri, sat, sun: sunC, both };
+    const all3 = fri.holes === 18 && sat.holes === 18 && sunC.holes === 18;
+    return { pid, name: S.players[pid].name, index: Number(S.players[pid].index) || 0, fri, sat, sun: sunC, both,
+      wg: all3 ? fri.g + sat.g + sunC.g : null, wn: all3 ? fri.n + sat.n + sunC.n : null };
   });
-  const sort = ui.psort || 'name';
-  const key = { name: r => r.name, fri: r => r.fri.holes === 18 ? r.fri.n : 999, sat: r => r.sat.holes === 18 ? r.sat.n : 999, sun: r => r.sun.n ?? 999, both: r => r.both ?? 999, index: r => r.index }[sort];
-  rows.sort((a, b) => { const x = key(a), y = key(b); return typeof x === 'string' ? x.localeCompare(y) : (x - y) || a.name.localeCompare(b.name); });
+  const sort = ui.psort || 'wn';
+  const f18 = (c, k) => c.holes === 18 ? c[k] : null;
+  const keys = { name: r => r.name, index: r => r.index,
+    friG: r => f18(r.fri, 'g'), fri: r => f18(r.fri, 'n'), satG: r => f18(r.sat, 'g'), sat: r => f18(r.sat, 'n'),
+    sunG: r => f18(r.sun, 'g'), sun: r => r.sun.n, both: r => r.both, wg: r => r.wg, wn: r => r.wn };
+  const rankKey = ['name', 'index'].includes(sort) ? 'wn' : sort;
+  sortRows(rows, keys[sort]);
+  const ranks = ['name', 'index'].includes(sort) ? null : rankLabels(rows, keys[sort]);
+  // When sorted by name or index, rank still shows the weekend net finish.
+  const wnRank = {}; if (!ranks) { const byWn = sortRows(rows.slice(), keys.wn); rankLabels(byWn, keys.wn).forEach((r, i) => { wnRank[byWn[i].pid] = r; }); }
   const tp = (n) => n == null ? '' : `<span class="muted small"> ${toParStr(n)}</span>`;
   const g = (c) => c.holes ? (c.holes < 18 ? `${c.g}<span class="muted small"> thru ${c.holes}</span>` : c.g) : '<span class="muted">–</span>';
   const n = (c) => c.holes === 18 ? `<b>${c.n}</b>${tp(c.tp)}` : c.holes ? `<span class="muted small">${toParStr(c.tp)} so far</span>` : '<span class="muted">–</span>';
   const sunN = (c) => c.n != null ? `<b>${c.n}</b>${tp(c.tp)}` : c.holes ? '<span class="muted small">playing</span>' : '<span class="muted">–</span>';
+  const tot = (v) => v != null ? '<b>' + v + '</b>' : '<span class="muted">–</span>';
   const th = (k, label, cls = 'num') => `<th class="${cls}"><button class="sortbtn ${sort === k ? 'on' : ''}" data-act="psort" data-k="${k}">${label}${sort === k ? ' ▾' : ''}</button></th>`;
-  const body = rows.map(r => `<tr><td>${esc(r.name)}</td><td class="num">${r.index.toFixed(1)}</td>
+  const body = rows.map((r, i) => `<tr><td class="pos">${ranks ? ranks[i] : wnRank[r.pid] || ''}</td><td>${esc(r.name)}</td><td class="num">${r.index.toFixed(1)}</td>
     <td class="num">${g(r.fri)}</td><td class="num">${n(r.fri)}</td>
     <td class="num">${g(r.sat)}</td><td class="num">${n(r.sat)}</td>
     <td class="num">${g(r.sun)}</td><td class="num">${sunN(r.sun)}</td>
-    <td class="num">${r.both != null ? '<b>' + r.both + '</b>' : '<span class="muted">–</span>'}</td></tr>`).join('');
-  return `<section class="panel"><div class="row between"><div><h2>Player Scores</h2><div class="muted small">Each player's own gross and net (gross minus his course handicap for that day's tees). Sunday is the scramble, so it shows his team's card. Tap a column to sort.</div></div></div>
+    <td class="num">${tot(r.both)}</td><td class="num">${tot(r.wg)}</td><td class="num">${tot(r.wn)}</td></tr>`).join('');
+  const rankNote = ranks ? '' : ' Rank shows the full-weekend net finish while sorted by name or index.';
+  return `<section class="panel"><div class="row between"><div><h2>Player Scores</h2><div class="muted small">Each player's own gross and net (gross minus his course handicap for that day's tees). Sunday is the scramble, so it shows his team's card. Full weekend = Friday + Saturday + Sunday team. Tap any column to sort; Rank follows the column you sort by.${rankNote}</div></div></div>
     <div class="tbl-wrap"><table class="pscores"><thead>
-      <tr><th></th><th></th><th class="num grp" colspan="2">Friday · ${esc(S.config.courses[S.config.days.fri.course].name)}</th><th class="num grp" colspan="2">Saturday · ${esc(S.config.courses[S.config.days.sat.course].name)}</th><th class="num grp" colspan="2">Sunday team · ${esc(S.config.courses[S.config.days.sun.course].name)}</th><th></th></tr>
-      <tr>${th('name', 'Player', '')}${th('index', 'Index')}<th class="num">Gross</th>${th('fri', 'Net')}<th class="num">Gross</th>${th('sat', 'Net')}<th class="num">Gross</th>${th('sun', 'Net')}${th('both', 'Fri + Sat net')}</tr>
+      <tr><th></th><th></th><th></th><th class="num grp" colspan="2">Friday · ${esc(S.config.courses[S.config.days.fri.course].name)}</th><th class="num grp" colspan="2">Saturday · ${esc(S.config.courses[S.config.days.sat.course].name)}</th><th class="num grp" colspan="2">Sunday team · ${esc(S.config.courses[S.config.days.sun.course].name)}</th><th></th><th class="num grp" colspan="2">Full weekend</th></tr>
+      <tr><th>Rank</th>${th('name', 'Player', '')}${th('index', 'Index')}${th('friG', 'Gross')}${th('fri', 'Net')}${th('satG', 'Gross')}${th('sat', 'Net')}${th('sunG', 'Gross')}${th('sun', 'Net')}${th('both', 'Fri + Sat net')}${th('wg', 'Gross')}${th('wn', 'Net')}</tr>
     </thead><tbody>${body}</tbody></table></div></section>`;
 }
 
 function viewTrip() {
   const tm = tripMoney(S);
   const buyIn = Number(S.config.buyIn) || 0;
-  const rows = tm.list.map((p, i) => `<tr class="${p.total ? 'paid' : ''}"><td class="pos">${i + 1}</td><td>${esc(p.name)}</td>${DAYS.concat('wknd').map(d => `<td class="num">${p[d] ? fmt$(p[d]) : '<span class="muted">–</span>'}</td>`).join('')}<td class="num money ${p.total ? '' : 'zero'}">${fmt$(p.total)}</td><td class="num score ${p.net >= 0 ? 'ok' : 'muted'}">${p.net >= 0 ? '+' : '−'}${fmt$(Math.abs(p.net))}</td></tr>`).join('');
-  const seed = individualNet(S, ['fri', 'sat']).map((p, i) => `<tr><td class="pos">${p.rounds === 2 ? i + 1 : '–'}</td><td>${esc(p.name)}</td><td class="num">${p.index.toFixed(1)}</td><td class="num">${p.detail.fri ?? '<span class="muted">–</span>'}</td><td class="num">${p.detail.sat ?? '<span class="muted">–</span>'}</td><td class="num score">${p.rounds === 2 ? p.total : ''}</td></tr>`).join('');
+  if (!ui.msort) ui.msort = 'total';
+  const mkeys = { name: r => r.name, fri: r => r.fri || 0, sat: r => r.sat || 0, sun: r => r.sun || 0, wknd: r => r.wknd || 0, total: r => r.total, net: r => r.net };
+  const mlist = sortRows(tm.list.slice(), mkeys[ui.msort], ui.msort !== 'name');
+  const mranks = rankLabels(mlist, ui.msort === 'name' ? mkeys.total : mkeys[ui.msort]);
+  if (ui.msort === 'name') { const byT = sortRows(tm.list.slice(), mkeys.total, true); const rk = {}; rankLabels(byT, mkeys.total).forEach((r, i) => { rk[byT[i].pid] = r; }); mlist.forEach((p, i) => { mranks[i] = rk[p.pid]; }); }
+  const rows = mlist.map((p, i) => `<tr class="${p.total ? 'paid' : ''}"><td class="pos">${mranks[i]}</td><td>${esc(p.name)}</td>${DAYS.concat('wknd').map(d => `<td class="num">${p[d] ? fmt$(p[d]) : '<span class="muted">–</span>'}</td>`).join('')}<td class="num money ${p.total ? '' : 'zero'}">${fmt$(p.total)}</td><td class="num score ${p.net >= 0 ? 'ok' : 'muted'}">${p.net >= 0 ? '+' : '−'}${fmt$(Math.abs(p.net))}</td></tr>`).join('');
+  if (!ui.ssort) ui.ssort = 'total';
+  const seedList = individualNet(S, ['fri', 'sat']);
+  const seedRank = {}; seedList.forEach((p, i) => { seedRank[p.pid] = p.rounds === 2 ? i + 1 : '–'; });
+  const skeys = { name: r => r.name, index: r => r.index, fri: r => r.detail.fri, sat: r => r.detail.sat, total: r => r.rounds === 2 ? r.total : null };
+  const slist = ui.ssort === 'total' ? seedList : sortRows(seedList.slice(), skeys[ui.ssort]);
+  const seed = slist.map(p => `<tr><td class="pos">${seedRank[p.pid]}</td><td>${esc(p.name)}</td><td class="num">${p.index.toFixed(1)}</td><td class="num">${p.detail.fri ?? '<span class="muted">–</span>'}</td><td class="num">${p.detail.sat ?? '<span class="muted">–</span>'}</td><td class="num score">${p.rounds === 2 ? p.total : ''}</td></tr>`).join('');
   const paid = tm.list.reduce((s, p) => s + p.total, 0), pot = buyIn * tm.list.length;
-  return `<section class="panel"><div class="row between"><h2>Trip Money List</h2><div class="kpis"><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(paid)}</div><div class="l">Paid so far</div></div></div></div>
-    <div class="tbl-wrap"><table><thead><tr><th></th><th>Player</th><th class="num">Fri</th><th class="num">Sat</th><th class="num">Sun</th><th class="num">Weekend</th><th class="num">Won</th><th class="num">Net vs ${fmt$(buyIn)}</th></tr></thead><tbody>${rows}</tbody></table></div></section>
+  return `<section class="panel"><div class="row between"><div><h2>Trip Money List</h2><div class="muted small">Tap a column to sort. Rank follows the column you sort by.</div></div><div class="kpis"><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(paid)}</div><div class="l">Paid so far</div></div></div></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Rank</th>${sortTh('msort', 'name', 'Player', '')}${sortTh('msort', 'fri', 'Fri')}${sortTh('msort', 'sat', 'Sat')}${sortTh('msort', 'sun', 'Sun')}${sortTh('msort', 'wknd', 'Weekend')}${sortTh('msort', 'total', 'Won')}${sortTh('msort', 'net', 'Net vs ' + fmt$(buyIn))}</tr></thead><tbody>${rows}</tbody></table></div></section>
   ${weekendPanel(tm.weekend)}
-  <section class="panel"><div><h3>Individual net, Friday + Saturday</h3><div class="muted small">Each player's own net score (gross minus course handicap) for both rounds. This ranking seeds Sunday's scramble: #1 plays with last place, #2 with second-to-last, and so on.</div></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Rank</th><th>Player</th><th class="num">Index</th><th class="num">Fri net</th><th class="num">Sat net</th><th class="num">Total</th></tr></thead><tbody>${seed}</tbody></table></div></section>`;
+  <section class="panel"><div><h3>Individual net, Friday + Saturday</h3><div class="muted small">Each player's own net score (gross minus course handicap) for both rounds. This ranking seeds Sunday's scramble: #1 plays with last place, #2 with second-to-last, and so on. Tap a column to sort; Rank is always the seed.</div></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Rank</th>${sortTh('ssort', 'name', 'Player', '')}${sortTh('ssort', 'index', 'Index')}${sortTh('ssort', 'fri', 'Fri net')}${sortTh('ssort', 'sat', 'Sat net')}${sortTh('ssort', 'total', 'Total')}</tr></thead><tbody>${seed}</tbody></table></div></section>`;
 }
 
 // ---- score entry ----
@@ -1898,6 +1952,7 @@ document.getElementById('main').addEventListener('click', async (e) => {
   if (['kday', 'kgroup', 'kback', 'khole', 'khole-fix', 'kprev', 'kminus', 'kplus', 'kmax', 'kout', 'kout-yes', 'kout-no', 'kflag-no', 'ksave', 'kreview', 'kdone'].includes(act)) return keepAction(act, b);
   if (act === 'rday') { ui.rday = day; return render(); }
   if (act === 'psort') { ui.psort = b.dataset.k; return render(); }
+  if (act === 'tsort') { ui[b.dataset.t] = b.dataset.k; return render(); }
   if (act === 'reload') { location.reload(); return; }
   if (act === 'pin-open') return askPin();
   if (act === 'tip-no') { try { localStorage.setItem('wyd-install-tip', 'no'); } catch (x) {} return render(); }
@@ -2149,7 +2204,7 @@ async function boot() {
     role = me.exists ? ((me.data() || {}).role || 'admin') : null; canWrite = !!role; render();
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027093020';
+const APP_VERSION = '20261027193616';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
