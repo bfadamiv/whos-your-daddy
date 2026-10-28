@@ -386,6 +386,10 @@ details.det2 summary { cursor: pointer; color: var(--pine); font-weight: 600; pa
 .sh-day > .row b { font-size: 16px; }
 body.sheet-open { overflow: hidden; }
 .card.mini td, .card.mini th { padding: 4px 2px; font-size: 14px; min-width: 26px; }
+.card.mini.fixed { table-layout: fixed; width: calc(110px + 18 * 30px + 3 * 40px); min-width: 0; }
+.card.mini.fixed col.c-lab { width: 110px; } .card.mini.fixed col.c-h { width: 30px; } .card.mini.fixed col.c-t { width: 40px; }
+.card.mini.fixed th, .card.mini.fixed td { min-width: 0; text-align: center; overflow: hidden; }
+.card.mini.fixed td.lab, .card.mini.fixed th:first-child { text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; max-width: none; }
 .card.mini td { position: relative; }
 .sc { display: inline-block; min-width: 22px; line-height: 22px; font-family: var(--font-display); font-weight: 600; font-size: 16px; }
 .sc.birdie { border: 1.5px solid var(--red); border-radius: 50%; color: var(--red); }
@@ -493,8 +497,8 @@ ul.bul li .amt { font-family: var(--font-display); font-weight: 700; font-size: 
     </div>
     <nav class="tabs" role="tablist" id="tabs">
       <button role="tab" data-tab="keep" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V4M5 4l12 4-12 4"/><path d="M3 20h8"/></svg><span>My Group</span></button>
-      <button role="tab" data-tab="now" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="5"/></svg><span>Right Now</span></button>
       <button role="tab" data-tab="board" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Leaderboard</span></button>
+      <button role="tab" data-tab="now" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="5"/></svg><span>Latest</span></button>
       <button role="tab" data-tab="money" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg><span>Money</span></button>
       <button role="tab" data-tab="admin" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg><span>Admin</span></button>
     </nav>
@@ -1087,12 +1091,15 @@ let role = null;        // 'admin' | 'score' | null
 const isAdmin = () => backend === 'local' || role === 'admin';
 let authId = null;
 const ui = { tab: 'now', rday: 'fri', sday: 'fri', team: null, drafts: {}, armed: null, bday: 'auto', bview: 'day', rotate: false, tv: false };
-try { const t = localStorage.getItem('wyd-tab'); if (t) ui.tab = ({ results: 'board', scores: 'admin', players: 'admin', setup: 'admin' })[t] || t; } catch (e) {}
+const ui_saved_tab = (() => { try { return localStorage.getItem('wyd-tab'); } catch (e) { return null; } })();
+// Opening the app: viewers land on the Leaderboard, scorekeepers on My Group, admins where they left off.
+ui.tab = ({ results: 'board', scores: 'admin', players: 'admin', setup: 'admin' })[ui_saved_tab] || ui_saved_tab || 'board';
 try { ui.mode = localStorage.getItem('wyd-mode') || null; } catch (e) { ui.mode = null; }
+if (ui.mode === 'viewer') ui.tab = 'board'; else if (ui.mode === 'keeper') ui.tab = 'keep';
 if (location.hash === '#scoreboard') { ui.tab = 'board'; ui.tv = true; ui.mode = ui.mode || 'viewer'; }
 { const m = location.hash.match(/^#keep(?:=(.+))?$/); if (m) { ui.mode = 'keeper'; ui.tab = 'keep'; try { localStorage.setItem('wyd-mode', 'keeper'); } catch (e) {} if (m[1]) ui.autoPin = decodeURIComponent(m[1]); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} } }
-const MODE_TABS = { viewer: ['now', 'board', 'money'], keeper: ['keep', 'now', 'board', 'money'], admin: ['keep', 'now', 'board', 'money', 'admin'] };
-function setMode(m) { ui.mode = m; try { if (m) localStorage.setItem('wyd-mode', m); else localStorage.removeItem('wyd-mode'); } catch (e) {} ui.tab = m === 'keeper' ? 'keep' : m === 'admin' ? 'admin' : 'now'; try { localStorage.setItem('wyd-tab', ui.tab); } catch (e) {} }
+const MODE_TABS = { viewer: ['board', 'now', 'money'], keeper: ['keep', 'board', 'now', 'money'], admin: ['keep', 'board', 'now', 'money', 'admin'] };
+function setMode(m) { ui.mode = m; try { if (m) localStorage.setItem('wyd-mode', m); else localStorage.removeItem('wyd-mode'); } catch (e) {} ui.tab = m === 'keeper' ? 'keep' : m === 'admin' ? 'admin' : 'board'; try { localStorage.setItem('wyd-tab', ui.tab); } catch (e) {} }
 // ===== Clubhouse scoreboard (Who's Your Daddy) =====
 // Expects: S, ui, DAYS, DAY_LABEL, computeDay, individualNet, esc, fmt$ in scope.
 const boardPrev = {};
@@ -1648,7 +1655,7 @@ function viewNow() {
   const { r, rows } = boardRows(day);
   const live = dayStarted(day);
   const head = `<section class="now-head"><div><div class="now-kicker">${DAY_LABEL[day]} · ${esc(r.course.name)}</div>
-    <h2>${r.complete ? 'Final results' : live ? 'Live now' : 'Up next'}</h2></div>
+    <h2>${r.complete ? 'Latest round' : live ? 'Live now' : 'Up next'}</h2></div>
     <div class="now-upd">${ui.lastSnap ? `Updated <span data-ago="${ui.lastSnap}">${agoText(ui.lastSnap)}</span>` : ''}</div></section>`;
   let pick = '';
   if (!me && !ui.meSkip) {
@@ -1775,15 +1782,19 @@ function viewMoney() {
 }
 
 // ---------- Drill-down sheets ----------
-function cardStrip(day, label, arr, ph, extraRows) {
+// One scorecard grid. rows = [{ label, arr, ph }]; every row shares the same columns so holes line up.
+function cardTable(day, rows, extraRows) {
   const course = courseOf(day), H = [...Array(18).keys()];
-  const cell = (v, h) => { if (v == null) return '<td>–</td>'; const d = v - course.pars[h]; return `<td><span class="sc ${d <= -2 ? 'eagle' : d === -1 ? 'birdie' : d === 1 ? 'bogey' : d >= 2 ? 'dbl' : ''}">${v}</span>${ph != null && pops(ph, course.si[h]) > 0 ? '<i class="dot">' + '•'.repeat(pops(ph, course.si[h])) + '</i>' : ''}</td>`; };
-  const sum = (a, b) => arr.slice(a, b).reduce((s, v) => s + (v || 0), 0);
-  return `<div class="tbl-wrap"><table class="card mini"><thead><tr><th>Hole</th>${H.slice(0, 9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">Out</th>${H.slice(9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">In</th><th class="tot">Tot</th></tr></thead><tbody>
-    <tr class="meta"><td>Par</td>${course.pars.slice(0, 9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${course.pars.slice(0, 9).reduce((a, b) => a + b, 0)}</td>${course.pars.slice(9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${course.pars.slice(9).reduce((a, b) => a + b, 0)}</td><td class="tot">${course.pars.reduce((a, b) => a + b, 0)}</td></tr>
-    <tr><td>${esc(label)}</td>${H.slice(0, 9).map(h => cell(arr[h], h)).join('')}<td class="tot">${sum(0, 9) || ''}</td>${H.slice(9).map(h => cell(arr[h], h)).join('')}<td class="tot">${sum(9, 18) || ''}</td><td class="tot">${sum(0, 18) || ''}</td></tr>
+  const cell = (v, h, ph) => { if (v == null) return '<td>–</td>'; const d = v - course.pars[h], st = ph != null ? pops(ph, course.si[h]) : 0; return `<td><span class="sc ${d <= -2 ? 'eagle' : d === -1 ? 'birdie' : d === 1 ? 'bogey' : d >= 2 ? 'dbl' : ''}">${v}</span>${st > 0 ? '<i class="dot">' + '•'.repeat(st) + '</i>' : ''}</td>`; };
+  const sum = (arr, a, b) => arr.slice(a, b).reduce((s, v) => s + (v || 0), 0);
+  const parT = (a, b) => course.pars.slice(a, b).reduce((x, y) => x + y, 0);
+  const cols = `<colgroup><col class="c-lab">${'<col class="c-h">'.repeat(9)}<col class="c-t">${'<col class="c-h">'.repeat(9)}<col class="c-t"><col class="c-t"></colgroup>`;
+  return `<div class="tbl-wrap"><table class="card mini fixed">${cols}<thead><tr><th>Hole</th>${H.slice(0, 9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">Out</th>${H.slice(9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">In</th><th class="tot">Tot</th></tr></thead><tbody>
+    <tr class="meta"><td>Par</td>${course.pars.slice(0, 9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${parT(0, 9)}</td>${course.pars.slice(9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${parT(9, 18)}</td><td class="tot">${parT(0, 18)}</td></tr>
+    ${rows.map(r => `<tr><td class="lab">${esc(r.label)}</td>${H.slice(0, 9).map(h => cell(r.arr[h], h, r.ph)).join('')}<td class="tot">${sum(r.arr, 0, 9) || ''}</td>${H.slice(9).map(h => cell(r.arr[h], h, r.ph)).join('')}<td class="tot">${sum(r.arr, 9, 18) || ''}</td><td class="tot">${sum(r.arr, 0, 18) || ''}</td></tr>`).join('')}
     ${extraRows || ''}</tbody></table></div>`;
 }
+function cardStrip(day, label, arr, ph, extraRows) { return cardTable(day, [{ label, arr, ph }], extraRows); }
 function sheetPlayer(pid) {
   const p = S.players[pid]; if (!p) return '';
   const parts = DAYS.map(day => {
@@ -1812,10 +1823,10 @@ function sheetTeam(day, id) {
   if (r.fmt.scramble) body = cardStrip(day, 'Team', t.gross, t.ph);
   else {
     const H = [...Array(18).keys()];
-    const teamRow = `<tr class="team"><td>${r.fmt.balls > 1 ? '2 best nets' : 'Best net'}</td>${H.slice(0, 9).map(h => `<td>${t.holes[h] ?? ''}</td>`).join('')}<td class="tot">${t.holes.slice(0, 9).every(v => v != null) ? t.holes.slice(0, 9).reduce((a, b) => a + b, 0) : ''}</td>${H.slice(9).map(h => `<td>${t.holes[h] ?? ''}</td>`).join('')}<td class="tot">${t.holes.slice(9).every(v => v != null) ? t.holes.slice(9).reduce((a, b) => a + b, 0) : ''}</td><td class="tot">${t.total ?? ''}</td></tr>`;
-    body = t.members.map((m, i) => cardStrip(day, S.players[m.pid].name.split(' ').slice(-1)[0] + ' (' + m.ph + ')', m.gross, m.ph, i === t.members.length - 1 ? teamRow : '')).join('');
+    const teamRow = `<tr class="team"><td class="lab">${r.fmt.balls > 1 ? '2 best nets' : 'Best net'}</td>${H.slice(0, 9).map(h => `<td>${t.holes[h] ?? ''}</td>`).join('')}<td class="tot">${t.holes.slice(0, 9).every(v => v != null) ? t.holes.slice(0, 9).reduce((a, b) => a + b, 0) : ''}</td>${H.slice(9).map(h => `<td>${t.holes[h] ?? ''}</td>`).join('')}<td class="tot">${t.holes.slice(9).every(v => v != null) ? t.holes.slice(9).reduce((a, b) => a + b, 0) : ''}</td><td class="tot">${t.total ?? ''}</td></tr>`;
+    body = cardTable(day, t.members.map(m => ({ label: lastName(S.players[m.pid].name) + ' (' + m.ph + ')', arr: m.gross, ph: m.ph })), teamRow);
   }
-  return `<div class="sh-h"><div><h2 class="sm">${esc(namesOf(t.pids).join(', '))}</h2><div class="muted">${DAY_LABEL[day]} · ${esc(r.course.name)} · ${pr.pos ? placeWord(pr.pos) + ', ' : ''}${underWord(pr.toPar)}${t.payout ? ' · won ' + fmt$(t.payout) : ''}</div></div></div>
+  return `<div class="sh-h"><div><h2 class="sm">${esc(teamName(namesOf(t.pids)))}</h2><div class="muted">${DAY_LABEL[day]} · ${esc(r.course.name)} · ${pr.pos ? placeWord(pr.pos) + ', ' : ''}${underWord(pr.toPar)}${t.payout ? ' · won ' + fmt$(t.payout) : ''}</div></div></div>
     ${body}<div class="row">${t.pids.map(p => `<button class="btn" data-act="sheet-p" data-pid="${p}">${esc(shortName(S.players[p].name))}</button>`).join('')}</div>
     <div class="muted small">${r.fmt.scramble ? 'Team handicap ' + t.ph + '.' : 'Each player\'s course handicap is in brackets. The team row counts the ' + (r.fmt.balls > 1 ? 'two best net scores' : 'best net score') + ' on each hole.'}</div>`;
 }
@@ -2875,7 +2886,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027204944';
+const APP_VERSION = '20261027205947';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
