@@ -301,6 +301,145 @@ body.tv-mode main { max-width: none; padding-block: 0; }
 .bd.tv .bd-board.wk, .bd.tv .bd-board.ml { font-size: clamp(10px, min(calc(62vh / (var(--rows) * 2.3)), calc((100vw - 120px) / 44)), 30px); }
 .bd.tv .bd-name { font-size: 3.2em; }
 @media (prefers-reduced-motion: reduce) { .bd-dot, .bd-row.flash { animation: none; } }
+
+/* ===== Streamlined look (v2) ===== */
+html[data-size="1"] main.wrap, html[data-size="1"] .sheet { zoom: 1.1; }
+html[data-size="2"] main.wrap, html[data-size="2"] .sheet { zoom: 1.25; }
+body.tv-mode main.wrap { zoom: 1 !important; }
+:root[data-contrast="hi"] { --bg: #ffffff; --surface: #ffffff; --surface-2: #ffffff; --ink: #000000; --muted: #222222; --line: #6b6b6b; --pine: #0b4426; --pine-soft: #dcebdf; --gold: #6b4500; --gold-bg: #fff3cf; --red: #b00000; }
+:root[data-contrast="hi"] .panel { border-color: #6b6b6b; box-shadow: none; }
+.panel { border-color: transparent; box-shadow: 0 1px 2px rgba(20,40,30,.08), 0 0 0 1px rgba(20,40,30,.05); border-radius: 10px; padding: 18px; }
+.panel.soft { background: var(--pine-soft); box-shadow: none; }
+main { gap: 16px; }
+body.has-nav main { padding-bottom: 32px; }
+.setbtn { display: inline-flex; align-items: center; gap: 6px; font: 600 13px var(--font-body); color: var(--band-ink); background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.setbtn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+nav.tabs button { display: inline-flex; align-items: center; gap: 7px; }
+nav.tabs button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+@media (max-width: 700px) {
+  nav.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 12; background: var(--band); padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px)); gap: 0; box-shadow: 0 -2px 10px rgba(0,0,0,.15); }
+  nav.tabs button { flex: 1 1 0; flex-direction: column; gap: 2px; font-size: 12.5px; letter-spacing: .03em; padding: 6px 2px; border-bottom: 0; border-top: 3px solid transparent; min-width: 0; }
+  nav.tabs button[aria-selected="true"] { border-top-color: var(--band-ink); border-bottom-color: transparent; }
+  nav.tabs button svg { width: 24px; height: 24px; }
+  body.has-nav main { padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+  .band .wrap { padding-bottom: 12px; }
+  .toast { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  .setbtn span { display: none; }
+}
+body.tv-mode nav.tabs { display: none; }
+.chips.seg .chip { font-size: 17px; padding: 9px 16px; }
+.wrapchips { row-gap: 6px; }
+select.big { font-size: 17px; padding: 10px 12px; min-width: 220px; }
+button.link.plain { color: var(--pine); font-size: 15px; text-decoration: underline; padding: 6px 0; }
+button.link.inline { color: var(--pine); font-size: inherit; padding: 0; text-decoration: underline; }
+.welcome-btn { padding: 22px; }
+.welcome-btn b { font-size: 26px; }
+.welcome-btn span { font-size: 16px; }
+.big-p { font-size: 18px; margin: 0; line-height: 1.4; }
+.now-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+.now-kicker { font-family: var(--font-display); font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--pine); font-size: 15px; }
+.now-head h2 { font-size: 34px; }
+.now-upd { color: var(--muted); font-size: 14px; }
+.me-card { background: var(--pine-soft); box-shadow: 0 0 0 2px var(--pine); }
+.me-card p { margin: 0; }
+.summary div { font-size: 16px; }
+/* Leaderboard rows: big rank, name, score, dollars */
+.lb { display: flex; flex-direction: column; }
+.lb-row { display: grid; grid-template-columns: 2.6em minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 11px 4px; font: inherit; color: var(--ink); cursor: pointer; }
+.lb-row:last-child { border-bottom: 0; }
+.lb-row:active { background: var(--pine-soft); }
+.lb-rank { font-family: var(--font-display); font-weight: 700; font-size: 24px; text-align: center; color: var(--muted); }
+.lb-name { min-width: 0; display: flex; flex-direction: column; }
+.lb-name b { font-size: 17px; font-weight: 600; line-height: 1.25; }
+.lb-name small { font-size: 14px; color: var(--muted); line-height: 1.3; }
+.lb-right { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.lb-score { font-family: var(--font-display); font-weight: 700; font-size: 26px; text-align: right; }
+.lb-score.under { color: var(--red); }
+.lb-money { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--gold); text-align: right; }
+.lb-row.me { background: var(--pine-soft); box-shadow: inset 4px 0 0 var(--pine); }
+.lb-row.me .lb-rank { color: var(--pine); }
+.lb-hdr { display: grid; grid-template-columns: 2.6em minmax(0, 1fr) auto; gap: 10px; padding: 0 4px; font: 600 12px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.lb-hdr span:nth-child(3) { text-align: right; } .lb-hdr span:first-child { text-align: center; }
+.lb.pinned { border: 2px solid var(--pine); border-radius: 8px; overflow: hidden; }
+.lb-cap { font: 700 12px var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--pine-ink); background: var(--pine); padding: 3px 10px; }
+.li { display: flex; justify-content: space-between; gap: 10px; padding: 9px 2px; border-bottom: 1px solid var(--line); font-size: 16px; }
+.li:last-child { border-bottom: 0; }
+.li .amt { font-family: var(--font-display); font-weight: 700; font-size: 18px; color: var(--gold); white-space: nowrap; }
+.li.me { background: var(--pine-soft); }
+.games { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.game b { display: block; font-family: var(--font-display); font-size: 17px; letter-spacing: .03em; margin-bottom: 2px; }
+details.det > summary { list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 10px; cursor: pointer; }
+details.det > summary::-webkit-details-marker { display: none; }
+details.det > summary h3::before { content: '▸ '; color: var(--pine); }
+details.det[open] > summary h3::before { content: '▾ '; }
+details.det .panel { box-shadow: none; padding: 0; background: none; }
+details.det2 summary { cursor: pointer; color: var(--pine); font-weight: 600; padding: 4px 0; }
+/* Sheets (drill-down) */
+.sheet-bg { position: fixed; inset: 0; background: rgba(8,20,14,.45); z-index: 30; }
+.sheet { position: fixed; z-index: 31; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(820px, calc(100% - 24px)); max-height: calc(100% - 40px); overflow: auto; background: var(--surface); color: var(--ink); border-radius: 14px; padding: 20px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.3); }
+@media (max-width: 700px) { .sheet { left: 0; right: 0; bottom: 0; top: auto; transform: none; width: 100%; max-height: 88%; border-radius: 16px 16px 0 0; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); } }
+.sheet-x { position: sticky; top: -8px; align-self: flex-end; margin-bottom: -40px; z-index: 2; font: 600 15px var(--font-body); background: var(--surface-2); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; cursor: pointer; color: var(--ink); }
+.sheet > * { flex-shrink: 0; }
+.sheet .sh-h h2 { font-size: 28px; padding-right: 100px; }
+.sheet p { margin: 0; font-size: 16px; }
+.sh-day { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); padding-top: 12px; }
+.sh-day > .row b { font-size: 16px; }
+body.sheet-open { overflow: hidden; }
+.card.mini td, .card.mini th { padding: 4px 2px; font-size: 14px; min-width: 26px; }
+.card.mini td { position: relative; }
+.sc { display: inline-block; min-width: 22px; line-height: 22px; font-family: var(--font-display); font-weight: 600; font-size: 16px; }
+.sc.birdie { border: 1.5px solid var(--red); border-radius: 50%; color: var(--red); }
+.sc.eagle { border: 3px double var(--red); border-radius: 50%; color: var(--red); }
+.sc.bogey { border: 1.5px solid var(--ink); }
+.sc.dbl { border: 3px double var(--ink); }
+.card.mini i.dot { position: absolute; top: 0; right: 2px; font-style: normal; font-size: 10px; color: var(--pine); line-height: 1; }
+.set-row { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); padding-top: 12px; }
+.set-row > b { font-size: 17px; }
+/* Admin */
+.steps { display: flex; flex-direction: column; gap: 8px; }
+.step { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) auto; gap: 12px; align-items: center; text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 12px 14px; cursor: pointer; font: inherit; color: var(--ink); }
+.step b { display: block; font-size: 18px; }
+.step small { color: var(--muted); font-size: 14px; }
+.step-n { width: 2em; height: 2em; border-radius: 50%; display: grid; place-items: center; font-weight: 700; background: var(--surface-2); border: 2px solid var(--line); }
+.step.ok .step-n { background: var(--pine); border-color: var(--pine); color: var(--pine-ink); }
+.step.todo .step-n { border-color: var(--warn); color: var(--warn); }
+.step-go { font-size: 26px; color: var(--muted); }
+.slot { display: block; width: 100%; text-align: left; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 9px 10px; font: 600 15px var(--font-body); cursor: pointer; }
+.slot.empty { color: var(--muted); font-weight: 400; border-style: dashed; }
+.slot.on { background: var(--pine); color: var(--pine-ink); border-color: var(--pine); }
+.pool { display: flex; flex-direction: column; gap: 6px; border: 1px dashed var(--warn); border-radius: 8px; padding: 10px; }
+.pool .slot { width: auto; display: inline-block; }
+.banner.soft { background: var(--pine-soft); border-color: transparent; }
+label.tiny { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+label.tiny input { width: 64px; }
+.ptable td.dcell { white-space: nowrap; }
+.chbox { display: inline-flex; flex-direction: column; vertical-align: middle; margin-left: 6px; }
+.chbox input { width: 52px; text-align: center; }
+.chbox input.set { border-color: var(--warn); background: var(--warn-bg); font-weight: 700; }
+.chbox small { font-size: 11px; color: var(--muted); }
+.lockrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); flex-wrap: wrap; font-size: 16px; }
+.fixrow { align-items: flex-end; }
+.big-check { font-family: var(--font-display); font-weight: 700; font-size: 20px; }
+tr.chg td { background: var(--warn-bg); }
+.qrs { display: flex; gap: 24px; flex-wrap: wrap; }
+.qrbox { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
+.qrbox > div { background: #fff; padding: 10px; border-radius: 6px; min-width: 200px; min-height: 200px; word-break: break-all; font-size: 11px; }
+.qrbox b { font-size: 18px; } .qrbox small { color: var(--muted); }
+/* Keep score */
+.kp-sync { font-size: 14px; font-weight: 600; padding: 6px 10px; border-radius: 6px; }
+.kp-sync.ok { color: var(--pine); background: var(--pine-soft); }
+.kp-sync.wait { color: var(--warn); background: var(--warn-bg); }
+.kp-sync.off { color: #fff; background: var(--warn); }
+.undo { position: sticky; top: 8px; z-index: 4; display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--ink); color: var(--bg); border-radius: 8px; padding: 8px 8px 8px 14px; font-size: 16px; }
+.undo .btn { background: var(--bg); color: var(--ink); }
+.kp-names { font-size: 15px; line-height: 1.35; }
+.kp-group b { font-size: 20px; }
+.kp-nm { grid-column: 1 / -1; font-size: 20px; line-height: 1.2; }
+.sheet .sh-h h2.sm { font-size: 22px; line-height: 1.2; }
+.kp-who span { font-size: 14px; }
+@media (max-width: 440px) { .kp-btn { width: 46px; height: 46px; font-size: 26px; } .kp-score { width: 50px; } .kp-score b { font-size: 34px; } .kp-ctl { gap: 4px; } .kp-row { padding: 10px; } }
+.kp-ctp > span { font-size: 16px; }
+@media print { body * { visibility: hidden; } .printable, .printable * { visibility: visible; } .printable { position: absolute; left: 0; top: 0; box-shadow: none; } .noprint, .noprint * { display: none !important; } nav.tabs, header.band { display: none; } }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -315,15 +454,14 @@ body.tv-mode main { max-width: none; padding-block: 0; }
         <h1>Who's Your Daddy 2026</h1>
         <div class="sub">Fallen Oak · Shell Landing · Windance</div>
       </div>
-      <div class="hdr-right"><span class="status" id="status">Loading</span><button class="modesw" id="modeSwitch" hidden></button></div>
+      <div class="hdr-right"><span class="status" id="status">Loading</span><button class="setbtn" id="settingsBtn" hidden aria-label="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg><span>Settings</span></button></div>
     </div>
     <nav class="tabs" role="tablist" id="tabs">
-      <button role="tab" data-tab="keep" aria-selected="false" hidden>Keep Score</button>
-      <button role="tab" data-tab="board" aria-selected="false">Scoreboard</button>
-      <button role="tab" data-tab="results" aria-selected="true">Results</button>
-      <button role="tab" data-tab="scores" aria-selected="false">Enter Scores</button>
-      <button role="tab" data-tab="players" aria-selected="false">Players &amp; Teams</button>
-      <button role="tab" data-tab="setup" aria-selected="false">Setup &amp; Payouts</button>
+      <button role="tab" data-tab="keep" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V4M5 4l12 4-12 4"/><path d="M3 20h8"/></svg><span>My Group</span></button>
+      <button role="tab" data-tab="now" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="5"/></svg><span>Right Now</span></button>
+      <button role="tab" data-tab="board" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Leaderboard</span></button>
+      <button role="tab" data-tab="money" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/></svg><span>Money</span></button>
+      <button role="tab" data-tab="admin" aria-selected="false" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg><span>Admin</span></button>
     </nav>
   </div>
 </header>
@@ -361,26 +499,36 @@ function playingHcp(index, tee, allowance) {
 
 // Strokes received on a hole of stroke index `si` for playing handicap `ph`.
 function pops(ph, si) {
+  ph = Math.round(ph);
   if (ph >= 0) return Math.floor(ph / 18) + (si <= ph % 18 ? 1 : 0);
   const p = -ph;
   return -(Math.floor(p / 18) + (si > 18 - (p % 18) ? 1 : 0));
 }
 
+// Course handicap for a player on a day: a typed-in override wins, otherwise the WHS formula.
+function playerCH(state, pid, day) {
+  const p = state.players[pid];
+  if (!p) return 0;
+  const o = p.ch && p.ch[day];
+  if (o != null && o !== '' && !isNaN(Number(o))) return Number(o);
+  return courseHcp(Number(p.index) || 0, teeFor(state, pid, day));
+}
 function playerPH(state, pid, day) {
   const p = state.players[pid];
   if (!p) return 0;
-  return playingHcp(Number(p.index) || 0, teeFor(state, pid, day), state.config.days[day].allowance);
+  const a = state.config.days[day].allowance;
+  return Math.round(playerCH(state, pid, day) * (a == null ? 100 : a) / 100);
 }
 
-function scrambleTeamHcp(state, pids, day) {
+// Scramble team handicap. A team's own typed-in handicap wins. '3515d' keeps the decimal (e.g. 4.35).
+function scrambleTeamHcp(state, pids, day, team) {
   const dc = state.config.days[day];
-  const chs = pids.map(pid => {
-    const p = state.players[pid];
-    return p ? courseHcp(Number(p.index) || 0, teeFor(state, pid, day)) : 0;
-  }).sort((a, b) => a - b);
+  if (team && team.hcp != null && team.hcp !== '' && !isNaN(Number(team.hcp))) return Number(team.hcp);
+  const chs = pids.map(pid => state.players[pid] ? playerCH(state, pid, day) : 0).sort((a, b) => a - b);
   if (!chs.length) return 0;
-  if (dc.scrHcp === '3515' && chs.length >= 2) {
-    return Math.round(chs[0] * 0.35 + chs[chs.length - 1] * 0.15);
+  if ((dc.scrHcp === '3515' || dc.scrHcp === '3515d') && chs.length >= 2) {
+    const v = chs[0] * 0.35 + chs[chs.length - 1] * 0.15;
+    return dc.scrHcp === '3515d' ? round2(v) : Math.round(v);
   }
   const pct = dc.scrPct == null ? 100 : dc.scrPct;
   return Math.round(sum(chs) / chs.length * pct / 100);
@@ -476,7 +624,7 @@ function computeDay(state, day) {
   const rows = teams.map(t => {
     const row = { id: t.id, pids: t.pids, name: teamLabel(state, t), holes: new Array(18).fill(null), members: [] };
     if (fmt.scramble) {
-      const ph = scrambleTeamHcp(state, t.pids, day);
+      const ph = scrambleTeamHcp(state, t.pids, day, t);
       const gross = cappedCard(state, day, t.id, ph);
       const net = gross.map((g, h) => g == null ? null : g - pops(ph, si[h]));
       row.ph = ph;
@@ -484,8 +632,8 @@ function computeDay(state, day) {
       row.holes = gross.slice();
       row.thru = gross.filter(v => v != null).length;
       row.grossTotal = sum(gross);
-      row.total = row.thru === 18 ? row.grossTotal - ph : null;
-      row.toPar = row.total == null ? null : row.total - coursePar;
+      row.total = row.thru === 18 ? round2(row.grossTotal - ph) : null;
+      row.toPar = row.total == null ? null : round2(row.total - coursePar);
       units.push({ key: t.id, pids: t.pids, name: row.name, gross, net });
     } else {
       row.members = t.pids.map(pid => {
@@ -903,12 +1051,13 @@ let role = null;        // 'admin' | 'score' | null
 // (To bring back a separate admin PIN: return backend === 'local' || role === 'admin'.)
 const isAdmin = () => backend === 'local' || role === 'admin';
 let authId = null;
-const ui = { tab: 'results', rday: 'fri', sday: 'fri', team: null, drafts: {}, armed: null, bday: 'auto', bview: 'day', rotate: false, tv: false };
-try { const t = localStorage.getItem('wyd-tab'); if (t) ui.tab = t; } catch (e) {}
+const ui = { tab: 'now', rday: 'fri', sday: 'fri', team: null, drafts: {}, armed: null, bday: 'auto', bview: 'day', rotate: false, tv: false };
+try { const t = localStorage.getItem('wyd-tab'); if (t) ui.tab = ({ results: 'board', scores: 'admin', players: 'admin', setup: 'admin' })[t] || t; } catch (e) {}
 try { ui.mode = localStorage.getItem('wyd-mode') || null; } catch (e) { ui.mode = null; }
 if (location.hash === '#scoreboard') { ui.tab = 'board'; ui.tv = true; ui.mode = ui.mode || 'viewer'; }
-const MODE_TABS = { viewer: ['board', 'results'], keeper: ['keep', 'board', 'results'], admin: ['keep', 'board', 'results', 'scores', 'players', 'setup'] };
-function setMode(m) { ui.mode = m; try { if (m) localStorage.setItem('wyd-mode', m); else localStorage.removeItem('wyd-mode'); } catch (e) {} ui.tab = m === 'keeper' ? 'keep' : m === 'admin' ? 'setup' : 'board'; try { localStorage.setItem('wyd-tab', ui.tab); } catch (e) {} }
+{ const m = location.hash.match(/^#keep(?:=(.+))?$/); if (m) { ui.mode = 'keeper'; ui.tab = 'keep'; try { localStorage.setItem('wyd-mode', 'keeper'); } catch (e) {} if (m[1]) ui.autoPin = decodeURIComponent(m[1]); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} } }
+const MODE_TABS = { viewer: ['now', 'board', 'money'], keeper: ['keep', 'now', 'board', 'money'], admin: ['keep', 'now', 'board', 'money', 'admin'] };
+function setMode(m) { ui.mode = m; try { if (m) localStorage.setItem('wyd-mode', m); else localStorage.removeItem('wyd-mode'); } catch (e) {} ui.tab = m === 'keeper' ? 'keep' : m === 'admin' ? 'admin' : 'now'; try { localStorage.setItem('wyd-tab', ui.tab); } catch (e) {} }
 // ===== Clubhouse scoreboard (Who's Your Daddy) =====
 // Expects: S, ui, DAYS, DAY_LABEL, computeDay, individualNet, esc, fmt$ in scope.
 const boardPrev = {};
@@ -933,7 +1082,7 @@ function boardRows(day) {
       run += holes[h] - pars[h] * balls; any = true; cum.push(run);
     }
     const names = t.pids.map(pid => S.players[pid] ? S.players[pid].name : '?');
-    return { id: t.id, names, thru: t.thru, toPar: any ? run : null, cum, payout: t.payout, final: t.thru === 18 };
+    return { id: t.id, names, thru: t.thru, toPar: t.thru === 18 && t.toPar != null ? t.toPar : any ? run : null, cum, payout: t.payout, final: t.thru === 18 };
   });
   rows.sort((a, b) => (a.toPar == null) - (b.toPar == null) || (a.toPar ?? 0) - (b.toPar ?? 0) || b.thru - a.thru || a.names[0].localeCompare(b.names[0]));
   let i = 0;
@@ -1186,7 +1335,7 @@ function keepGroups(day) {
     const ts = teams.slice(i, i + step);
     let units;
     if (fmt.scramble) {
-      units = ts.map((t, j) => ({ key: t.id, name: t.pids.filter(p => S.players[p]).map(p => S.players[p].name).join(' & '), sub: 'Team ' + (i + j + 1) + ' · team hcp ' + scrambleTeamHcp(S, t.pids, day), ph: scrambleTeamHcp(S, t.pids, day), pid: t.pids[0] }));
+      units = ts.map((t, j) => ({ key: t.id, name: t.pids.filter(p => S.players[p]).map(p => S.players[p].name).join(' & '), sub: 'Team ' + (i + j + 1) + ' · team handicap ' + scrambleTeamHcp(S, t.pids, day, t), ph: scrambleTeamHcp(S, t.pids, day, t), pid: t.pids[0] }));
     } else {
       units = ts.flatMap(t => t.pids.filter(p => S.players[p]).map(p => ({ key: p, name: S.players[p].name, sub: 'CH ' + computeDayPH(p, day), ph: computeDayPH(p, day), pid: p })));
     }
@@ -1197,55 +1346,6 @@ function keepGroups(day) {
 function savedScore(day, key, h) { const c = S.scores[day] && S.scores[day][key]; const v = Array.isArray(c) ? c[h] : null; return v == null || v === '' ? null : Number(v); }
 function groupThru(day, g) { let n = 0; for (let h = 0; h < 18; h++) if (g.units.every(u => savedScore(day, u.key, h) != null)) n++; return n; }
 function firstOpenHole(day, g) { for (let h = 0; h < 18; h++) if (g.units.some(u => savedScore(day, u.key, h) == null)) return h; return 17; }
-
-// Yardage-book style drawing: tee at the bottom, green at the top. Illustration only, not the real layout.
-function holeSvg(par, h, yards) {
-  const W = 140, H = 240, gy = 44;
-  const ty = par === 3 ? 160 : par === 4 ? 188 : 200;
-  const bend = [0, 14, -12, 8, -16, 10, -6, 16, -10][h % 9] * (par === 3 ? 0.3 : 1);
-  const cx = (t) => 70 + bend * Math.sin(Math.PI * t);                 // centerline x at 0..1 from tee to green
-  const yAt = (t) => ty - (ty - gy) * t;
-  const fwW = par === 3 ? 0 : par === 4 ? 30 : 26;
-  const fwStart = par === 3 ? 1 : 0.18, fwEnd = 0.86;
-  const pts = []; for (let i = 0; i <= 20; i++) { const t = fwStart + (fwEnd - fwStart) * i / 20; pts.push([cx(t), yAt(t)]); }
-  const left = pts.map(([x, y], i) => `${(x - fwW / 2 * (i === 0 || i === 20 ? 0.7 : 1)).toFixed(1)},${y.toFixed(1)}`);
-  const right = pts.slice().reverse().map(([x, y], i) => `${(x + fwW / 2 * (i === 0 || i === 20 ? 0.7 : 1)).toFixed(1)},${y.toFixed(1)}`);
-  const fairway = par === 3 ? '' : `<polygon points="${left.concat(right).join(' ')}" fill="url(#fw)" stroke="#3f8a4c" stroke-width="1"/>`;
-  // tree lines down both sides
-  let trees = '';
-  for (let i = 0; i < 9; i++) { const t = 0.05 + i * 0.11, y = yAt(t), x = cx(t);
-    const r1 = 7 + ((h + i) % 3) * 1.5, r2 = 6 + ((h + i * 2) % 3) * 1.5;
-    trees += `<circle cx="${(x - 42 - (i % 2) * 4).toFixed(1)}" cy="${y.toFixed(1)}" r="${r1}" fill="#1f5230"/><circle cx="${(x + 42 + ((i + 1) % 2) * 4).toFixed(1)}" cy="${(y + 5).toFixed(1)}" r="${r2}" fill="#1f5230"/>`; }
-  const gx = cx(1);
-  const bunker = (dx, dy, rx, ry) => `<ellipse cx="${(gx + dx).toFixed(1)}" cy="${(gy + dy).toFixed(1)}" rx="${rx}" ry="${ry}" fill="#efe2b8" stroke="#d6c58f" stroke-width=".8"/>`;
-  const bunkers = (h % 2 ? bunker(24, 6, 8, 5) : bunker(-24, 4, 8, 5)) + (par > 3 && h % 3 !== 1 ? bunker(h % 2 ? -21 : 21, 15, 6, 4) : '');
-  const marker = (t, label) => { const y = yAt(t); return `<g><circle cx="${cx(t).toFixed(1)}" cy="${y.toFixed(1)}" r="2.2" fill="#fff"/><text x="${(cx(t) + 8).toFixed(1)}" y="${(y + 3).toFixed(1)}" font-size="8" fill="#fff" font-family="Arial,sans-serif" opacity=".85">${label}</text></g>`; };
-  const markers = par === 3 ? '' : marker(0.62, '150') + marker(0.76, '100');
-  return `<svg class="kp-hole" viewBox="0 0 ${W} ${H}" role="img" aria-label="Illustration of hole ${h + 1}, par ${par}">
-    <defs>
-      <pattern id="rough" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="#2e6a3d"/><rect width="10" height="5" fill="#2b643a"/></pattern>
-      <pattern id="fw" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(-8)"><rect width="12" height="12" fill="#6cbf72"/><rect width="12" height="6" fill="#62b569"/></pattern>
-    </defs>
-    <rect x="2" y="2" width="${W - 4}" height="${H - 4}" rx="14" fill="url(#rough)"/>
-    ${trees}${fairway}
-    <ellipse cx="${gx.toFixed(1)}" cy="${gy}" rx="27" ry="19" fill="#5fae66"/>
-    <ellipse cx="${gx.toFixed(1)}" cy="${gy}" rx="22" ry="15" fill="#93dc97"/>
-    ${bunkers}${markers}
-    <line x1="${(gx + 3).toFixed(1)}" y1="${gy + 2}" x2="${(gx + 3).toFixed(1)}" y2="${gy - 24}" stroke="#fff" stroke-width="1.6"/>
-    <path d="M${(gx + 3).toFixed(1)} ${gy - 24} h15 v10 h-15z" fill="#e9c869"/>
-    <text x="${(gx + 10.5).toFixed(1)}" y="${gy - 16}" font-size="8" font-weight="700" text-anchor="middle" fill="#10301e" font-family="Arial,sans-serif">${h + 1}</text>
-    <rect x="${(cx(0) - 9).toFixed(1)}" y="${ty + 2}" width="18" height="8" rx="2" fill="#8fd694" stroke="#24552f"/>
-    <rect x="${(cx(0) - 7).toFixed(1)}" y="${ty + 13}" width="14" height="6" rx="2" fill="#8fd694" stroke="#24552f"/>
-    ${yards ? `<text x="${W / 2}" y="${H - 8}" font-size="10" font-weight="700" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif">${yards} YDS · PAR ${par}</text>` : ''}
-  </svg>`;
-}
-
-const COURSE_MAP_QUERY = { fallen: 'Fallen Oak Golf Club, 24400 MS-15, Saucier, MS', shell: 'Shell Landing Golf Club, 3499 Shell Landing Blvd, Gautier, MS', windance: 'Windance Country Club, 19385 Champion Cir, Gulfport, MS' };
-function courseMapUrl(ck) {
-  const q = COURSE_MAP_QUERY[ck] || (S.config.courses[ck] && S.config.courses[ck].name + ' golf course') || 'golf course';
-  const ios = /iPhone|iPad|iPod/.test(navigator.userAgent || '');
-  return ios ? 'https://maps.apple.com/?q=' + encodeURIComponent(q) + '&t=k' : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
-}
 
 function todayISO() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function defaultKeepDay() {
@@ -1269,12 +1369,16 @@ function viewKeep() {
   const g = groups.find(x => x.n === ui.kgroup);
   if (!g) {
     const mine = myGroups()[day];
-    const list = groups.map(x => { const thru = groupThru(day, x); return `<button class="kp-group ${mine === x.n ? 'mine' : ''}" data-act="kgroup" data-n="${x.n}"><span><b>Group ${x.n}${mine === x.n ? ' · yours' : ''}</b><span class="kp-names">${esc(x.label)}</span></span><span class="thru ${thru === 18 ? 'done' : ''}">${thru === 18 ? '✓ Done' : thru ? 'Thru ' + thru : 'Start'}</span></button>`; }).join('');
-    return dayChips + `<section class="panel"><div><h2>Who are you keeping score for?</h2><div class="muted small">${DAY_LABEL[day]} · ${esc(course.name)} · ${esc(FORMATS[dc.format].label)}. ${dc.format === 'bb4x2' ? 'Pick your 4-man team.' : 'Pick your foursome (Teams 1 & 2 play together, 3 & 4, and so on).'} This phone remembers your pick.</div></div>
+    const list = groups.map(x => { const thru = groupThru(day, x); const names = x.teams.flatMap(t => t.pids.filter(p => S.players[p]).map(p => S.players[p].name));
+      return `<button class="kp-group ${mine === x.n ? 'mine' : ''}" data-act="kgroup" data-n="${x.n}"><span><b>Group ${x.n}${mine === x.n ? ' · yours' : ''}</b><span class="kp-names">${names.map(esc).join('<br>')}</span></span><span class="thru ${thru === 18 ? 'done' : ''}">${thru === 18 ? '✓ Done' : thru ? 'Through ' + thru : 'Start'}</span></button>`; }).join('');
+    return dayChips + `<section class="panel"><div><h2>Who's in your group?</h2><div class="muted">${DAY_LABEL[day]} at ${esc(course.name)}. Tap your group. This phone remembers it.</div></div>
       ${groups.length ? `<div class="kp-groups">${list}</div>` : '<div class="empty">No teams set for this day yet.</div>'}</section>`;
   }
-  const head = `<div class="row between"><button class="btn" data-act="kback">← Groups</button><span class="muted small">${DAY_LABEL[day]} · ${esc(course.name)} · Group ${g.n}</span></div>`;
-  if (ui.kreview) return head + reviewCard(day, g, course);
+  const sync = (navigator.onLine === false) ? `<div class="kp-sync off">No signal. Scores are saved on this phone and will send when you have signal.</div>` : ui.pending ? `<div class="kp-sync wait">Sending scores…</div>` : `<div class="kp-sync ok">✓ All scores sent</div>`;
+  const head = `<div class="row between"><button class="btn" data-act="kchange">Change group</button><span class="muted">${DAY_LABEL[day]} · Group ${g.n}</span></div>${sync}`;
+  if (isLocked(day)) return head + `<section class="panel"><h2>${DAY_LABEL[day]} is final</h2><p>The admin locked ${DAY_LABEL[day]}'s scores. If something's wrong, tell the admin.</p></section>`;
+  const undo = ui.kundo && ui.kundo.until > Date.now() && ui.kundo.day === day ? `<div class="undo"><span>Hole ${ui.kundo.h + 1} saved.</span><button class="btn" data-act="kundo">Undo</button></div>` : '';
+  if (ui.kreview) return head + undo + reviewCard(day, g, course, ui.kreview === 'front');
   const h = ui.khole == null ? firstOpenHole(day, g) : ui.khole;
   ui.khole = h;
   const par = course.pars[h], si = course.si[h];
@@ -1286,7 +1390,7 @@ function viewKeep() {
   const thruLine = (u) => {
     let gross = 0, net = 0, parT = 0, n = 0;
     for (let k = 0; k < 18; k++) { let s = k === h ? (isSet(u) ? val(u) : null) : savedScore(day, u.key, k); if (s == null) continue; s = Math.min(s, maxFor(S, day, u.ph, k)); gross += s; net += s - pops(u.ph, course.si[k]); parT += course.pars[k]; n++; }
-    return n ? `Thru ${n}: ${gross} · net ${toParStr(net - parT)}` : '';
+    return n ? `Through ${n}: ${gross}, net ${toParStr(net - parT)}` : '';
   };
   const rule = maxRule(S, day);
   const rows = g.units.map(u => {
@@ -1294,7 +1398,7 @@ function viewKeep() {
     const word = atMax ? 'Max' : d <= -2 ? 'Eagle' : d === -1 ? 'Birdie' : d === 0 ? 'Par' : d === 1 ? 'Bogey' : d === 2 ? 'Double' : '+' + d;
     const outAsk = ui.kout === u.key ? `<div class="kp-out-ask"><span>Mark <b>${esc(u.name)}</b> out for the rest of the round? He gets the max on this hole and every hole after it.</span><span class="row"><button class="btn" data-act="kout-no">Cancel</button><button class="btn danger armed" data-act="kout-yes" data-key="${esc(u.key)}">Yes, he's out</button></span></div>` : '';
     return `<div class="kp-row ${atMax ? 'atmax' : ''}">
-      <div class="kp-who"><b>${esc(u.name)}</b><span>${p > 0 ? '<i class="kp-pop">' + '●'.repeat(p) + '</i> gets ' + p + ' stroke' + (p > 1 ? 's' : '') : p < 0 ? 'gives a stroke' : 'no stroke'} · ${esc(u.sub)}${rule.type !== 'none' ? ' · max ' + cap : ''}</span><span class="kp-run">${thruLine(u)}</span>
+      <b class="kp-nm">${esc(u.name)}</b><div class="kp-who"><span>${p > 0 ? '<i class="kp-pop">' + '●'.repeat(p) + '</i> gets ' + p + ' stroke' + (p > 1 ? 's' : '') : p < 0 ? 'gives a stroke' : 'no stroke'}${rule.type !== 'none' ? ' · max ' + cap : ''}</span><span class="kp-run">${thruLine(u)}</span>
         <span class="kp-mini"><button class="link" data-act="kmax" data-key="${esc(u.key)}">MAX</button>${FORMATS[dc.format].scramble ? '' : `<button class="link" data-act="kout" data-key="${esc(u.key)}">Out</button>`}</span></div>
       <div class="kp-ctl">
         <button class="kp-btn" data-act="kminus" data-key="${esc(u.key)}" aria-label="One less for ${esc(u.name)}">−</button>
@@ -1309,16 +1413,18 @@ function viewKeep() {
     ui.kctp = ui.kctp || {};
     const ck = day + '|' + cc.id + '|' + g.n, draft = ui.kctp[ck] || ctpSaved(day, cc.id, g.n) || {};
     const opts = `<option value="">Nobody on the green</option>` + g.units.flatMap(u => FORMATS[dc.format].scramble ? (S.teams[day].find(t => t.id === u.key) || { pids: [] }).pids : [u.key]).filter(p => S.players[p]).map(p => `<option value="${p}" ${draft.pid === p ? 'selected' : ''}>${esc(S.players[p].name)}</option>`).join('');
-    ctp = `<div class="kp-ctp"><b>Closest to the pin · ${fmt$(cc.amt)}</b><span class="muted small">Who in your group is closest, and how far? The app keeps the best one across all groups.</span>
-      <div class="row"><select id="kctp-p" data-kctp="pid">${opts}</select>
+    const on = draft.on != null ? draft.on : (draft.pid ? true : null);
+    ctp = `<div class="kp-ctp"><b>Closest to the pin · ${fmt$(cc.amt)}</b><span>Anyone in your group on the green?</span>
+      <div class="row"><button class="btn ${on === true ? 'primary' : ''}" data-act="kctp-yes">Yes</button><button class="btn ${on === false ? 'primary' : ''}" data-act="kctp-no">No</button></div>
+      ${on ? `<span class="muted small">Who's closest, and how far? The app keeps the best one across all groups.</span><div class="row"><select id="kctp-p" data-kctp="pid">${opts.replace('Nobody on the green', 'Pick a name')}</select>
       <label class="kp-dist"><input id="kctp-ft" data-kctp="ft" inputmode="numeric" value="${esc(draft.ft ?? '')}" placeholder="0"> ft</label>
-      <label class="kp-dist"><input id="kctp-in" data-kctp="inch" inputmode="numeric" value="${esc(draft.inch ?? '')}" placeholder="0"> in</label></div></div>`;
+      <label class="kp-dist"><input id="kctp-in" data-kctp="inch" inputmode="numeric" value="${esc(draft.inch ?? '')}" placeholder="0"> in</label></div>` : ''}</div>`;
   }
   const flagged = g.units.filter(u => val(u) <= par - 2);
   const flagAsk = ui.kflag === h && flagged.length ? `<div class="banner"><p><b>Double-check:</b> ${flagged.map(u => esc(u.name) + ' ' + val(u)).join(', ')} on a par ${par}. That right?</p><div class="row"><button class="btn" data-act="kflag-no">Let me fix it</button><button class="btn primary" data-act="ksave" data-ok="1">Yes, save it</button></div></div>` : '';
   const dots = course.pars.map((pp, k) => { const done = g.units.every(u => savedScore(day, u.key, k) != null); return `<button class="kp-dot ${k === h ? 'on' : ''} ${done ? 'done' : ''}" data-act="khole" data-h="${k}" aria-label="Hole ${k + 1}">${k + 1}</button>`; }).join('');
   const allDone = groupThru(day, g) === 18;
-  return head + `
+  return head + undo + `
   <section class="panel kp">
     <div class="kp-dots">${dots}</div>
     <div class="kp-head">
@@ -1329,13 +1435,21 @@ function viewKeep() {
     ${ctp}${flagAsk}
     <div class="kp-nav">
       ${h > 0 ? `<button class="btn" data-act="kprev">← Hole ${h}</button>` : ''}
-      <button class="btn primary kp-next" data-act="ksave">${h === 17 ? 'Save hole 18 · review card' : 'Save · go to hole ' + (h + 2) + ' →'}</button>
+      <button class="btn primary kp-next" data-act="ksave">${h === 17 ? 'Save hole 18 · check the card' : h === 8 ? 'Save · check the front 9' : 'Save · next hole →'}</button>
     </div>
     ${allDone ? '<div class="row"><button class="btn" data-act="kreview">Review the full card</button></div>' : ''}
   </section>`;
 }
 
-function reviewCard(day, g, course) {
+function reviewCard(day, g, course, front) {
+  if (front) {
+    const rowsF = g.units.map(u => { const arr = cappedCard(S, day, u.key, u.ph).slice(0, 9); const out = arr.reduce((s, v) => s + (v || 0), 0);
+      return `<tr><td><b>${esc(u.name)}</b></td>${arr.map((v, h) => `<td><button class="kp-cell" data-act="khole-fix" data-h="${h}">${v == null ? '–' : v}</button></td>`).join('')}<td class="tot">${out}</td></tr>`; }).join('');
+    return `<section class="panel"><h2>Front 9 done</h2><div class="muted">Compare with the paper card. Tap any score to fix it.</div>
+      <div class="tbl-wrap"><table class="card"><thead><tr><th>Hole</th>${[...Array(9).keys()].map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">Out</th></tr></thead><tbody>
+      <tr class="meta"><td>Par</td>${course.pars.slice(0, 9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${course.pars.slice(0, 9).reduce((a, b) => a + b, 0)}</td></tr>${rowsF}</tbody></table></div>
+      <div class="row"><button class="btn primary kp-next" data-act="kfront-ok">Looks right · start the back 9</button></div></section>`;
+  }
   const rows = g.units.map(u => {
     const arr = cappedCard(S, day, u.key, u.ph);
     const sumR = (a, b) => arr.slice(a, b).reduce((s, v) => s + (v || 0), 0);
@@ -1358,7 +1472,19 @@ async function keepAction(act, b) {
   const day = ui.kday;
   if (act === 'kday') { ui.kday = b.dataset.day; ui.kgroup = null; ui.khole = null; ui.kpick = false; ui.kreview = false; return render(); }
   if (act === 'kgroup') { ui.kgroup = Number(b.dataset.n); rememberGroup(day, ui.kgroup); ui.khole = null; ui.kpick = false; ui.kreview = false; render(); window.scrollTo(0, 0); return; }
-  if (act === 'kback') { ui.kgroup = null; ui.khole = null; ui.kpick = true; ui.kreview = false; return render(); }
+  if (act === 'kback' || act === 'kchange') { ui.kgroup = null; ui.khole = null; ui.kpick = true; ui.kreview = false; return render(); }
+  if (act === 'kfront-ok') { ui.kreview = false; ui.khole = 9; render(); window.scrollTo(0, 0); return; }
+  if (act === 'kundo') {
+    const u = ui.kundo; ui.kundo = null; if (!u || u.day !== day) return render();
+    saveScores(day, u.prev); ui.khole = u.h; ui.kreview = false; toast('Hole ' + (u.h + 1) + ' put back the way it was.'); return render();
+  }
+  if (act === 'kctp-yes' || act === 'kctp-no') {
+    const cc = ctpContest(day, ui.khole); if (!cc) return;
+    ui.kctp = ui.kctp || {}; const ck = day + '|' + cc.id + '|' + ui.kgroup;
+    const d = ui.kctp[ck] = ui.kctp[ck] || Object.assign({}, ctpSaved(day, cc.id, ui.kgroup) || {});
+    d.on = act === 'kctp-yes'; if (!d.on) { d.pid = ''; d.ft = ''; d.inch = ''; }
+    return render();
+  }
   if (act === 'khole' || act === 'khole-fix') { ui.khole = Number(b.dataset.h); ui.kreview = false; ui.kflag = null; render(); window.scrollTo(0, 0); return; }
   if (act === 'kprev') { ui.khole = Math.max(0, ui.khole - 1); ui.kflag = null; return render(); }
   if (act === 'kreview') { ui.kreview = true; render(); window.scrollTo(0, 0); return; }
@@ -1376,34 +1502,36 @@ async function keepAction(act, b) {
   }
   if (act === 'kmax') { const key = b.dataset.key; ui.kvals[day + '|' + key + '|' + h] = maxFor(S, day, unit(key).ph, h); return render(); }
   if (act === 'kout') { ui.kout = b.dataset.key; return render(); }
-  const save = (out) => { writeDoc('scores_' + day, { h: out }, true); };      // not awaited: works offline, sends when back online
+  const save = (out) => saveScores(day, out);      // not awaited: works offline, sends when back online; logged
   if (act === 'kout-yes') {
     const u = unit(b.dataset.key); ui.kout = null;
     const arr = ((S.scores[day] && S.scores[day][u.key]) || new Array(18).fill(null)).slice(); while (arr.length < 18) arr.push(null);
     for (let k = h; k < 18; k++) if (arr[k] == null || k === h) arr[k] = maxFor(S, day, u.ph, k);
-    S.scores[day] = S.scores[day] || {}; S.scores[day][u.key] = arr;
     save({ [u.key]: arr }); toast(u.name + ' marked out. Max scores entered for the rest of the round.'); return render();
   }
   if (act === 'ksave') {
     if (!b.dataset.ok && g.units.some(u => cur(u.key) <= par - 2)) { ui.kflag = h; return render(); }
     ui.kflag = null;
-    const out = {};
+    if (isLocked(day)) { toast(DAY_LABEL[day] + ' is locked.'); return render(); }
+    const out = {}, prev = {};
     g.units.forEach(u => {
       const arr = ((S.scores[day] && S.scores[day][u.key]) || new Array(18).fill(null)).slice();
       while (arr.length < 18) arr.push(null);
+      prev[u.key] = arr.slice();
       arr[h] = cur(u.key); out[u.key] = arr;
       delete ui.kvals[day + '|' + u.key + '|' + h];
     });
-    S.scores[day] = Object.assign({}, S.scores[day], out);          // show it right away, even offline
     save(out);
+    ui.kundo = { day, h, prev, until: Date.now() + 6000 }; clearTimeout(keepAction.ut); keepAction.ut = setTimeout(() => { if (ui.kundo && ui.kundo.until <= Date.now() + 50) { ui.kundo = null; if (ui.tab === 'keep') render(); } }, 6100);
     const cc = ctpContest(day, h);
     if (cc) {
       const ck = day + '|' + cc.id + '|' + g.n, d = (ui.kctp && ui.kctp[ck]) || ctpSaved(day, cc.id, g.n);
-      if (d) writeDoc('extras', { [day]: { ctp: { [cc.id]: { ['g' + g.n]: d.pid ? { pid: d.pid, ft: Number(d.ft) || 0, inch: Number(d.inch) || 0 } : null } } } }, true);
+      if (d && (d.on != null || d.pid)) writeDoc('extras', { [day]: { ctp: { [cc.id]: { ['g' + g.n]: d.on !== false && d.pid ? { pid: d.pid, ft: Number(d.ft) || 0, inch: Number(d.inch) || 0 } : null } } } }, true);
       if (ui.kctp) delete ui.kctp[ck];
     }
-    if (h < 17) { ui.khole = h + 1; toast('Hole ' + (h + 1) + ' saved.'); }
-    else { ui.kreview = true; toast('Hole 18 saved. Check the card.'); }
+    if (h === 8 && g.units.every(u => (S.scores[day][u.key] || []).slice(0, 9).every(v => v != null))) { ui.kreview = 'front'; ui.khole = 9; }
+    else if (h < 17) { ui.khole = h + 1; }
+    else { ui.kreview = true; }
     render(); window.scrollTo(0, 0); return;
   }
 }
@@ -1416,6 +1544,452 @@ document.addEventListener('input', (e) => {
   d[f] = f === 'pid' ? e.target.value : e.target.value.replace(/[^0-9]/g, '');
 });
 document.addEventListener('change', (e) => { if (e.target.dataset && e.target.dataset.kctp === 'pid') e.target.dispatchEvent(new Event('input', { bubbles: true })); });
+
+// ===== Streamlined views: Right Now, Leaderboard, Money, drill-down sheets, settings, Admin hub =====
+// Expects the app scope from ui.html plus board.js (boardRows, shortName, lastName, tpStr, autoBoardDay)
+// and keep.js (keepGroups, todayISO).
+
+// ---------- small helpers ----------
+const MY_KEY = 'wyd-me';
+function meId() { try { const m = localStorage.getItem(MY_KEY); return m && S.players[m] ? m : null; } catch (e) { return null; } }
+function setMe(pid) { try { if (pid) localStorage.setItem(MY_KEY, pid); else localStorage.removeItem(MY_KEY); } catch (e) {} }
+function placeWord(pos) {
+  if (pos == null || pos === '') return '';
+  const s = String(pos), tied = s.startsWith('T'), n = Number(s.replace('T', ''));
+  return (tied ? 'tied for ' : '') + ordinal(n);
+}
+function underWord(n) {
+  if (n == null) return '';
+  const r = Math.round(n * 100) / 100;
+  return r === 0 ? 'even par' : Math.abs(r) + (r < 0 ? ' under' : ' over');
+}
+function agoText(ts) {
+  if (!ts) return '';
+  const s = Math.max(0, Math.round((Date.now() - ts) / 1000));
+  return s < 45 ? 'just now' : s < 90 ? '1 min ago' : s < 3600 ? Math.round(s / 60) + ' min ago' : Math.round(s / 3600) + ' hr ago';
+}
+setInterval(() => { document.querySelectorAll('[data-ago]').forEach(el => { el.textContent = agoText(Number(el.dataset.ago)); }); }, 20000);
+function dayNow() { const t = todayISO(), d = DAYS.find(x => S.config.days[x].date === t); return d || autoBoardDay(); }
+function dayStarted(day) { return Object.values(S.scores[day] || {}).some(c => Array.isArray(c) && c.some(v => v != null && v !== '')); }
+function isLocked(day) { return !!(S.config.locks && S.config.locks[day]); }
+function courseOf(day) { return S.config.courses[S.config.days[day].course]; }
+function namesOf(pids, short) { return pids.filter(p => S.players[p]).map(p => short ? shortName(S.players[p].name) : S.players[p].name); }
+function teamOfPid(day, pid) { return (S.teams[day] || []).find(t => (t.pids || []).includes(pid)); }
+const LB_DAYS = { fri: 'Fri', sat: 'Sat', sun: 'Sun' };
+
+// One leaderboard row, used everywhere on phones.
+function lbRow(o) {
+  return `<button class="lb-row ${o.me ? 'me' : ''} ${o.money ? 'paid' : ''}" ${o.act || ''}>
+    <span class="lb-rank">${esc(o.rank ?? '')}</span>
+    <span class="lb-name"><b>${o.nameHtml || esc(o.name)}</b>${o.sub ? `<small>${o.sub}</small>` : ''}</span>
+    <span class="lb-right"><span class="lb-score ${o.scoreCls || ''}">${o.score ?? ''}</span>${o.money ? `<span class="lb-money">${fmt$(o.money)}</span>` : ''}</span></button>`;
+}
+// Team names that fit on a phone: 4-man teams by last name, 2-man by initial + last name.
+function teamName(names) { return names.length > 2 ? names.map(lastName).join(' · ') : names.map(shortName).join(' / '); }
+const scoreCls = (n) => n == null ? '' : n < 0 ? 'under' : n > 0 ? 'over' : 'even';
+const thruWord = (x) => x.final ? 'Finished' : x.thru ? 'Through ' + x.thru : 'Not started';
+
+// Every dollar a player has won, with plain labels, across the trip.
+function moneyItems(pid) {
+  const tm = tripMoney(S), out = [];
+  for (const d of DAYS) { const m = tm.days[d].money[pid]; if (m) m.items.forEach(i => out.push({ day: d, why: i.why, amt: i.amt })); }
+  const w = tm.weekend.list.find(x => x.pid === pid && x.payout);
+  if (w) out.push({ day: 'wknd', why: 'Weekend individual ' + ordinal(w.pos), amt: w.payout });
+  return out;
+}
+function plainWhy(why) {
+  return String(why).replace(/^CTP #/, 'Closest to pin #').replace(/^LD #/, 'Long drive #').replace(/ \(tie\)/, ', tied')
+    .replace(/^(\d+)(st|nd|rd|th)(, tied)? place$/, (m, n, s, t) => n + s + ' place team' + (t || ''));
+}
+function moneySentence(pid, who) {
+  const items = moneyItems(pid), total = items.reduce((s, i) => s + i.amt, 0);
+  if (!items.length) return `${who} hasn't won any money yet.`;
+  return `${who} won <b>${fmt$(total)}</b>: ` + items.map(i => `${i.day === 'wknd' ? '' : LB_DAYS[i.day] + ' '}${esc(plainWhy(i.why))} (${fmt$(i.amt)})`).join(', ') + '.';
+}
+
+// ---------- Right Now ----------
+function viewNow() {
+  const day = dayNow(), me = meId();
+  const { r, rows } = boardRows(day);
+  const live = dayStarted(day);
+  const head = `<section class="now-head"><div><div class="now-kicker">${DAY_LABEL[day]} · ${esc(r.course.name)}</div>
+    <h2>${r.complete ? 'Final results' : live ? 'Live now' : 'Up next'}</h2></div>
+    <div class="now-upd">${ui.lastSnap ? `Updated <span data-ago="${ui.lastSnap}">${agoText(ui.lastSnap)}</span>` : ''}</div></section>`;
+  let pick = '';
+  if (!me && !ui.meSkip) {
+    pick = `<section class="panel soft"><h3>Who are you?</h3><div class="muted">Pick your name and the app highlights you everywhere.</div>
+      <div class="row"><select id="me-pick" data-me="1" class="big"><option value="">Choose your name</option>${Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([pid, p]) => `<option value="${pid}">${esc(p.name)}</option>`).join('')}</select>
+      <button class="btn" data-act="me-skip">Not now</button></div></section>`;
+  }
+  let mine = '';
+  if (me) {
+    const nm = S.players[me].name.split(' ')[0];
+    const t = rows.find(x => (S.teams[day].find(y => y.id === x.id) || { pids: [] }).pids.includes(me));
+    const line = t ? (t.toPar == null ? `Your team hasn't started yet.` : `Your team is <b>${placeWord(t.pos)}</b> at <b>${underWord(t.toPar)}</b>, ${t.final ? 'finished' : 'through ' + t.thru + ' holes'}.`) : `You're not on a ${DAY_LABEL[day]} team yet.`;
+    mine = `<section class="panel me-card"><div class="row between"><h3>${esc(nm)}</h3><button class="btn" data-act="sheet-p" data-pid="${me}">My scores</button></div>
+      <p class="big-p">${line}</p><p>${moneySentence(me, 'You')}</p></section>`;
+  }
+  const top = rows.slice(0, 5).map(x => lbRow({ rank: x.pos, name: teamName(x.names), sub: thruWord(x), score: tpStr(x.toPar), scoreCls: scoreCls(x.toPar), money: x.payout, me: me && teamPids(day, x.id).includes(me), act: `data-act="sheet-t" data-day="${day}" data-id="${esc(x.id)}"` })).join('');
+  const skins = r.skins.length ? r.skins.slice().reverse().slice(0, 6).map(s => `<div class="li"><span><b>Hole ${s.hole}</b> ${s.winners.map(w => esc(w.name)).join(' and ')}${s.winners.length === 2 ? ' <span class="muted">(split)</span>' : ''}</span><span class="amt">${fmt$(s.winners.reduce((a, w) => a + w.amt, 0))}</span></div>`).join('') : '<div class="muted">No skins won yet.</div>';
+  const summary = r.complete ? daySummary(day) : '';
+  return head + pick + mine + `
+    <section class="panel"><div class="row between"><h3>Leaders</h3><button class="btn" data-act="go" data-tab="board">Full leaderboard</button></div>
+      <div class="lb">${top || '<div class="muted">No teams yet.</div>'}</div></section>` + summary + `
+    <section class="panel"><div class="row between"><h3>Latest skins</h3><span class="muted small">${r.skinUnits ? r.skinUnits + ' won so far' : ''}</span></div>${skins}</section>`;
+}
+function teamPids(day, id) { const t = (S.teams[day] || []).find(x => x.id === id); return t ? t.pids.filter(Boolean) : []; }
+
+// End-of-day card: winners, skins, low round. Share sends the plain text.
+function daySummaryText(day) {
+  const r = computeDay(S, day), out = [`Who's Your Daddy 2026 · ${DAY_LABEL[day]} at ${r.course.name}`];
+  r.standings.filter(t => t.payout).forEach(t => out.push(`${t.tied ? 'T' : ''}${t.pos}. ${t.name} ${t.total} (${fmt$(t.payout)})`));
+  if (r.skins.length) out.push('Skins: ' + r.skins.map(s => '#' + s.hole + ' ' + s.winners.map(w => w.name).join(' & ')).join(', '));
+  if (!r.fmt.scramble) {
+    const ind = r.standings.flatMap(t => t.members.map(m => ({ pid: m.pid, g: m.gross.reduce((a, b) => a + (b || 0), 0), n: m.gross.reduce((a, b) => a + (b || 0), 0) - m.ph }))).filter(x => x.g);
+    const lowG = ind.slice().sort((a, b) => a.g - b.g)[0], lowN = ind.slice().sort((a, b) => a.n - b.n)[0];
+    if (lowG) out.push(`Low gross: ${S.players[lowG.pid].name} ${lowG.g}`);
+    if (lowN) out.push(`Low net: ${S.players[lowN.pid].name} ${lowN.n}`);
+  }
+  const ctp = r.contests.filter(c => c.winner).map(c => '#' + c.hole + ' ' + S.players[c.winner].name);
+  if (ctp.length) out.push('Closest to pin: ' + ctp.join(', '));
+  return out.join('\n');
+}
+function daySummary(day) {
+  const lines = daySummaryText(day).split('\n');
+  return `<section class="panel summary"><div class="row between"><h3>${DAY_LABEL[day]} wrap-up</h3><button class="btn primary" data-act="share-day" data-day="${day}">Share</button></div>
+    ${lines.slice(1).map(l => `<div>${esc(l)}</div>`).join('')}</section>`;
+}
+
+// ---------- Leaderboard ----------
+function viewLeaderboard() {
+  const me = meId();
+  if (!ui.lday) ui.lday = dayNow();
+  const sel = ui.lday;
+  const chips = `<div class="chips seg">${DAYS.map(d => `<button class="chip" aria-pressed="${sel === d}" data-act="lday" data-day="${d}">${DAY_LABEL[d]}</button>`).join('')}<button class="chip" aria-pressed="${sel === 'wknd'}" data-act="lday" data-day="wknd">Weekend</button></div>`;
+  const tvBtn = `<div class="row"><button class="btn" data-act="tv-on">Show on clubhouse TV</button></div>`;
+  if (sel === 'wknd') return chips + weekendBoard(me) + tvBtn;
+  const day = sel, { r, rows } = boardRows(day);
+  const list = rows.map(x => { const pids = teamPids(day, x.id); return lbRow({ rank: x.pos, name: teamName(x.names), sub: thruWord(x), score: tpStr(x.toPar), scoreCls: scoreCls(x.toPar), money: x.payout, me: me && pids.includes(me), act: `data-act="sheet-t" data-day="${day}" data-id="${esc(x.id)}"` }); });
+  const myRow = me ? rows.find(x => teamPids(day, x.id).includes(me)) : null;
+  const pinned = myRow ? `<div class="lb pinned"><div class="lb-cap">Your team</div>${lbRow({ rank: myRow.pos, name: teamName(myRow.names), sub: thruWord(myRow), score: tpStr(myRow.toPar), scoreCls: scoreCls(myRow.toPar), money: myRow.payout, me: true, act: `data-act="sheet-t" data-day="${day}" data-id="${esc(myRow.id)}"` })}</div>` : '';
+  const status = r.complete ? '<span class="pill final">Final</span>' : dayStarted(day) ? `<span class="pill live">${r.cardsIn} of ${r.cardsTotal} finished</span>` : '';
+  const head = `<section class="panel"><div class="row between"><div><h2>${DAY_LABEL[day]} · ${esc(r.course.name)}</h2><div class="muted">${esc(r.fmt.label)}. Tap a team to see its card.</div></div>${status}${isLocked(day) ? '<span class="pill">Locked</span>' : ''}</div>
+    ${pinned}<div class="lb-hdr"><span>Place</span><span>Team</span><span>Score · won</span></div><div class="lb">${list.join('') || '<div class="muted">No teams set yet.</div>'}</div></section>`;
+  return chips + (r.complete ? daySummary(day) : '') + head + dayDetails(day, r, me) + tvBtn;
+}
+function dayDetails(day, r, me) {
+  const scr = r.fmt.scramble;
+  const skinRows = r.skins.map(s => s.winners.map(w => `<div class="li ${me && w.pids.includes(me) ? 'me' : ''}"><span><b>Hole ${s.hole}</b> ${esc(w.name)} <span class="muted small">${s.gross ? 'gross' : 'net'} ${s.score} on a par ${s.par}${s.worth > 1 ? ' · worth ' + s.worth + ' skins' : ''}${s.winners.length === 2 ? ' · split' : ''}</span></span><span class="amt">${fmt$(w.amt)}</span></div>`).join('')).join('');
+  const carry = r.carries.length ? `<div class="muted small">No skin (3 or more tied, carried over): holes ${r.carries.map(c => c.hole).join(', ')}.</div>` : '';
+  const ctp = r.contests.map(c => `<div class="li ${me && c.winner === me ? 'me' : ''}"><span><b>Hole ${c.hole}</b> ${c.winner ? esc(S.players[c.winner].name) + (c.dist ? ' <span class="muted small">' + c.dist + '</span>' : '') : '<span class="muted">Not decided yet</span>'}</span><span class="amt">${c.winner ? fmt$(c.amt) : ''}</span></div>`).join('');
+  const games = r.games.map(g => `<div class="game"><b>${esc(g.label)}</b>${g.list.filter(x => x.payout).map(x => `<div class="li ${me && x.pids.includes(me) ? 'me' : ''}"><span>${esc(x.name)} <span class="muted small">${tpStr(x.toPar)}${x.tied ? ', tied' : ''}</span></span><span class="amt">${fmt$(x.payout)}</span></div>`).join('') || '<div class="muted small">Not decided yet</div>'}</div>`).join('');
+  const det = (key, title, sub, body) => `<details class="panel det" ${ui.open && ui.open[key] ? 'open' : ''} data-det="${key}"><summary><h3>${title}</h3><span class="muted small">${sub}</span></summary>${body}</details>`;
+  let pairs = '';
+  if (day === 'sun' && !dayStarted('sun') && (S.teams.sun || []).length) {
+    pairs = det('pairs', 'Sunday pairings', (S.teams.sun || []).length + ' teams', (S.teams.sun || []).map((t, i) => `<div class="li ${me && t.pids.includes(me) ? 'me' : ''}"><span><b>Team ${i + 1}</b> ${esc(namesOf(t.pids).join(' & '))}</span></div>`).join(''));
+  }
+  return pairs + det('skins', 'Skins', `${fmt$(r.skinsPot)} pot · ${r.skinUnits ? r.skinUnits + ' skins at about ' + fmt$(Math.round(r.skinValue)) : 'none yet'}`, (skinRows || '<div class="muted">No skins won yet.</div>') + carry)
+    + (r.contests.length ? det('ctp', 'Closest to the pin', r.contests.length + ' holes', ctp) : '')
+    + (r.games.length ? det('games', scr ? 'Nines' : 'Nines & individual games', 'Net · ties split', `<div class="games">${games}</div>`) : '');
+}
+// Live weekend standings (Fri net + Sat net + Sunday team net, to par).
+function weekendLive() {
+  const parOf = (d) => courseOf(d).pars.reduce((a, b) => a + b, 0);
+  const sunTP = {};
+  boardRows('sun').rows.forEach(t => { if (t.toPar != null) teamPids('sun', t.id).forEach(pid => { sunTP[pid] = t.toPar; }); });
+  const tm = tripMoney(S), payBy = Object.fromEntries(tm.weekend.list.filter(x => x.payout).map(x => [x.pid, x.payout]));
+  const rows = individualNet(S, ['fri', 'sat']).map(p => {
+    const f = p.detail.fri != null ? p.detail.fri - parOf('fri') : null, s = p.detail.sat != null ? p.detail.sat - parOf('sat') : null, u = sunTP[p.pid] ?? null;
+    const parts = [f, s, u].filter(v => v != null);
+    return { pid: p.pid, name: p.name, f, s, u, n: parts.length, toPar: parts.length ? Math.round(parts.reduce((a, b) => a + b, 0) * 100) / 100 : null, pay: payBy[p.pid] || 0 };
+  }).sort((a, b) => (a.toPar == null) - (b.toPar == null) || (a.toPar ?? 0) - (b.toPar ?? 0) || b.n - a.n || a.name.localeCompare(b.name));
+  let i = 0; while (i < rows.length) { let j = i + 1; while (j < rows.length && rows[j].toPar === rows[i].toPar) j++; for (let k = i; k < j; k++) rows[k].pos = rows[i].toPar == null ? '' : (j - i > 1 ? 'T' : '') + (i + 1); i = j; }
+  return { rows, complete: tm.weekend.complete };
+}
+function weekendBoard(me) {
+  const { rows, complete } = weekendLive();
+  const places = (S.config.weekend && S.config.weekend.places) || [];
+  const sub = (x) => ['f', 's', 'u'].map((k, i) => x[k] == null ? null : ['Fri', 'Sat', 'Sun'][i] + ' ' + tpStr(x[k])).filter(Boolean).join(' · ') || 'No rounds yet';
+  const mine = me ? rows.find(x => x.pid === me) : null;
+  return `<section class="panel"><div class="row between"><div><h2>Weekend individual</h2><div class="muted">Your Friday net + Saturday net + your Sunday team's net. Pays ${places.map((p, i) => ordinal(i + 1) + ' ' + fmt$(p)).join(', ')}.</div></div>${complete ? '<span class="pill final">Final</span>' : '<span class="pill live">In progress</span>'}</div>
+    ${mine ? `<div class="lb pinned"><div class="lb-cap">You</div>${lbRow({ rank: mine.pos, name: mine.name, sub: sub(mine), score: tpStr(mine.toPar), scoreCls: scoreCls(mine.toPar), money: mine.pay, me: true, act: `data-act="sheet-p" data-pid="${mine.pid}"` })}</div>` : ''}
+    <div class="lb">${rows.map(x => lbRow({ rank: x.pos, name: x.name, sub: sub(x), score: tpStr(x.toPar), scoreCls: scoreCls(x.toPar), money: x.pay, me: x.pid === me, act: `data-act="sheet-p" data-pid="${x.pid}"` })).join('')}</div></section>`;
+}
+
+// ---------- Money ----------
+function viewMoney() {
+  const me = meId(), sec = ui.msec || 'list';
+  const chips = `<div class="chips seg"><button class="chip" aria-pressed="${sec === 'list'}" data-act="msec" data-k="list">Money list</button><button class="chip" aria-pressed="${sec === 'players'}" data-act="msec" data-k="players">Everyone's scores</button><button class="chip" aria-pressed="${sec === 'detail'}" data-act="msec" data-k="detail">By day &amp; seeds</button></div>`;
+  if (sec === 'players') return chips + viewPlayerScores();
+  if (sec === 'detail') return chips + viewTrip();
+  const tm = tripMoney(S), buyIn = Number(S.config.buyIn) || 0;
+  const list = tm.list.slice();
+  const ranks = rankLabels(list, x => x.total);
+  const paid = list.reduce((s, p) => s + p.total, 0), pot = buyIn * list.length;
+  const short = (pid) => { const items = moneyItems(pid); return items.length ? items.map(i => (i.day === 'wknd' ? '' : LB_DAYS[i.day] + ' ') + plainWhy(i.why)).join(' · ') : 'Nothing yet'; };
+  const mine = me ? list.find(x => x.pid === me) : null;
+  return chips + `<section class="panel"><div class="row between"><h2>Money list</h2><div class="kpis"><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(paid)}</div><div class="l">Won so far</div></div></div></div>
+    ${mine ? `<p class="big-p">${moneySentence(me, 'You')} ${mine.net >= 0 ? `That's <b>${fmt$(mine.net)}</b> ahead of your ${fmt$(buyIn)} buy-in.` : `You're <b>${fmt$(-mine.net)}</b> short of your ${fmt$(buyIn)} buy-in.`}</p>` : ''}
+    <div class="lb">${list.map((p, i) => lbRow({ rank: p.total ? ranks[i] : '', name: p.name, sub: esc(short(p.pid)), score: '', money: p.total, me: p.pid === me, act: `data-act="sheet-p" data-pid="${p.pid}"` })).join('')}</div>
+    <div class="muted small">Tap a name to see where the money came from and his cards.</div></section>`;
+}
+
+// ---------- Drill-down sheets ----------
+function cardStrip(day, label, arr, ph, extraRows) {
+  const course = courseOf(day), H = [...Array(18).keys()];
+  const cell = (v, h) => { if (v == null) return '<td>–</td>'; const d = v - course.pars[h]; return `<td><span class="sc ${d <= -2 ? 'eagle' : d === -1 ? 'birdie' : d === 1 ? 'bogey' : d >= 2 ? 'dbl' : ''}">${v}</span>${ph != null && pops(ph, course.si[h]) > 0 ? '<i class="dot">' + '•'.repeat(pops(ph, course.si[h])) + '</i>' : ''}</td>`; };
+  const sum = (a, b) => arr.slice(a, b).reduce((s, v) => s + (v || 0), 0);
+  return `<div class="tbl-wrap"><table class="card mini"><thead><tr><th>Hole</th>${H.slice(0, 9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">Out</th>${H.slice(9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">In</th><th class="tot">Tot</th></tr></thead><tbody>
+    <tr class="meta"><td>Par</td>${course.pars.slice(0, 9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${course.pars.slice(0, 9).reduce((a, b) => a + b, 0)}</td>${course.pars.slice(9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${course.pars.slice(9).reduce((a, b) => a + b, 0)}</td><td class="tot">${course.pars.reduce((a, b) => a + b, 0)}</td></tr>
+    <tr><td>${esc(label)}</td>${H.slice(0, 9).map(h => cell(arr[h], h)).join('')}<td class="tot">${sum(0, 9) || ''}</td>${H.slice(9).map(h => cell(arr[h], h)).join('')}<td class="tot">${sum(9, 18) || ''}</td><td class="tot">${sum(0, 18) || ''}</td></tr>
+    ${extraRows || ''}</tbody></table></div>`;
+}
+function sheetPlayer(pid) {
+  const p = S.players[pid]; if (!p) return '';
+  const parts = DAYS.map(day => {
+    const course = courseOf(day), par = course.pars.reduce((a, b) => a + b, 0);
+    if (FORMATS[S.config.days[day].format].scramble) {
+      const t = teamOfPid(day, pid); if (!t) return '';
+      const ph = scrambleTeamHcp(S, t.pids, day, t), arr = cappedCard(S, day, t.id, ph), n = arr.filter(v => v != null).length, g = arr.reduce((a, b) => a + (b || 0), 0);
+      return `<div class="sh-day"><div class="row between"><b>${DAY_LABEL[day]} · ${esc(course.name)}</b><span>${n === 18 ? `Team gross ${g}, net <b>${Math.round((g - ph) * 100) / 100}</b> (${underWord(g - ph - par)})` : n ? 'Through ' + n : 'Not played yet'}</span></div>
+        <div class="muted small">Scramble with ${esc(namesOf(t.pids.filter(x => x !== pid)).join(' & '))} · team handicap ${ph}</div>${n ? cardStrip(day, 'Team', arr, ph) : ''}</div>`;
+    }
+    const ph = playerPH(S, pid, day), arr = cappedCard(S, day, pid, ph), n = arr.filter(v => v != null).length, g = arr.reduce((a, b) => a + (b || 0), 0);
+    const t = teamOfPid(day, pid), mates = t ? namesOf(t.pids.filter(x => x !== pid)) : [];
+    return `<div class="sh-day"><div class="row between"><b>${DAY_LABEL[day]} · ${esc(course.name)}</b><span>${n === 18 ? `Gross ${g}, net <b>${g - ph}</b> (${underWord(g - ph - par)})` : n ? 'Through ' + n : 'Not played yet'}</span></div>
+      <div class="muted small">Course handicap ${ph} · ${esc(teeObj(pid, day).name)} tees${mates.length ? ' · with ' + esc(mates.join(', ')) : ''}</div>${n ? cardStrip(day, p.name.split(' ').slice(-1)[0], arr, ph) : ''}</div>`;
+  }).join('');
+  const isMe = meId() === pid;
+  return `<div class="sh-h"><div><h2>${esc(p.name)}</h2><div class="muted">Index ${Number(p.index || 0).toFixed(1)}</div></div></div>
+    <p>${moneySentence(pid, p.name.split(' ')[0])}</p>${parts}
+    <div class="row"><button class="btn" data-act="me-set" data-pid="${isMe ? '' : pid}">${isMe ? 'Stop following me' : 'This is me'}</button></div>
+    <div class="muted small">Circles are birdies, squares are bogeys. Dots mark holes where he gets a stroke.</div>`;
+}
+function sheetTeam(day, id) {
+  const r = computeDay(S, day), t = r.standings.find(x => x.id === id); if (!t) return '';
+  const pr = boardRows(day).rows.find(x => x.id === id) || {};
+  let body;
+  if (r.fmt.scramble) body = cardStrip(day, 'Team', t.gross, t.ph);
+  else {
+    const H = [...Array(18).keys()];
+    const teamRow = `<tr class="team"><td>${r.fmt.balls > 1 ? '2 best nets' : 'Best net'}</td>${H.slice(0, 9).map(h => `<td>${t.holes[h] ?? ''}</td>`).join('')}<td class="tot">${t.holes.slice(0, 9).every(v => v != null) ? t.holes.slice(0, 9).reduce((a, b) => a + b, 0) : ''}</td>${H.slice(9).map(h => `<td>${t.holes[h] ?? ''}</td>`).join('')}<td class="tot">${t.holes.slice(9).every(v => v != null) ? t.holes.slice(9).reduce((a, b) => a + b, 0) : ''}</td><td class="tot">${t.total ?? ''}</td></tr>`;
+    body = t.members.map((m, i) => cardStrip(day, S.players[m.pid].name.split(' ').slice(-1)[0] + ' (' + m.ph + ')', m.gross, m.ph, i === t.members.length - 1 ? teamRow : '')).join('');
+  }
+  return `<div class="sh-h"><div><h2 class="sm">${esc(namesOf(t.pids).join(', '))}</h2><div class="muted">${DAY_LABEL[day]} · ${esc(r.course.name)} · ${pr.pos ? placeWord(pr.pos) + ', ' : ''}${underWord(pr.toPar)}${t.payout ? ' · won ' + fmt$(t.payout) : ''}</div></div></div>
+    ${body}<div class="row">${t.pids.map(p => `<button class="btn" data-act="sheet-p" data-pid="${p}">${esc(shortName(S.players[p].name))}</button>`).join('')}</div>
+    <div class="muted small">${r.fmt.scramble ? 'Team handicap ' + t.ph + '.' : 'Each player\'s course handicap is in brackets. The team row counts the ' + (r.fmt.balls > 1 ? 'two best net scores' : 'best net score') + ' on each hole.'}</div>`;
+}
+function sheetSettings() {
+  const size = uiPref('size', '1'), hc = uiPref('contrast', '') === 'hi', me = meId();
+  const opt = (v, l) => `<button class="chip" aria-pressed="${size === v}" data-act="pref" data-k="size" data-v="${v}">${l}</button>`;
+  return `<div class="sh-h"><h2>Settings</h2></div>
+    <div class="set-row"><b>Text size</b><div class="chips seg">${opt('0', 'Normal')}${opt('1', 'Large')}${opt('2', 'Extra large')}</div></div>
+    <div class="set-row"><b>High contrast</b><span class="muted small">Black on white. Easier to read in bright sun.</span><div class="chips seg"><button class="chip" aria-pressed="${!hc}" data-act="pref" data-k="contrast" data-v="">Off</button><button class="chip" aria-pressed="${hc}" data-act="pref" data-k="contrast" data-v="hi">On</button></div></div>
+    <div class="set-row"><b>Follow me</b><span class="muted small">Highlights you on every list.</span><select id="me-pick2" data-me="1" class="big"><option value="">Nobody</option>${Object.entries(S.players).sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([pid, p]) => `<option value="${pid}" ${pid === me ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select></div>
+    <div class="set-row"><b>How you use the app</b><span class="muted small">Now: ${({ viewer: 'Watching', keeper: 'Scorekeeper', admin: 'Admin' }[ui.mode] || '')}</span><div class="chips seg"><button class="chip" aria-pressed="${ui.mode === 'viewer'}" data-act="mode-view">Watch</button><button class="chip" aria-pressed="${ui.mode === 'keeper'}" data-act="mode-keep">Keep score</button><button class="chip" aria-pressed="${ui.mode === 'admin'}" data-act="mode-admin">Admin</button></div></div>`;
+}
+function sheetHtml() {
+  const s = ui.sheet; if (!s) return '';
+  const body = s.t === 'p' ? sheetPlayer(s.pid) : s.t === 'team' ? sheetTeam(s.day, s.id) : s.t === 'settings' ? sheetSettings() : '';
+  if (!body) return '';
+  return `<div class="sheet-bg" data-act="sheet-close"></div><section class="sheet" role="dialog" aria-modal="true"><button class="sheet-x" data-act="sheet-close" aria-label="Close">✕ Close</button>${body}</section>`;
+}
+
+// ---------- preferences (per device) ----------
+function uiPref(k, d) { try { const v = localStorage.getItem('wyd-' + k); return v == null ? d : v; } catch (e) { return d; } }
+function setPref(k, v) { try { localStorage.setItem('wyd-' + k, v); } catch (e) {} applyPrefs(); }
+function applyPrefs() {
+  const r = document.documentElement;
+  r.dataset.size = uiPref('size', '1');
+  if (uiPref('contrast', '') === 'hi') { r.dataset.contrast = 'hi'; r.dataset.theme = 'light'; } else { delete r.dataset.contrast; delete r.dataset.theme; }
+}
+applyPrefs();
+
+// ---------- change log ----------
+function deviceLabel() { return role === 'admin' ? 'Admin' : ui.kgroup ? 'Group ' + ui.kgroup + ' phone' : 'Scorekeeper'; }
+function logEntries(day, out) {
+  const log = {}, t = Date.now();
+  for (const [key, arr] of Object.entries(out)) {
+    const before = (S.scores[day] && S.scores[day][key]) || [];
+    arr.forEach((v, h) => { const f = before[h] == null || before[h] === '' ? null : Number(before[h]); const nv = v == null ? null : Number(v); if (f !== nv) log[t.toString(36) + Math.random().toString(36).slice(2, 6)] = { t, by: deviceLabel(), k: key, h, f, v: nv }; });
+  }
+  return log;
+}
+function saveScores(day, out) {
+  if (isLocked(day)) { toast(`${DAY_LABEL[day]} is locked. An admin can unlock it under Admin › Scores.`); return false; }
+  const log = logEntries(day, out);
+  S.scores[day] = Object.assign({}, S.scores[day], out);
+  writeDoc('scores_' + day, Object.keys(log).length ? { h: out, log } : { h: out }, true);
+  return true;
+}
+function keyLabel(day, key) { if (S.players[key]) return S.players[key].name; const t = (S.teams[day] || []).find(x => x.id === key); return t ? namesOf(t.pids).join(' & ') : key; }
+
+// ---------- automatic backups (kept on the admin's device, last 7 days) ----------
+function autoBackup() {
+  if (role !== 'admin' || mode !== 'live' || autoBackup.done) return;
+  autoBackup.done = true;
+  try {
+    const list = JSON.parse(localStorage.getItem('wyd-autobak') || '[]'), today = todayISO();
+    const snap = {}; DOC_IDS.forEach(id => { if (docs[id]) snap[id] = docs[id]; });
+    const rest = list.filter(b => b.date !== today);
+    rest.unshift({ date: today, at: Date.now(), data: snap });
+    localStorage.setItem('wyd-autobak', JSON.stringify(rest.slice(0, 7)));
+  } catch (e) {}
+}
+function autoBackups() { try { return JSON.parse(localStorage.getItem('wyd-autobak') || '[]'); } catch (e) { return []; } }
+
+// ---------- Admin hub ----------
+const ADMIN_SECS = [['check', 'Checklist'], ['players', 'Players'], ['teams', 'Teams'], ['scores', 'Scores'], ['payouts', 'Payouts'], ['courses', 'Courses'], ['log', 'Change log'], ['links', 'Links & backup']];
+function viewAdmin() {
+  const sec = ui.asec || 'check';
+  const chips = `<div class="chips seg wrapchips">${ADMIN_SECS.map(([k, l]) => `<button class="chip" aria-pressed="${sec === k}" data-act="asec" data-k="${k}">${l}</button>`).join('')}</div>`;
+  if (!isAdmin()) return chips + `<section class="panel"><h2>Admin</h2><p>Enter the admin PIN to make changes.</p><div class="row"><button class="btn primary" data-act="pin-open">Enter admin PIN</button></div></section>`;
+  const body = { check: adminChecklist, players: adminPlayers, teams: adminTeams, scores: adminScores, payouts: adminPayouts, courses: () => viewSetupParts().courses, log: adminLog, links: adminLinks }[sec] || adminChecklist;
+  return chips + body();
+}
+function payoutTotals() {
+  const c = S.config, n = Object.keys(S.players).length, pot = n * (Number(c.buyIn) || 0);
+  const rows = DAYS.map(day => {
+    const dc = c.days[day], scr = FORMATS[dc.format].scramble;
+    const places = (dc.places || []).reduce((s, v) => s + (Number(v) || 0), 0), skins = Number(dc.skinsPot) || 0, ctp = (dc.contests || []).reduce((s, x) => s + (Number(x.amt) || 0), 0);
+    const side = Object.entries(dc.side || {}).filter(([k]) => ['teamF9', 'teamB9'].includes(k) || (k === 'group4' ? dc.format === 'bb2' : !scr)).reduce((s, [, v]) => s + (v || []).reduce((a, x) => a + (Number(x) || 0), 0), 0);
+    return { day, places, skins, ctp, side, total: places + skins + ctp + side };
+  });
+  const wk = ((c.weekend && c.weekend.places) || []).reduce((s, v) => s + (Number(v) || 0), 0);
+  const assigned = rows.reduce((s, r) => s + r.total, 0) + wk;
+  return { pot, rows, wk, assigned, n };
+}
+function adminChecklist() {
+  const ids = Object.keys(S.players), c = S.config;
+  const pt = payoutTotals();
+  const teamsDone = (day) => { const used = new Set((S.teams[day] || []).flatMap(t => (t.pids || []).filter(Boolean))); return ids.length > 0 && ids.every(p => used.has(p)); };
+  const cards = (day) => { const r = computeDay(S, day); return { inn: r.cardsIn, of: r.cardsTotal }; };
+  const steps = [
+    { k: 'players', t: 'Players', ok: ids.length > 0 && ids.every(p => S.players[p].index !== '' && S.players[p].index != null), d: `${ids.length} players with indexes` },
+    { k: 'courses', t: 'Courses & tees', ok: DAYS.every(d => c.days[d].course && c.days[d].date), d: DAYS.map(d => `${LB_DAYS[d]} ${esc(courseOf(d).name)}${c.days[d].date ? '' : ' (no date)'}`).join(' · ') },
+    { k: 'teams', t: 'Teams', ok: teamsDone('fri') && teamsDone('sat') && teamsDone('sun'), d: DAYS.map(d => `${LB_DAYS[d]} ${teamsDone(d) ? '✓' : (S.teams[d] || []).length ? 'partly set' : 'not set'}`).join(' · ') },
+    { k: 'payouts', t: 'Payouts', ok: Math.abs(pt.pot - pt.assigned) < 1, d: `${fmt$(pt.assigned)} of ${fmt$(pt.pot)} assigned` },
+    { k: 'links', t: 'PINs & scorekeeper links', ok: null, d: 'Print the scorekeeper QR code for the carts' },
+    { k: 'scores', t: 'Day of: cards in & lock', ok: DAYS.every(isLocked), d: DAYS.map(d => { const x = cards(d); return `${LB_DAYS[d]} ${x.inn}/${x.of}${isLocked(d) ? ' 🔒' : ''}`; }).join(' · ') },
+  ];
+  return `<section class="panel"><h2>Trip checklist</h2><div class="muted">Work top to bottom. Tap a step to open it.</div>
+    <div class="steps">${steps.map((s, i) => `<button class="step ${s.ok === true ? 'ok' : s.ok === false ? 'todo' : 'info'}" data-act="asec" data-k="${s.k}"><span class="step-n">${s.ok === true ? '✓' : i + 1}</span><span><b>${s.t}</b><small>${s.d}</small></span><span class="step-go">›</span></button>`).join('')}</div></section>`;
+}
+function adminPlayers() {
+  const c = S.config, ids = Object.keys(S.players).sort((a, b) => S.players[a].name.localeCompare(S.players[b].name));
+  const teeSel = (pid, day) => { const course = c.courses[c.days[day].course]; const cur = (S.players[pid].tees && S.players[pid].tees[day]) || course.defaultTee;
+    return `<select id="tee-${pid}-${day}" data-tee="${pid}" data-day="${day}">${course.tees.map(t => `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.name.replace(/ ·.*$/, ''))}</option>`).join('')}</select>`; };
+  const chCell = (pid, day) => { const p = S.players[pid], o = p.ch && p.ch[day], calc = courseHcp(Number(p.index) || 0, teeObj(pid, day));
+    return `<span class="chbox"><input id="ch-${pid}-${day}" data-chover="${pid}" data-day="${day}" inputmode="numeric" value="${o == null ? '' : esc(o)}" placeholder="${calc}" aria-label="${esc(p.name)} ${DAY_LABEL[day]} course handicap" class="${o != null && o !== '' ? 'set' : ''}">${o != null && o !== '' ? `<small>calc ${calc}</small>` : ''}</span>`; };
+  const rows = ids.map(pid => { const p = S.players[pid];
+    return `<tr><td><input id="pn-${pid}" data-pfield="name" data-pid="${pid}" value="${esc(p.name)}" style="width:150px"></td>
+      <td><input id="pi-${pid}" data-pfield="index" data-pid="${pid}" value="${esc(p.index)}" inputmode="decimal" style="width:60px"></td>
+      ${DAYS.map(d => `<td class="dcell">${teeSel(pid, d)}${chCell(pid, d)}</td>`).join('')}
+      <td><button class="link" data-act="del-player" data-pid="${pid}">${ui.armed === 'del-' + pid ? 'Tap to confirm' : 'Remove'}</button></td></tr>`; }).join('');
+  return `<section class="panel"><div class="row between"><h2>Players · ${ids.length}</h2></div>
+    <div class="muted">Each day shows the tees and the course handicap. The grey number is the calculated handicap. Type a number in the box to use it instead; clear the box to go back to the calculation.</div>
+    ${ids.length ? `<div class="tbl-wrap"><table class="ptable"><thead><tr><th>Name</th><th>Index</th>${DAYS.map(d => `<th>${DAY_LABEL[d]} · tees &amp; handicap</th>`).join('')}<th></th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}
+    <details class="det2"><summary>Add players or update indexes</summary>
+    <label class="f">Add players · one per line: Name, Index<textarea id="bulk" placeholder="Player 1, 12.4&#10;Player 2, 8.1"></textarea></label><div class="row"><button class="btn primary" data-act="bulk-add">Add players</button></div>
+    <label class="f">Update indexes · one per line: Name, Index<textarea id="idxupd" placeholder="Player 1, 12.4"></textarea></label><div class="row"><button class="btn" data-act="idx-update">Update indexes</button></div></details></section>`;
+}
+function adminTeams() {
+  const day = ui.tday || 'fri', c = S.config, dc = c.days[day], size = FORMATS[dc.format].size;
+  const ids = Object.keys(S.players).sort((a, b) => S.players[a].name.localeCompare(S.players[b].name));
+  const cur = S.teams[day] || [];
+  let lastUsed = -1; cur.forEach((t, i) => { if ((t.pids || []).some(p => p && S.players[p])) lastUsed = i; });
+  const n = Math.max(Math.ceil(ids.length / size), lastUsed + 1);
+  const used = new Set(cur.flatMap(t => (t.pids || []).filter(Boolean)));
+  const pool = ids.filter(p => !used.has(p));
+  const sel = ui.swap && ui.swap.day === day ? ui.swap : null;
+  const slot = (i, j, pid) => { const on = sel && sel.ti === i && sel.tj === j;
+    return `<button class="slot ${pid ? '' : 'empty'} ${on ? 'on' : ''}" data-act="slot" data-ti="${i}" data-tj="${j}">${pid && S.players[pid] ? esc(S.players[pid].name) : 'Open spot'}</button>`; };
+  const scr = FORMATS[dc.format].scramble;
+  const cards = [...Array(n).keys()].map(i => { const t = cur[i] || { pids: [] };
+    const hcp = scr ? `<label class="tiny">Team handicap <input id="th-${i}" data-thcp="${i}" inputmode="decimal" value="${t.hcp == null ? '' : esc(t.hcp)}" placeholder="${t.pids && t.pids.some(Boolean) ? scrambleTeamHcp(S, t.pids.filter(Boolean), day, null) : ''}"></label>` : '';
+    return `<div class="teamcard"><b>Team ${i + 1}${day === 'fri' && dc.format === 'bb2' ? ` <span class="muted small">· Foursome ${Math.floor(i / 2) + 1}</span>` : ''}</b>${[...Array(size).keys()].map(j => slot(i, j, (t.pids || [])[j])).join('')}${hcp}</div>`; }).join('');
+  const poolHtml = pool.length ? `<div class="pool"><b>Not on a team (${pool.length})</b><div class="row">${pool.map(p => `<button class="slot ${sel && sel.pool === p ? 'on' : ''}" data-act="pool" data-pid="${p}">${esc(S.players[p].name)}</button>`).join('')}</div></div>` : '';
+  const tools = day === 'sat' ? `<button class="btn" data-act="draw-sat">Random draw</button>` : day === 'sun' ? `<button class="btn" data-act="pair-sun">${ui.armed === 'pair-sun' ? 'Tap again: this clears Sunday scores' : 'Pair by Friday + Saturday net'}</button>` : '';
+  const note = day === 'fri' ? 'Teams 1 & 2 play together as Foursome 1, Teams 3 & 4 as Foursome 2, and so on.' : day === 'sat' ? 'Random draw into teams of 4. Redraw as often as you like before play.' : 'Pairs #1 with last place, #2 with second-to-last, and so on, by Friday + Saturday net. The team handicap box overrides the 35/15 calculation.';
+  return `<div class="chips seg">${DAYS.map(d => `<button class="chip" aria-pressed="${day === d}" data-act="tday" data-day="${d}">${DAY_LABEL[d]}</button>`).join('')}</div>
+    <section class="panel"><div class="row between"><div><h2>${DAY_LABEL[day]} teams</h2><div class="muted">${esc(FORMATS[dc.format].label)}. ${note}</div></div><div class="row">${tools}</div></div>
+    <div class="banner soft"><p>${sel ? (sel.pool ? `Now tap a spot to put <b>${esc(S.players[sel.pool].name)}</b> there.` : `Tap another spot to swap with it, or <button class="link inline" data-act="slot-clear">take him off the team</button>.`) : 'To move players, tap one name, then tap where he should go. The two swap places.'}</p>${sel ? '<button class="btn" data-act="swap-cancel">Cancel</button>' : ''}</div>
+    ${poolHtml}<div class="teamcards">${cards}</div></section>`;
+}
+function writeTeams(day, mutate) {
+  const size = FORMATS[S.config.days[day].format].size, pre = day === 'fri' ? 'F' : day === 'sat' ? 'A' : 'S';
+  const n = Math.max(Math.ceil(Object.keys(S.players).length / size), (S.teams[day] || []).length);
+  const teams = clone(S.teams[day] || []);
+  while (teams.length < n) teams.push({ id: pre + (teams.length + 1), pids: [] });
+  teams.forEach((t, k) => { if (!t.id) t.id = pre + (k + 1); t.pids = [...Array(size).keys()].map(x => (t.pids || [])[x] || null); });
+  mutate(teams);
+  return writeDoc('teams', { [day]: teams }, true);
+}
+function adminScores() {
+  const lockRows = DAYS.map(d => { const r = computeDay(S, d), L = isLocked(d);
+    return `<div class="lockrow"><span><b>${DAY_LABEL[d]}</b> <span class="muted">${r.cardsIn} of ${r.cardsTotal} cards in${r.complete ? ' · final' : ''}</span></span><button class="btn ${L ? '' : 'primary'}" data-act="lock" data-day="${d}">${L ? '🔒 Locked · unlock' : 'Lock ' + DAY_LABEL[d]}</button></div>`; }).join('');
+  const f = ui.fix || (ui.fix = { day: dayNow(), key: '', h: 0, v: '' });
+  const scr = FORMATS[S.config.days[f.day].format].scramble;
+  const who = scr ? (S.teams[f.day] || []).map((t, i) => [t.id, 'Team ' + (i + 1) + ': ' + namesOf(t.pids).join(' & ')]) : Object.keys(S.players).sort((a, b) => S.players[a].name.localeCompare(S.players[b].name)).map(p => [p, S.players[p].name]);
+  const curV = f.key ? (S.scores[f.day] && S.scores[f.day][f.key] || [])[f.h] : null;
+  const fix = `<section class="panel"><h3>Fix a score</h3><div class="muted">Pick the day, the player and the hole, then type the right score.</div>
+    <div class="row fixrow">
+      <label class="f">Day<select id="fx-day" data-fix="day">${DAYS.map(d => `<option value="${d}" ${d === f.day ? 'selected' : ''}>${DAY_LABEL[d]}</option>`).join('')}</select></label>
+      <label class="f">${scr ? 'Team' : 'Player'}<select id="fx-key" data-fix="key"><option value="">Choose</option>${who.map(([k, l]) => `<option value="${k}" ${k === f.key ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></label>
+      <label class="f">Hole<select id="fx-h" data-fix="h">${[...Array(18).keys()].map(h => `<option value="${h}" ${h === Number(f.h) ? 'selected' : ''}>${h + 1} · par ${courseOf(f.day).pars[h]}</option>`).join('')}</select></label>
+      <label class="f">Correct score<input id="fx-v" data-fix="v" inputmode="numeric" value="${esc(f.v)}" style="width:80px"></label>
+      <button class="btn primary" data-act="fix-save">Save</button></div>
+    ${f.key ? `<div class="muted">Right now it's <b>${curV == null ? 'blank' : curV}</b>.</div>` : ''}</section>`;
+  return `<section class="panel"><h2>Scores</h2><div class="muted">Lock a day once it's final so nothing can change by accident. Unlocking needs the admin PIN.</div>${lockRows}</section>${fix}
+    <details class="panel det" data-det="grid" ${ui.open && ui.open.grid ? 'open' : ''}><summary><h3>Full scorecards</h3><span class="muted small">Type a whole card at once</span></summary>${viewScores()}</details>`;
+}
+function adminPayouts() {
+  const pt = payoutTotals(), parts = viewSetupParts(), ok = Math.abs(pt.pot - pt.assigned) < 1;
+  const tbl = `<div class="tbl-wrap"><table><thead><tr><th>Day</th><th class="num">Team places</th><th class="num">Skins</th><th class="num">Closest to pin</th><th class="num">Nines &amp; individual</th><th class="num">Total</th></tr></thead><tbody>
+    ${pt.rows.map(r => `<tr><td>${DAY_LABEL[r.day]}</td><td class="num">${fmt$(r.places)}</td><td class="num">${fmt$(r.skins)}</td><td class="num">${fmt$(r.ctp)}</td><td class="num">${fmt$(r.side)}</td><td class="num"><b>${fmt$(r.total)}</b></td></tr>`).join('')}
+    <tr><td>Weekend individual</td><td class="num">${fmt$(pt.wk)}</td><td></td><td></td><td></td><td class="num"><b>${fmt$(pt.wk)}</b></td></tr></tbody></table></div>`;
+  return `<section class="panel"><div class="row between"><h2>Payouts</h2><span class="big-check ${ok ? 'ok' : 'bad'}">${fmt$(pt.assigned)} of ${fmt$(pt.pot)} assigned ${ok ? '✓' : ''}</span></div>
+    <div class="muted">${pt.n} players × ${fmt$(S.config.buyIn)} buy-in. ${ok ? 'Every dollar is assigned.' : pt.assigned < pt.pot ? fmt$(pt.pot - pt.assigned) + ' still to assign.' : fmt$(pt.assigned - pt.pot) + ' more than the pot.'}</div>${tbl}</section>
+    ${parts.pot}
+    ${DAYS.map((d, i) => `<details class="panel det" data-det="pay-${d}" ${ui.open && ui.open['pay-' + d] ? 'open' : ''}><summary><h3>Edit ${DAY_LABEL[d]} payouts</h3><span class="muted small">${fmt$(pt.rows[i].total)}</span></summary>${parts.days[i]}</details>`).join('')}
+    <details class="panel det" data-det="pay-wk" ${ui.open && ui.open['pay-wk'] ? 'open' : ''}><summary><h3>Edit weekend individual</h3><span class="muted small">${fmt$(pt.wk)}</span></summary>${parts.weekend}</details>`;
+}
+function adminLog() {
+  const all = [];
+  for (const d of DAYS) { const L = (docs['scores_' + d] && docs['scores_' + d].log) || {}; Object.values(L).forEach(e => all.push({ ...e, day: d })); }
+  all.sort((a, b) => b.t - a.t);
+  const fday = ui.logday || 'all';
+  const list = all.filter(e => fday === 'all' || e.day === fday).slice(0, 300);
+  const when = (t) => new Date(t).toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+  return `<div class="chips seg"><button class="chip" aria-pressed="${fday === 'all'}" data-act="logday" data-day="all">All</button>${DAYS.map(d => `<button class="chip" aria-pressed="${fday === d}" data-act="logday" data-day="${d}">${DAY_LABEL[d]}</button>`).join('')}</div>
+    <section class="panel"><h2>Change log</h2><div class="muted">Every score saved from here on, newest first: who entered it, and what it was before.</div>
+    ${list.length ? `<div class="tbl-wrap"><table><thead><tr><th>When</th><th>Day</th><th>Hole</th><th>Player</th><th class="num">Was</th><th class="num">Now</th><th>By</th></tr></thead><tbody>
+      ${list.map(e => `<tr class="${e.f != null ? 'chg' : ''}"><td>${when(e.t)}</td><td>${LB_DAYS[e.day]}</td><td>${e.h + 1}</td><td>${esc(keyLabel(e.day, e.k))}</td><td class="num">${e.f ?? '–'}</td><td class="num"><b>${e.v ?? '–'}</b></td><td>${esc(e.by || '')}</td></tr>`).join('')}</tbody></table></div>` : '<div class="empty">Nothing logged yet. Scores saved from now on will show here.</div>'}</section>`;
+}
+function adminLinks() {
+  const base = location.origin + location.pathname;
+  const pin = ui.qrPin || '';
+  const keepUrl = base + '#keep' + (pin ? '=' + encodeURIComponent(pin) : ''), viewUrl = base;
+  setTimeout(drawQrs, 0);
+  const baks = autoBackups();
+  const parts = viewSetupParts();
+  return `<section class="panel printable"><h2>Scorekeeper link &amp; QR code</h2>
+    <div class="muted">Type the scorekeeper PIN to build a QR code that opens straight to "Who's in your group?" with the PIN already entered. Print it for the carts. Anyone with this code can enter scores, so hand it out like the PIN.</div>
+    <div class="row noprint"><label class="f">Scorekeeper PIN<input id="qr-pin" data-qrpin="1" inputmode="numeric" value="${esc(pin)}" style="width:120px"></label><button class="btn" data-act="print">Print</button></div>
+    <div class="qrs"><div class="qrbox"><div id="qr-keep" data-url="${esc(keepUrl)}"></div><b>Keep score</b><small>${pin ? 'Opens your group, PIN included' : 'Asks for the PIN'}</small></div>
+      <div class="qrbox"><div id="qr-view" data-url="${esc(viewUrl)}"></div><b>Watch the scores</b><small>No PIN</small></div></div></section>
+    <section class="panel"><h2>Backups</h2><div class="muted">This device saves a copy of the whole trip once a day while you're signed in as admin (last 7 days).</div>
+      ${baks.length ? baks.map((b, i) => `<div class="lockrow"><span><b>${esc(b.date)}</b> <span class="muted">${new Date(b.at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}</span></span><span class="row"><button class="btn" data-act="bak-dl" data-i="${i}">Download</button><button class="btn" data-act="bak-restore" data-i="${i}">${ui.armed === 'bak-' + i ? 'Tap again to restore' : 'Restore'}</button></span></div>`).join('') : '<div class="muted">None yet.</div>'}
+      ${parts.backup}</section>${parts.reset}`;
+}
+function drawQrs() {
+  const go = () => document.querySelectorAll('#qr-keep,#qr-view').forEach(el => { el.innerHTML = ''; try { new QRCode(el, { text: el.dataset.url, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M }); } catch (e) { el.textContent = el.dataset.url; } });
+  if (window.QRCode) return go();
+  if (drawQrs.loading) return; drawQrs.loading = true;
+  const s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+  s.onload = go; s.onerror = () => document.querySelectorAll('#qr-keep,#qr-view').forEach(el => { el.textContent = el.dataset.url; });
+  document.head.appendChild(s);
+}
 
 
 const $ = (s) => document.querySelector(s);
@@ -1454,6 +2028,8 @@ function deepMerge(a, b) {
 function saveLocal() { try { localStorage.setItem('bgt-docs', JSON.stringify(docs)); } catch (e) {} }
 async function writeDoc(id, body, merge) {
   const scoreDoc = /^scores_(fri|sat|sun)$|^extras$/.test(id);
+  const lockDay = id.startsWith('scores_') ? id.slice(7) : id === 'extras' ? Object.keys(body || {}).find(d => S && S.config && S.config.locks && S.config.locks[d]) : null;
+  if (lockDay && S && S.config && S.config.locks && S.config.locks[lockDay] && !(id === 'extras' && !merge)) { toast(`${DAY_LABEL[lockDay]} is locked. An admin can unlock it under Admin › Scores.`); return; }
   if (!(scoreDoc ? canWrite : isAdmin())) { if (canWrite) toast('That change needs the admin PIN.'); askPin(); return; }
   if (backend === 'local') {
     docs[id] = merge ? deepMerge(docs[id], body) : body;
@@ -1470,8 +2046,8 @@ async function deleteAll() {
   for (const id of DOC_IDS) { try { await db.collection('trip').doc(id).delete(); } catch (e) {} }
 }
 function askPin() { if (backend !== 'db') return; ui.pinOpen = true; render(); setTimeout(() => { const el = document.getElementById('pin-in'); if (el) el.focus(); }, 30); }
-async function submitPin() {
-  const el = document.getElementById('pin-in'); const pin = el ? el.value.trim() : '';
+async function submitPin(given) {
+  const el = document.getElementById('pin-in'); const pin = given || (el ? el.value.trim() : '');
   if (!pin) return toast('Type the PIN first.');
   if (!authId) return toast('Still connecting. Try again in a moment.');
   const ref = db.collection('editors').doc(authId);
@@ -1510,23 +2086,26 @@ function render() {
   if (mode === 'loading') return;
   // keep focus + typed text across re-renders
   const a = document.activeElement, keep = a && a.id && $('#main').contains(a) ? { id: a.id, v: a.value, s: a.selectionStart, e: a.selectionEnd } : null;
-  const views = { keep: viewKeep, board: viewBoard, results: viewResults, scores: viewScores, players: viewPlayers, setup: viewSetup };
+  const views = { keep: viewKeep, now: viewNow, board: () => ui.tv ? viewBoard() : viewLeaderboard(), money: viewMoney, admin: viewAdmin };
   const allowed = MODE_TABS[ui.mode] || MODE_TABS.viewer;
   document.querySelectorAll('#tabs button').forEach(b => { b.hidden = !allowed.includes(b.dataset.tab); });
   if (!allowed.includes(ui.tab)) ui.tab = allowed[0];
-  const ms = $('#modeSwitch'); ms.hidden = !ui.mode || ui.tv; ms.textContent = ({ viewer: 'Viewing', keeper: 'Scorekeeper', admin: 'Admin' }[ui.mode] || '') + ' · change';
+  $('#settingsBtn').hidden = !ui.mode || ui.tv;
+  document.body.classList.toggle('has-nav', !!ui.mode && !ui.tv);
   if (!ui.mode) {
     document.querySelectorAll('#tabs button').forEach(b => { b.hidden = true; });
-    $('#main').innerHTML = `<section class="panel welcome"><h2>How are you using the app?</h2><div class="welcome-opts">
-      <button class="welcome-btn" data-act="mode-view"><b>View only</b><span>Live scoreboard, results and money. No PIN.</span></button>
-      <button class="welcome-btn primary" data-act="mode-keep"><b>Scorekeeper</b><span>Enter scores for my group, hole by hole. Scorekeeper PIN.</span></button>
-      <button class="welcome-btn" data-act="mode-admin"><b>Admin</b><span>Players, teams, courses, payouts and everything else. Admin PIN.</span></button></div>
-      <p class="muted small">You can change this any time from the link at the top.</p></section>`;
+    $('#main').innerHTML = banner() + `<section class="panel welcome"><h2>Welcome</h2><div class="welcome-opts">
+      <button class="welcome-btn primary" data-act="mode-view"><b>Watch the scores</b><span>Leaderboard, skins and money. Nothing to sign in.</span></button>
+      <button class="welcome-btn" data-act="mode-keep"><b>Keep score for my group</b><span>One hole at a time. Asks for the scorekeeper PIN once.</span></button></div>
+      <p class="row"><button class="link plain" data-act="mode-admin">I'm the admin</button></p></section>`;
     return;
   }
   document.body.classList.toggle('tv-mode', !!ui.tv && ui.tab === 'board');
   const y = window.scrollY, sameTab = render.lastTab === ui.tab; render.lastTab = ui.tab;
-  $('#main').innerHTML = (ui.tv && ui.tab === 'board' ? '' : banner()) + views[ui.tab]();
+  $('#main').innerHTML = (ui.tv && ui.tab === 'board' ? '' : banner()) + views[ui.tab]() + (ui.tv ? '' : sheetHtml());
+  document.body.classList.toggle('sheet-open', !!ui.sheet && !ui.tv);
+  if (render.sheetWas !== JSON.stringify(ui.sheet || null)) { render.sheetWas = JSON.stringify(ui.sheet || null); const sh = document.querySelector('.sheet'); if (sh) sh.scrollTop = 0; }
+  autoBackup();
   if (sameTab && y) window.scrollTo(0, y);
   if (keep) {
     const el = document.getElementById(keep.id);
@@ -1602,7 +2181,7 @@ function viewResults() {
   const paidOut = Object.values(r.money).reduce((s, m) => s + m.total, 0);
   return dayChips(ui.rday, 'rday', true) + `
   <section class="panel">
-    <div class="row between"><div><h2>${DAY_LABEL[ui.rday]} · ${esc(r.course.name)}</h2><div class="muted small">${esc(r.fmt.label)} · Par ${r.coursePar}${r.fmt.balls > 1 ? ' (' + r.coursePar * r.fmt.balls + ' for 2 balls)' : ''}${scr ? ' · Team handicap: ' + (dc.scrHcp === '3515' ? '35% low + 15% high' : 'average of course handicaps' + (dc.scrPct != 100 ? ' × ' + dc.scrPct + '%' : '')) : ''}</div></div>${status}</div>
+    <div class="row between"><div><h2>${DAY_LABEL[ui.rday]} · ${esc(r.course.name)}</h2><div class="muted small">${esc(r.fmt.label)} · Par ${r.coursePar}${r.fmt.balls > 1 ? ' (' + r.coursePar * r.fmt.balls + ' for 2 balls)' : ''}${scr ? ' · Team handicap: ' + (dc.scrHcp === '3515' ? '35% low + 15% high' : dc.scrHcp === '3515d' ? '35% low + 15% high (decimal)' : 'average of course handicaps' + (dc.scrPct != 100 ? ' × ' + dc.scrPct + '%' : '')) : ''}</div></div>${status}</div>
     <div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Team</th><th class="num">Thru</th>${scr ? '<th class="num">Gross</th><th class="num">Hcp</th>' : ''}<th class="num">Net</th><th class="num">To Par</th><th class="num">Payout</th></tr></thead><tbody>${rows || `<tr><td colspan="8" class="empty">Set teams under Players &amp; Teams.</td></tr>`}</tbody></table></div>
     ${r.complete ? '' : '<div class="muted small">Places and payouts settle as cards come in. Teams still on the course are listed below the finished ones.</div>'}
   </section>
@@ -1766,7 +2345,7 @@ function viewScores() {
     };
     let body = '';
     if (fmt.scramble) {
-      const ph = scrambleTeamHcp(S, team.pids, day);
+      const ph = scrambleTeamHcp(S, team.pids, day, team);
       body = rowFor(team.id, 'Team score', `${team.pids.map(p => esc(S.players[p].name.split(' ')[0])).join(' & ')} · team hcp ${ph}`, ph);
     } else {
       body = team.pids.map(pid => {
@@ -1799,7 +2378,7 @@ function viewScores() {
   ${editor}
   <section class="panel"><h3>${DAY_LABEL[day]} contest winners</h3>${contests ? `<div class="grid2" style="gap:12px">${contests}</div>` : '<div class="muted">No contests set for this day.</div>'}</section>`;
 }
-function computeDayPH(pid, day) { const t = teeObj(pid, day); return Math.round(courseHcp(Number(S.players[pid].index) || 0, t) * (S.config.days[day].allowance ?? 100) / 100); }
+function computeDayPH(pid, day) { return playerPH(S, pid, day); }
 function teeObj(pid, day) { const c = S.config.courses[S.config.days[day].course]; const want = S.players[pid].tees && S.players[pid].tees[day]; return c.tees.find(t => t.id === want) || c.tees.find(t => t.id === c.defaultTee) || c.tees[0]; }
 function teeName(pid, day) { return teeObj(pid, day).name; }
 
@@ -1843,7 +2422,7 @@ function maxControls(scope, rule, allowTrip) {
   return `<label class="f">Max score per hole<select id="mx-${scope}" data-max="${scope}" data-mfield="type" ${dis()}>${opts.map(([k, v]) => `<option value="${k}" ${t === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
     ${t === 'fixed' ? `<label class="f">Max<input id="mxv-${scope}" data-max="${scope}" data-mfield="value" data-num="1" value="${esc(rule.value || 10)}" style="width:70px" ${dis()}></label>` : ''}`;
 }
-function viewSetup() {
+function viewSetupParts() {
   const c = S.config, n = Object.keys(S.players).length, pot = n * (Number(c.buyIn) || 0);
   let allocated = 0;
   const daySection = (day) => {
@@ -1858,8 +2437,8 @@ function viewSetup() {
       <div class="row">
         <label class="f">Course<select id="d-${day}-course" data-dfield="course" data-day="${day}" ${dis()}>${Object.entries(c.courses).map(([k, v]) => `<option value="${k}" ${k === dc.course ? 'selected' : ''}>${esc(v.name)}</option>`).join('')}</select></label>
         <label class="f">Format<select id="d-${day}-format" data-dfield="format" data-day="${day}" ${dis()}>${Object.entries(FORMATS).map(([k, v]) => `<option value="${k}" ${k === dc.format ? 'selected' : ''}>${v.label}</option>`).join('')}</select></label>
-        ${FORMATS[dc.format].scramble ? `<label class="f">Team handicap<select id="d-${day}-scrHcp" data-dfield="scrHcp" data-day="${day}" ${dis()}><option value="avg" ${dc.scrHcp !== '3515' ? 'selected' : ''}>Average of course handicaps</option><option value="3515" ${dc.scrHcp === '3515' ? 'selected' : ''}>35% low + 15% high (USGA)</option></select></label>
-          ${dc.scrHcp !== '3515' ? `<label class="f">Average × %<input id="d-${day}-scrPct" data-dfield="scrPct" data-day="${day}" data-num="1" value="${dc.scrPct ?? 100}" style="width:80px" ${dis()}></label>` : ''}`
+        ${FORMATS[dc.format].scramble ? `<label class="f">Team handicap<select id="d-${day}-scrHcp" data-dfield="scrHcp" data-day="${day}" ${dis()}><option value="avg" ${dc.scrHcp !== '3515' ? 'selected' : ''}>Average of course handicaps</option><option value="3515" ${dc.scrHcp === '3515' ? 'selected' : ''}>35% low + 15% high, rounded</option><option value="3515d" ${dc.scrHcp === '3515d' ? 'selected' : ''}>35% low + 15% high, keep decimals</option></select></label>
+          ${!['3515', '3515d'].includes(dc.scrHcp) ? `<label class="f">Average × %<input id="d-${day}-scrPct" data-dfield="scrPct" data-day="${day}" data-num="1" value="${dc.scrPct ?? 100}" style="width:80px" ${dis()}></label>` : ''}`
           : `<label class="f">Handicap allowance %<input id="d-${day}-allowance" data-dfield="allowance" data-day="${day}" data-num="1" value="${dc.allowance ?? 100}" style="width:90px" ${dis()}></label>`}
       </div>
       <div><div class="muted small" style="margin-bottom:6px">Team places paid (${places.length}) · ${fmt$(pTot)}, split evenly among teammates</div>
@@ -1887,7 +2466,7 @@ function viewSetup() {
         ${mode === 'live' && isAdmin() ? `<div class="row" style="margin-top:8px"><button class="btn" data-act="add-contest" data-day="${day}">+ Contest</button></div>` : ''}</div>
     </section>`;
   };
-  const days = DAYS.map(daySection).join('');
+  const dayParts = DAYS.map(daySection);
   const wk = (c.weekend && c.weekend.places) || [];
   const wTot = wk.reduce((s, v) => s + (Number(v) || 0), 0);
   allocated += wTot;
@@ -1912,8 +2491,8 @@ function viewSetup() {
         <tr><td>Hdcp</td>${H.map(h => `<td><input class="siinput" id="cs-${k}-${h}" data-course="${k}" data-hole="${h}" data-hfield="si" data-num="1" value="${co.si[h]}" ${dis()}></td>`).join('')}</tr>
       </tbody></table></div></section>`;
   }).join('');
-  return `<section class="panel"><div class="row between"><h2>The Pot</h2>
-      <div class="kpis"><div class="kpi"><div class="v">${n}</div><div class="l">Players</div></div><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(allocated)}</div><div class="l">Allocated</div></div><div class="kpi"><div class="v ${Math.abs(left) < 0.01 ? 'ok' : 'bad'}">${left >= 0 ? '' : '−'}${fmt$(Math.abs(left))}</div><div class="l">${left >= 0 ? 'Unallocated' : 'Over the pot'}</div></div></div></div>
+  const potSec = `<section class="panel"><div class="row between"><h2>The pot</h2>
+      <div class="kpis"><div class="kpi"><div class="v">${n}</div><div class="l">Players</div></div><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(allocated)}</div><div class="l">Assigned</div></div><div class="kpi"><div class="v ${Math.abs(left) < 0.01 ? 'ok' : 'bad'}">${left >= 0 ? '' : '−'}${fmt$(Math.abs(left))}</div><div class="l">${left >= 0 ? 'Left to assign' : 'Over the pot'}</div></div></div></div>
     <div class="row">
       <label class="f">Buy-in per player<input id="buyIn" data-gfield="buyIn" data-num="1" value="${numFmt(c.buyIn)}" style="width:100px" ${dis()}></label>
       ${maxControls('trip', c.maxScore || { type: 'netDoublePar' }, false)}
@@ -1922,21 +2501,20 @@ function viewSetup() {
     ${mode === 'live' && isAdmin() ? (ui.tplAsk ? `<div class="banner"><p><b>Are you sure?</b> This replaces every payout amount, the skins pots and the closest-to-pin list with the 2024-style split for 32 players ($3,360). Courses, players, teams and scores stay.</p><div class="row"><button class="btn" data-act="tpl-no">Cancel</button><button class="btn primary" data-act="tpl-yes">Yes, use 2024-style payouts</button></div></div>`
       : ui.tplAsk2 ? `<div class="banner"><p><b>Are you sure?</b> This sets the buy-in to $110 and replaces every payout amount, the skins pots and the closest-to-pin list with the organizer's 2026 sheet for 32 players ($3,520). Courses, players, teams and scores stay.</p><div class="row"><button class="btn" data-act="tpl-no">Cancel</button><button class="btn primary" data-act="tpl2-yes">Yes, use the organizer's 2026 payouts</button></div></div>`
       : `<div class="row"><button class="btn" data-act="tpl2-ask">Use organizer's 2026 payouts</button><button class="btn" data-act="tpl-ask">Use 2024-style payouts</button></div>`) : ''}
-    <div class="muted small">Skins: one low score wins the full skin; two tied for low split it (half skin each); three or more tied means no skin and the hole carries to the next. The skins pot is divided by the number of skins won. Course handicap = Index × Slope ÷ 113 + (Rating − Par), rounded.</div></section>
-  ${days}
-  ${weekendSec}
-  <h2 style="margin-top:8px">Courses</h2>
+    <div class="muted small">Skins: one low score wins the full skin; two tied for low split it; three or more tied means no skin and the hole carries to the next. The skins pot is divided by the number of skins won. Course handicap = Index × Slope ÷ 113 + (Rating − Par), rounded, unless you type one in on the Players page.</div></section>`;
+  const coursesSec = `<h2 style="margin-top:8px">Courses</h2>
   <div class="muted small">Ratings, slopes and hole handicaps were pulled from public scorecards. Check them against the card at each course before play.</div>
-  ${courses}
-  ${isAdmin() ? `<section class="panel"><h3>Backup</h3><div class="muted small">Save a copy of everything to a file, or load one back in.</div>
-    <div class="row"><button class="btn" data-act="export">Download backup file</button><label class="btn" for="imp-file2">Import a trip file</label><input type="file" id="imp-file2" accept=".json,application/json" hidden></div></section>` : ''}
-  ${mode === 'live' && isAdmin() && testToolsOn() ? `<section class="panel"><h3>Reset</h3><div class="muted small">Erases all players, teams, scores and setup for this trip.</div><div class="row"><button class="btn danger ${ui.armed === 'reset' ? 'armed' : ''}" data-act="reset">${ui.armed === 'reset' ? 'Tap again to erase everything' : 'Reset trip'}</button></div></section>` : ''}`;
+  ${courses}`;
+  const backupSec = isAdmin() ? `<h3>Backup file</h3><div class="muted small">Save a copy of everything to a file, or load one back in.</div>
+    <div class="row"><button class="btn" data-act="export">Download backup file</button><label class="btn" for="imp-file2">Import a trip file</label><input type="file" id="imp-file2" accept=".json,application/json" hidden></div>` : '';
+  const resetSec = mode === 'live' && isAdmin() && testToolsOn() ? `<section class="panel"><h3>Reset</h3><div class="muted small">Erases all players, teams, scores and setup for this trip.</div><div class="row"><button class="btn danger ${ui.armed === 'reset' ? 'armed' : ''}" data-act="reset">${ui.armed === 'reset' ? 'Tap again to erase everything' : 'Reset trip'}</button></div></section>` : '';
+  return { pot: potSec, days: dayParts, weekend: weekendSec, courses: coursesSec, backup: backupSec, reset: resetSec };
 }
 
 // ---- events ----
 function arm(key) { ui.armed = key; clearTimeout(arm.t); arm.t = setTimeout(() => { ui.armed = null; render(); }, 4000); }
 
-document.getElementById('modeSwitch').addEventListener('click', () => { setMode(null); ui.pinOpen = false; render(); window.scrollTo(0, 0); });
+document.getElementById('settingsBtn').addEventListener('click', () => { ui.sheet = { t: 'settings' }; render(); });
 document.getElementById('tabs').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-tab]'); if (!b) return;
   ui.tab = b.dataset.tab; try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {}
@@ -1946,10 +2524,53 @@ document.getElementById('tabs').addEventListener('click', (e) => {
 document.getElementById('main').addEventListener('click', async (e) => {
   const b = e.target.closest('[data-act]'); if (!b || b.disabled) return;
   const act = b.dataset.act, day = b.dataset.day;
-  if (act === 'mode-view') { setMode('viewer'); return render(); }
-  if (act === 'mode-keep') { setMode('keeper'); render(); if (!canWrite) askPin(); return; }
-  if (act === 'mode-admin') { setMode('admin'); render(); if (!isAdmin()) askPin(); return; }
-  if (['kday', 'kgroup', 'kback', 'khole', 'khole-fix', 'kprev', 'kminus', 'kplus', 'kmax', 'kout', 'kout-yes', 'kout-no', 'kflag-no', 'ksave', 'kreview', 'kdone'].includes(act)) return keepAction(act, b);
+  if (act === 'mode-view') { ui.sheet = null; setMode('viewer'); return render(); }
+  if (act === 'mode-keep') { ui.sheet = null; setMode('keeper'); render(); if (!canWrite) askPin(); return; }
+  if (act === 'mode-admin') { ui.sheet = null; setMode('admin'); render(); if (!isAdmin()) askPin(); return; }
+  if (['kday', 'kgroup', 'kback', 'khole', 'khole-fix', 'kprev', 'kminus', 'kplus', 'kmax', 'kout', 'kout-yes', 'kout-no', 'kflag-no', 'ksave', 'kreview', 'kdone', 'kfront-ok', 'kundo', 'kctp-yes', 'kctp-no', 'kchange'].includes(act)) return keepAction(act, b);
+  // ---- streamlined views ----
+  if (act === 'go') { ui.tab = b.dataset.tab; ui.sheet = null; try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {} render(); window.scrollTo(0, 0); return; }
+  if (act === 'lday') { ui.lday = day; return render(); }
+  if (act === 'msec') { ui.msec = b.dataset.k; return render(); }
+  if (act === 'sheet-p') { ui.sheet = { t: 'p', pid: b.dataset.pid }; return render(); }
+  if (act === 'sheet-t') { ui.sheet = { t: 'team', day, id: b.dataset.id }; return render(); }
+  if (act === 'sheet-close') { ui.sheet = null; return render(); }
+  if (act === 'pref') { setPref(b.dataset.k, b.dataset.v); return render(); }
+  if (act === 'me-skip') { ui.meSkip = true; return render(); }
+  if (act === 'me-set') { setMe(b.dataset.pid || null); toast(b.dataset.pid ? 'Following ' + S.players[b.dataset.pid].name + '.' : 'Stopped following.'); return render(); }
+  if (act === 'share-day') {
+    const text = daySummaryText(day);
+    try { if (navigator.share) { await navigator.share({ text }); return; } } catch (x) { return; }
+    try { await navigator.clipboard.writeText(text); toast('Copied. Paste it into a text.'); } catch (x) { toast('Could not copy on this device.'); }
+    return;
+  }
+  if (act === 'asec') { ui.asec = b.dataset.k; ui.swap = null; render(); window.scrollTo(0, 0); return; }
+  if (act === 'tday') { ui.tday = day; ui.swap = null; return render(); }
+  if (act === 'logday') { ui.logday = day; return render(); }
+  if (act === 'swap-cancel') { ui.swap = null; return render(); }
+  if (act === 'pool') { const pid = b.dataset.pid, d = ui.tday || 'fri', sel = ui.swap && ui.swap.day === d ? ui.swap : null;
+    if (sel && sel.ti != null) { ui.swap = null; return writeTeams(d, ts => { ts[sel.ti].pids[sel.tj] = pid; }); }
+    ui.swap = sel && sel.pool === pid ? null : { day: d, pool: pid }; return render(); }
+  if (act === 'slot') { const d = ui.tday || 'fri', ti = Number(b.dataset.ti), tj = Number(b.dataset.tj), sel = ui.swap && ui.swap.day === d ? ui.swap : null;
+    if (!sel) { ui.swap = { day: d, ti, tj }; return render(); }
+    ui.swap = null;
+    if (sel.pool) return writeTeams(d, ts => { ts[ti].pids[tj] = sel.pool; });
+    if (sel.ti === ti && sel.tj === tj) return render();
+    return writeTeams(d, ts => { const a = ts[sel.ti].pids[sel.tj]; ts[sel.ti].pids[sel.tj] = ts[ti].pids[tj]; ts[ti].pids[tj] = a; }); }
+  if (act === 'slot-clear') { const sel = ui.swap; ui.swap = null; if (!sel || sel.ti == null) return render(); return writeTeams(sel.day, ts => { ts[sel.ti].pids[sel.tj] = null; }); }
+  if (act === 'lock') { const cfg2 = clone(S.config); cfg2.locks = cfg2.locks || {}; cfg2.locks[day] = !cfg2.locks[day]; await saveConfig(cfg2); toast(DAY_LABEL[day] + (cfg2.locks[day] ? ' is locked.' : ' is unlocked.')); return; }
+  if (act === 'fix-save') {
+    const f = ui.fix, v = Number(f.v);
+    if (!f.key) return toast('Pick who to fix first.');
+    if (!(v >= 1 && v <= 20)) return toast('Type a score from 1 to 20.');
+    const arr = ((S.scores[f.day] && S.scores[f.day][f.key]) || new Array(18).fill(null)).slice(); while (arr.length < 18) arr.push(null);
+    arr[Number(f.h)] = v;
+    if (saveScores(f.day, { [f.key]: arr })) { toast(`Saved: ${keyLabel(f.day, f.key)}, hole ${Number(f.h) + 1} is now ${v}.`); f.v = ''; }
+    return render();
+  }
+  if (act === 'print') { window.print(); return; }
+  if (act === 'bak-dl') { const bk = autoBackups()[Number(b.dataset.i)]; if (!bk) return; const blob = new Blob([JSON.stringify(bk.data, null, 1)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'whos-your-daddy-backup-' + bk.date + '.json'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); return; }
+  if (act === 'bak-restore') { const i = b.dataset.i; if (ui.armed !== 'bak-' + i) { arm('bak-' + i); return render(); } ui.armed = null; const bk = autoBackups()[Number(i)]; if (!bk) return; ui.importData = bk.data; ui.importName = 'the ' + bk.date + ' backup'; render(); window.scrollTo(0, 0); return; }
   if (act === 'rday') { ui.rday = day; return render(); }
   if (act === 'psort') { ui.psort = b.dataset.k; return render(); }
   if (act === 'tsort') { ui[b.dataset.t] = b.dataset.k; return render(); }
@@ -2014,12 +2635,13 @@ document.getElementById('main').addEventListener('click', async (e) => {
     let capped = 0;
     const fmtD = FORMATS[S.config.days[d].format];
     for (const [key, arr] of Object.entries(h)) {
-      const ph = fmtD.scramble ? scrambleTeamHcp(S, (S.teams[d].find(t => t.id === key) || { pids: [] }).pids, d) : computeDayPH(key, d);
+      const ph = fmtD.scramble ? (() => { const t = S.teams[d].find(t => t.id === key) || { pids: [] }; return scrambleTeamHcp(S, t.pids, d, t); })() : computeDayPH(key, d);
       h[key] = arr.map((v, hole) => { if (v == null) return v; const m = maxFor(S, d, ph, hole); if (v > m) { capped++; return m; } return v; });
     }
     if (capped) toast(capped + (capped === 1 ? ' score was' : ' scores were') + ' above the max and saved at the max.');
+    if (isLocked(d)) return toast(`${DAY_LABEL[d]} is locked. Unlock it above first.`);
     Object.keys(ui.drafts).forEach(k => { if (k.startsWith(d + '|')) delete ui.drafts[k]; });
-    await writeDoc('scores_' + d, { h }, true);
+    saveScores(d, h);
     if (act === 'save-next' && !capped) {
       const ts = teamsFor(d), i = ts.findIndex(t => t.id === ui.team);
       const nxt = ts.slice(i + 1).concat(ts.slice(0, i)).find(t => { const keys = FORMATS[S.config.days[d].format].scramble ? [t.id] : t.pids; return keys.some(k => { const c = S.scores[d] && S.scores[d][k]; return !Array.isArray(c) || c.some(v => v == null); }); });
@@ -2090,6 +2712,8 @@ document.getElementById('main').addEventListener('click', async (e) => {
 
 // score typing: keep a draft, auto-advance
 document.getElementById('main').addEventListener('input', (e) => {
+  if (e.target.dataset.fix === 'v') { ui.fix.v = e.target.value.replace(/[^0-9]/g, ''); return; }
+  if (e.target.dataset.qrpin) { ui.qrPin = e.target.value.trim(); clearTimeout(drawQrs.t); drawQrs.t = setTimeout(() => { const k = document.getElementById('qr-keep'); if (k) { const base = location.origin + location.pathname; k.dataset.url = base + '#keep' + (ui.qrPin ? '=' + encodeURIComponent(ui.qrPin) : ''); k.parentElement.querySelector('small').textContent = ui.qrPin ? 'Opens your group, PIN included' : 'Asks for the PIN'; drawQrs(); } }, 400); return; }
   const el = e.target; if (!el.dataset.score) return;
   const key = el.dataset.score, h = Number(el.dataset.h), dk = draftKey(ui.sday, key);
   el.value = el.value.replace(/[^0-9]/g, '');
@@ -2115,6 +2739,7 @@ document.getElementById('main').addEventListener('keydown', (e) => {
 });
 document.getElementById('main').addEventListener('focusin', (e) => { if (e.target.dataset && e.target.dataset.score) e.target.select(); });
 
+document.getElementById('main').addEventListener('toggle', (e) => { const k = e.target.dataset && e.target.dataset.det; if (k) { ui.open = ui.open || {}; ui.open[k] = e.target.open; } }, true);
 document.getElementById('main').addEventListener('submit', (e) => {
   if (e.target.dataset.form === 'pin') { e.preventDefault(); submitPin(); }
 });
@@ -2131,6 +2756,10 @@ document.getElementById('main').addEventListener('change', async (e) => {
     el.value = ''; return;
   }
   if (ds.score) return;
+  if (ds.me) { setMe(el.value || null); ui.meSkip = true; if (el.value) toast('Following ' + S.players[el.value].name + '.'); return render(); }
+  if (ds.fix) { ui.fix = ui.fix || {}; ui.fix[ds.fix] = el.value; if (ds.fix === 'day') ui.fix.key = ''; return ds.fix === 'v' ? undefined : render(); }
+  if (ds.chover) { const v = String(el.value).trim(); return writeDoc('players', { list: { [ds.chover]: { ch: { [ds.day]: v === '' ? null : Number(v) } } } }, true); }
+  if (ds.thcp != null) { const v = String(el.value).trim(), i = Number(ds.thcp); return writeTeams('sun', ts => { ts[i].hcp = v === '' ? null : Number(v); }); }
   if (ds.brot) { ui.rotate = el.checked; setRotation(); return; }
   if (ds.clrx) { ui.clearExtras = el.checked; return render(); }
   const num = (v) => { const n = Number(String(v).replace(/[$,]/g, '')); return isNaN(n) ? 0 : n; };
@@ -2193,6 +2822,7 @@ async function boot() {
   backend = 'db';
   db.collection('trip').onSnapshot({ includeMetadataChanges: true }, (snap) => {
     ui.pending = !!(snap.metadata && snap.metadata.hasPendingWrites);
+    if (!(snap.metadata && snap.metadata.fromCache)) ui.lastSnap = Date.now();
     const next = {}; snap.docs.forEach(d => { next[d.id] = d.data(); });
     docs = next; deriveState(); render();
   }, () => toast('Live updates stopped. Reload the page to reconnect.'));
@@ -2202,9 +2832,10 @@ async function boot() {
     const me = await db.collection('editors').doc(authId).get();
     // Devices unlocked before roles existed used the admin PIN, so they count as admin.
     role = me.exists ? ((me.data() || {}).role || 'admin') : null; canWrite = !!role; render();
+    if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027193616';
+const APP_VERSION = '20261027201627';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
