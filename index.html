@@ -607,6 +607,11 @@ ol.pb-top small { color: var(--muted); font-size: 13px; }
 ol.pb-top .amt { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--gold); }
 .pb-table .link.plain { text-decoration: none; color: var(--ink); font-weight: 600; padding: 0; text-align: left; font-size: 15px; }
 .pb-table tr.me td { background: var(--pine-soft); }
+
+.lb-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tvbtn { display: inline-flex; align-items: center; gap: 8px; background: var(--m-frame) !important; color: #fff !important; border-color: var(--m-gold) !important; font-size: 16px !important; padding: 10px 16px !important; box-shadow: inset 0 0 0 1px var(--m-gold); }
+.tvbtn svg { width: 20px; height: 20px; fill: none; stroke: var(--m-gold); stroke-width: 2; stroke-linecap: round; }
+@media (max-width: 600px) { .lb-top { flex-direction: column-reverse; align-items: stretch; } .tvbtn { justify-content: center; } }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1841,16 +1846,16 @@ function viewLeaderboard() {
   if (!ui.lday) ui.lday = dayNow();
   const sel = ui.lday;
   const chips = `<div class="chips seg">${DAYS.map(d => `<button class="chip" aria-pressed="${sel === d}" data-act="lday" data-day="${d}">${DAY_LABEL[d]}</button>`).join('')}<button class="chip" aria-pressed="${sel === 'wknd'}" data-act="lday" data-day="wknd">Weekend</button></div>`;
-  const tvBtn = `<div class="row"><button class="btn" data-act="tv-on">Show on clubhouse TV</button></div>`;
-  if (sel === 'wknd') return chips + weekendBoard(me) + tvBtn;
+  const tvBtn = `<div class="lb-top"><div class="lb-top-chips">${chips}</div><button class="btn tvbtn" data-act="tv-on"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Show on clubhouse TV</button></div>`;
+  if (sel === 'wknd') return tvBtn + weekendBoard(me);
   const day = sel, { r, rows } = boardRows(day);
   const list = rows.map(x => { const pids = teamPids(day, x.id); return lbRow({ rank: x.pos, name: teamName(x.names), sub: thruWord(x), score: tpStr(x.toPar), scoreCls: scoreCls(x.toPar), money: x.payout, me: me && pids.includes(me), act: `data-act="sheet-t" data-day="${day}" data-id="${esc(x.id)}"` }); });
   const myRow = me ? rows.find(x => teamPids(day, x.id).includes(me)) : null;
   const pinned = myRow ? `<div class="lb pinned"><div class="lb-cap">Your team</div>${lbRow({ rank: myRow.pos, name: teamName(myRow.names), sub: thruWord(myRow), score: tpStr(myRow.toPar), scoreCls: scoreCls(myRow.toPar), money: myRow.payout, me: true, act: `data-act="sheet-t" data-day="${day}" data-id="${esc(myRow.id)}"` })}</div>` : '';
   const status = r.complete ? '<span class="pill final">Final</span>' : dayStarted(day) ? `<span class="pill live">${r.cardsIn} of ${r.cardsTotal} finished</span>` : '';
   const head = `<section class="panel board"><div class="row between"><div><h2>${DAY_LABEL[day]} · ${esc(r.course.name)}</h2><div class="muted">${esc(r.fmt.label)}. Tap a team to see its card.</div></div>${status}${isLocked(day) ? '<span class="pill">Locked</span>' : ''}</div>
-    ${pinned}<div class="lb-hdr"><span>Place</span><span>Team</span><span>Score · won</span></div><div class="lb">${list.join('') || '<div class="muted">No teams set yet.</div>'}</div></section>`;
-  return chips + head + dayDetails(day, r, me) + tvBtn;
+    ${pinned}<div class="lb-hdr"><span>#</span><span>Team</span><span>Score · won</span></div><div class="lb">${list.join('') || '<div class="muted">No teams set yet.</div>'}</div></section>`;
+  return tvBtn + head + dayDetails(day, r, me);
 }
 function dayDetails(day, r, me) {
   const scr = r.fmt.scramble;
@@ -3176,7 +3181,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027230418';
+const APP_VERSION = '20261028081246';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
