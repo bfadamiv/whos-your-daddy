@@ -101,7 +101,7 @@ tr.paid td { background: color-mix(in srgb, var(--gold-bg) 55%, transparent); }
 .sortbtn { background: none; border: 0; padding: 0; font: inherit; color: inherit; letter-spacing: inherit; text-transform: inherit; cursor: pointer; }
 .sortbtn.on { color: var(--ink); }
 .pscores th.grp { text-align: center; border-left: 1px solid var(--line); }
-.pscores td:nth-child(3), .pscores td:nth-child(5), .pscores td:nth-child(7), .pscores td:nth-child(9) { border-left: 1px solid var(--line); }
+.pscores td:nth-child(4), .pscores td:nth-child(6), .pscores td:nth-child(8), .pscores td:nth-child(10), .pscores td:nth-child(11) { border-left: 1px solid var(--line); }
 /* Mode chooser + Keep Score */
 .hdr-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 .modesw { font-family: var(--font-body); font-size: 12px; font-weight: 600; color: var(--band-ink); background: none; border: 0; text-decoration: underline; cursor: pointer; padding: 2px 0; }
@@ -479,6 +479,19 @@ ul.bul li::before { content: '•'; position: absolute; left: 4px; color: var(--
 ul.bul li .amt { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--gold); white-space: nowrap; }
 .summary > div > b { font-family: var(--font-display); font-size: 17px; letter-spacing: .03em; text-transform: uppercase; color: var(--pine); }
 .summary ul.bul li { font-size: 15px; }
+
+/* Names stay put when a wide table scrolls sideways */
+.stick2 th:nth-child(1), .stick2 td:nth-child(1) { position: sticky; left: 0; z-index: 2; background: var(--surface); width: 52px; min-width: 52px; max-width: 52px; }
+.stick2 th:nth-child(2), .stick2 td:nth-child(2) { position: sticky; left: 52px; z-index: 2; background: var(--surface); box-shadow: 6px 0 6px -6px rgba(0,0,0,.25); }
+.stick2 thead th:nth-child(1), .stick2 thead th:nth-child(2) { background: var(--surface-2); z-index: 3; }
+.stick2 tr.paid td:nth-child(1), .stick2 tr.paid td:nth-child(2) { background: color-mix(in srgb, var(--gold-bg) 55%, var(--surface)); }
+.stick2 td:nth-child(2) { white-space: normal; min-width: 120px; max-width: 170px; }
+.pscores.stick2 thead tr:first-child th:nth-child(3) { position: static; }
+.ptable th:first-child, .ptable td:first-child { position: sticky; left: 0; z-index: 2; background: var(--surface); box-shadow: 6px 0 6px -6px rgba(0,0,0,.25); }
+.ptable thead th:first-child { background: var(--surface-2); z-index: 3; }
+.card.mini.fixed th:first-child, .card.mini.fixed td.lab, .card.mini.fixed tr.meta td:first-child { position: sticky; left: 0; z-index: 2; background: var(--surface); box-shadow: 6px 0 6px -6px rgba(0,0,0,.25); }
+.card.mini.fixed thead th:first-child { background: var(--surface-2); z-index: 3; }
+.card.mini.fixed tr.team td.lab { background: var(--surface); }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -2233,7 +2246,7 @@ function viewResults() {
   return dayChips(ui.rday, 'rday', true) + `
   <section class="panel">
     <div class="row between"><div><h2>${DAY_LABEL[ui.rday]} · ${esc(r.course.name)}</h2><div class="muted small">${esc(r.fmt.label)} · Par ${r.coursePar}${r.fmt.balls > 1 ? ' (' + r.coursePar * r.fmt.balls + ' for 2 balls)' : ''}${scr ? ' · Team handicap: ' + (dc.scrHcp === '3515' ? '35% low + 15% high' : dc.scrHcp === '3515d' ? '35% low + 15% high (decimal)' : 'average of course handicaps' + (dc.scrPct != 100 ? ' × ' + dc.scrPct + '%' : '')) : ''}</div></div>${status}</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Team</th><th class="num">Thru</th>${scr ? '<th class="num">Gross</th><th class="num">Hcp</th>' : ''}<th class="num">Net</th><th class="num">To Par</th><th class="num">Payout</th></tr></thead><tbody>${rows || `<tr><td colspan="8" class="empty">Set teams under Players &amp; Teams.</td></tr>`}</tbody></table></div>
+    <div class="tbl-wrap"><table class="stick2"><thead><tr><th>Pos</th><th>Team</th><th class="num">Thru</th>${scr ? '<th class="num">Gross</th><th class="num">Hcp</th>' : ''}<th class="num">Net</th><th class="num">To Par</th><th class="num">Payout</th></tr></thead><tbody>${rows || `<tr><td colspan="8" class="empty">Set teams under Players &amp; Teams.</td></tr>`}</tbody></table></div>
     ${r.complete ? '' : '<div class="muted small">Places and payouts settle as cards come in. Teams still on the course are listed below the finished ones.</div>'}
   </section>
   <div class="grid2">
@@ -2280,7 +2293,7 @@ function weekendPanel(w) {
   const list = ui.wsort === 'total' ? w.list.slice() : sortRows(w.list.slice(), keys[ui.wsort]);
   const rows = list.map(r => `<tr class="${r.payout ? 'paid' : ''}"><td class="pos">${r.pos ? (r.tied ? 'T' : '') + r.pos : '–'}</td><td>${esc(r.name)}</td><td class="num">${r.fri ?? dash}</td><td class="num">${r.sat ?? dash}</td><td class="num">${r.sun ?? dash}</td><td class="num score">${r.rounds === 3 ? r.total : ''}</td><td class="num">${r.payout ? `<span class="money">${fmt$(r.payout)}</span>` : ''}</td></tr>`).join('');
   return `<section class="panel"><div class="row between"><div><h3>Weekend individual · top ${places.length}</h3><div class="muted small">Friday individual net + Saturday individual net + his Sunday scramble team's net. Pays ${places.map((p, i) => ordinal(i + 1) + ' ' + fmt$(p)).join(', ')}. Ties split. Tap a column to sort; Pos is always the weekend finish.</div></div>${w.complete ? '<span class="pill final">Final</span>' : '<span class="pill live">In progress</span>'}</div>
-    <div class="tbl-wrap"><table><thead><tr><th>Pos</th>${sortTh('wsort', 'name', 'Player', '')}${sortTh('wsort', 'fri', 'Fri net')}${sortTh('wsort', 'sat', 'Sat net')}${sortTh('wsort', 'sun', 'Sun team net')}${sortTh('wsort', 'total', 'Total')}<th class="num">Payout</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    <div class="tbl-wrap"><table class="stick2"><thead><tr><th>Pos</th>${sortTh('wsort', 'name', 'Player', '')}${sortTh('wsort', 'fri', 'Fri net')}${sortTh('wsort', 'sat', 'Sat net')}${sortTh('wsort', 'sun', 'Sun team net')}${sortTh('wsort', 'total', 'Total')}<th class="num">Payout</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 // Every player's own gross and net for each day. Sunday is a team scramble, so it shows the team's card.
@@ -2331,7 +2344,7 @@ function viewPlayerScores() {
     <td class="num">${tot(r.both)}</td><td class="num">${tot(r.wg)}</td><td class="num">${tot(r.wn)}</td></tr>`).join('');
   const rankNote = ranks ? '' : ' Rank shows the full-weekend net finish while sorted by name or index.';
   return `<section class="panel"><div class="row between"><div><h2>Player Scores</h2><div class="muted small">Each player's own gross and net (gross minus his course handicap for that day's tees). Sunday is the scramble, so it shows his team's card. Full weekend = Friday + Saturday + Sunday team. Tap any column to sort; Rank follows the column you sort by.${rankNote}</div></div></div>
-    <div class="tbl-wrap"><table class="pscores"><thead>
+    <div class="tbl-wrap"><table class="pscores stick2"><thead>
       <tr><th></th><th></th><th></th><th class="num grp" colspan="2">Friday · ${esc(S.config.courses[S.config.days.fri.course].name)}</th><th class="num grp" colspan="2">Saturday · ${esc(S.config.courses[S.config.days.sat.course].name)}</th><th class="num grp" colspan="2">Sunday team · ${esc(S.config.courses[S.config.days.sun.course].name)}</th><th></th><th class="num grp" colspan="2">Full weekend</th></tr>
       <tr><th>Rank</th>${th('name', 'Player', '')}${th('index', 'Index')}${th('friG', 'Gross')}${th('fri', 'Net')}${th('satG', 'Gross')}${th('sat', 'Net')}${th('sunG', 'Gross')}${th('sun', 'Net')}${th('both', 'Fri + Sat net')}${th('wg', 'Gross')}${th('wn', 'Net')}</tr>
     </thead><tbody>${body}</tbody></table></div></section>`;
@@ -2354,10 +2367,10 @@ function viewTrip() {
   const seed = slist.map(p => `<tr><td class="pos">${seedRank[p.pid]}</td><td>${esc(p.name)}</td><td class="num">${p.index.toFixed(1)}</td><td class="num">${p.detail.fri ?? '<span class="muted">–</span>'}</td><td class="num">${p.detail.sat ?? '<span class="muted">–</span>'}</td><td class="num score">${p.rounds === 2 ? p.total : ''}</td></tr>`).join('');
   const paid = tm.list.reduce((s, p) => s + p.total, 0), pot = buyIn * tm.list.length;
   return `<section class="panel"><div class="row between"><div><h2>Trip Money List</h2><div class="muted small">Tap a column to sort. Rank follows the column you sort by.</div></div><div class="kpis"><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(paid)}</div><div class="l">Paid so far</div></div></div></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Rank</th>${sortTh('msort', 'name', 'Player', '')}${sortTh('msort', 'fri', 'Fri')}${sortTh('msort', 'sat', 'Sat')}${sortTh('msort', 'sun', 'Sun')}${sortTh('msort', 'wknd', 'Weekend')}${sortTh('msort', 'total', 'Won')}${sortTh('msort', 'net', 'Net vs ' + fmt$(buyIn))}</tr></thead><tbody>${rows}</tbody></table></div></section>
+    <div class="tbl-wrap"><table class="stick2"><thead><tr><th>Rank</th>${sortTh('msort', 'name', 'Player', '')}${sortTh('msort', 'fri', 'Fri')}${sortTh('msort', 'sat', 'Sat')}${sortTh('msort', 'sun', 'Sun')}${sortTh('msort', 'wknd', 'Weekend')}${sortTh('msort', 'total', 'Won')}${sortTh('msort', 'net', 'Net vs ' + fmt$(buyIn))}</tr></thead><tbody>${rows}</tbody></table></div></section>
   ${weekendPanel(tm.weekend)}
   <section class="panel"><div><h3>Individual net, Friday + Saturday</h3><div class="muted small">Each player's own net score (gross minus course handicap) for both rounds. This ranking seeds Sunday's scramble: #1 plays with last place, #2 with second-to-last, and so on. Tap a column to sort; Rank is always the seed.</div></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Rank</th>${sortTh('ssort', 'name', 'Player', '')}${sortTh('ssort', 'index', 'Index')}${sortTh('ssort', 'fri', 'Fri net')}${sortTh('ssort', 'sat', 'Sat net')}${sortTh('ssort', 'total', 'Total')}</tr></thead><tbody>${seed}</tbody></table></div></section>`;
+    <div class="tbl-wrap"><table class="stick2"><thead><tr><th>Rank</th>${sortTh('ssort', 'name', 'Player', '')}${sortTh('ssort', 'index', 'Index')}${sortTh('ssort', 'fri', 'Fri net')}${sortTh('ssort', 'sat', 'Sat net')}${sortTh('ssort', 'total', 'Total')}</tr></thead><tbody>${seed}</tbody></table></div></section>`;
 }
 
 // ---- score entry ----
@@ -2886,7 +2899,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027205947';
+const APP_VERSION = '20261027210435';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
