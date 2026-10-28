@@ -492,6 +492,56 @@ ul.bul li .amt { font-family: var(--font-display); font-weight: 700; font-size: 
 .card.mini.fixed th:first-child, .card.mini.fixed td.lab, .card.mini.fixed tr.meta td:first-child { position: sticky; left: 0; z-index: 2; background: var(--surface); box-shadow: 6px 0 6px -6px rgba(0,0,0,.25); }
 .card.mini.fixed thead th:first-child { background: var(--surface-2); z-index: 3; }
 .card.mini.fixed tr.team td.lab { background: var(--surface); }
+
+/* Money list: day columns on desktop, compact rows that open on phones */
+.ml { display: flex; flex-direction: column; gap: 3px; }
+.ml-hdr { display: none; }
+.ml-row { background: var(--m-slat); color: var(--m-ink); border-radius: 3px; }
+.ml-row.me { background: #fff6cf; box-shadow: inset 5px 0 0 var(--m-gold); }
+.ml-head { display: grid; grid-template-columns: 2.4em minmax(0, 1fr) auto; gap: 10px; align-items: center; width: 100%; background: none; border: 0; padding: 10px 10px 10px 4px; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.ml-rank { font-family: var(--font-display); font-weight: 700; font-size: 22px; text-align: center; color: #5e665f; }
+.ml-name { display: flex; flex-direction: column; min-width: 0; }
+.ml-name b { font-size: 17px; font-weight: 600; }
+.ml-dt { font-size: 13.5px; color: #5e665f; }
+.ml-total { display: flex; flex-direction: column; align-items: flex-end; }
+.ml-total b { font-family: var(--font-display); font-size: 22px; color: #8a6410; }
+.ml-total small { font-size: 12px; }
+.ml-total small.up { color: var(--m-over); } .ml-total small.down { color: #6f7a70; }
+.ml-days { display: none; padding: 0 12px 12px 3.2em; flex-direction: column; gap: 8px; }
+.ml-row.open .ml-days { display: flex; }
+.ml-row.open .ml-dt { display: none; }
+.ml-dl { font-family: var(--font-display); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: 14px; color: var(--m-frame); }
+.ml-day ul.bul li { font-size: 15px; padding: 4px 0 4px 16px; border-color: var(--m-rule); }
+.ml-day ul.bul li::before { color: var(--m-frame); }
+.ml-day ul.bul li .amt { color: #8a6410; font-size: 16px; }
+.ml-sub { text-align: right; font-family: var(--font-display); font-weight: 700; font-size: 14px; color: #5e665f; border-top: 1px solid var(--m-rule); padding-top: 2px; }
+.ml-sub::before { content: 'Day total '; font-weight: 500; }
+.ml-day:has(.ml-none) { display: none; }
+.ml-more { align-self: flex-start; background: #fff !important; color: var(--m-ink) !important; border-color: var(--m-rule) !important; }
+.ml-none-list { display: flex; flex-direction: column; gap: 6px; }
+.ml-none-list > b { color: var(--m-gold); font-family: var(--font-display); letter-spacing: .06em; text-transform: uppercase; }
+.ml-none-list > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.slot-chip { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 6px 12px; font: 600 14px var(--font-body); cursor: pointer; }
+.slot-chip.me { background: var(--m-gold); color: #10301e; }
+@media (min-width: 860px) {
+  .ml { gap: 3px; }
+  .ml-hdr, .ml-row { display: grid; grid-template-columns: 44px 170px repeat(3, minmax(0, 1fr)) 130px 104px; column-gap: 14px; align-items: start; }
+  .ml-hdr { padding: 0 10px 4px 4px; font: 600 12px var(--font-body); letter-spacing: .08em; text-transform: uppercase; color: var(--m-gold); }
+  .ml-hdr span:first-child { text-align: center; } .ml-hdr span:last-child { text-align: right; }
+  .ml-row { padding: 10px 10px 10px 4px; }
+  .ml-head, .ml-days, .ml-row.open .ml-days { display: contents; }
+  .ml-head > .ml-rank { grid-column: 1; grid-row: 1; } .ml-head > .ml-name { grid-column: 2; grid-row: 1; } .ml-head > .ml-total { grid-column: 7; grid-row: 1; }
+  .ml-fri { grid-column: 3; } .ml-sat { grid-column: 4; } .ml-sun { grid-column: 5; } .ml-wknd { grid-column: 6; }
+  .ml-day { grid-row: 1; display: block !important; }
+  .ml-dl, .ml-dt, .ml-more { display: none !important; }
+  .ml-days { padding: 0; }
+  .ml-head { padding: 0; }
+  .ml-name b { cursor: pointer; text-decoration: underline; text-decoration-color: transparent; }
+  .ml-row:hover .ml-name b { text-decoration-color: currentColor; }
+  .ml-none { color: #b5bab4; }
+  .ml-day ul.bul { margin: 0; }
+  .ml-tip { display: none; }
+}
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1786,12 +1836,34 @@ function viewMoney() {
   const list = tm.list.slice();
   const ranks = rankLabels(list, x => x.total);
   const paid = list.reduce((s, p) => s + p.total, 0), pot = buyIn * list.length;
-  const short = (pid) => { const items = moneyItems(pid); return items.length ? items.map(i => '• ' + esc((i.day === 'wknd' ? 'Weekend' : LB_DAYS[i.day]) + ' · ' + plainWhy(i.why).replace(/^Weekend individual/, 'Individual'))).join('<br>') : 'Nothing yet'; };
-  const mine = me ? list.find(x => x.pid === me) : null;
+  const cols = [['fri', 'Friday'], ['sat', 'Saturday'], ['sun', 'Sunday'], ['wknd', 'Weekend']];
+  if (ui.mlOpen == null) ui.mlOpen = me ? { [me]: true } : {};
+  const short = (why) => plainWhy(why).replace(/^Weekend individual /, '').replace(' place team', ' place');
+  const row = (p, i) => {
+    const items = moneyItems(p.pid), by = {};
+    items.forEach(it => (by[it.day] = by[it.day] || []).push(it));
+    const tot = (d) => (by[d] || []).reduce((s, x) => s + x.amt, 0);
+    const dayTotals = cols.filter(([d]) => tot(d)).map(([d, l]) => `${d === 'wknd' ? 'Wknd' : LB_DAYS[d]} ${fmt$(tot(d))}`).join(' · ');
+    const net = `<small class="${p.net >= 0 ? 'up' : 'down'}">${p.net >= 0 ? '+' : '−'}${fmt$(Math.abs(p.net))} vs buy-in</small>`;
+    const open = !!ui.mlOpen[p.pid];
+    return `<div class="ml-row ${open ? 'open' : ''} ${p.pid === me ? 'me' : ''}">
+      <button class="ml-head" data-act="ml-toggle" data-pid="${p.pid}" aria-expanded="${open}">
+        <span class="ml-rank">${ranks[i]}</span>
+        <span class="ml-name"><b>${esc(p.name)}</b><small class="ml-dt">${dayTotals}</small></span>
+        <span class="ml-total"><b>${fmt$(p.total)}</b>${net}</span>
+      </button>
+      <div class="ml-days">${cols.map(([d, l]) => `<div class="ml-day ml-${d}"><span class="ml-dl">${l}</span>${by[d] ? `<ul class="bul">${by[d].map(it => `<li><span>${esc(short(it.why))}</span><span class="amt">${fmt$(it.amt)}</span></li>`).join('')}</ul>${by[d].length > 1 ? `<div class="ml-sub">${fmt$(tot(d))}</div>` : ''}` : '<span class="ml-none">–</span>'}</div>`).join('')}
+        <button class="btn ml-more" data-act="sheet-p" data-pid="${p.pid}">Cards &amp; details</button></div>
+    </div>`;
+  };
+  const cashed = list.filter(p => p.total > 0), none = list.filter(p => !p.total);
   return chips + `<section class="panel board"><div class="row between"><h2>Money list</h2><div class="kpis"><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(paid)}</div><div class="l">Won so far</div></div></div></div>
-    ${mine ? `<div class="me-card panel">${moneyList(me, 'You')}<div class="big-p">${mine.net >= 0 ? `<b>${fmt$(mine.net)}</b> ahead of your ${fmt$(buyIn)} buy-in` : `<b>${fmt$(-mine.net)}</b> short of your ${fmt$(buyIn)} buy-in`}</div></div>` : ''}
-    <div class="lb">${list.map((p, i) => lbRow({ rank: p.total ? ranks[i] : '', name: p.name, sub: short(p.pid), score: '', money: p.total, me: p.pid === me, act: `data-act="sheet-p" data-pid="${p.pid}"` })).join('')}</div>
-    <div class="muted small">Tap a name to see where the money came from and his cards.</div></section>`;
+    <div class="ml">
+      <div class="ml-hdr"><span>#</span><span>Player</span>${cols.map(([, l]) => `<span>${l}</span>`).join('')}<span>Total</span></div>
+      ${cashed.map((p) => row(p, list.indexOf(p))).join('')}
+    </div>
+    ${none.length ? `<div class="ml-none-list"><b>Hasn't cashed yet</b><div>${none.map(p => `<button class="slot-chip ${p.pid === me ? 'me' : ''}" data-act="sheet-p" data-pid="${p.pid}">${esc(p.name)}</button>`).join('')}</div></div>` : ''}
+    <div class="muted small ml-tip">Tap a player to see his winnings by day.</div></section>`;
 }
 
 // ---------- Drill-down sheets ----------
@@ -2596,6 +2668,7 @@ document.getElementById('main').addEventListener('click', async (e) => {
   if (act === 'go') { ui.tab = b.dataset.tab; ui.sheet = null; try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {} render(); window.scrollTo(0, 0); return; }
   if (act === 'lday') { ui.lday = day; return render(); }
   if (act === 'msec') { ui.msec = b.dataset.k; return render(); }
+  if (act === 'ml-toggle') { const pid = b.dataset.pid; if (window.matchMedia('(min-width: 860px)').matches) { ui.sheet = { t: 'p', pid }; return render(); } ui.mlOpen = ui.mlOpen || {}; ui.mlOpen[pid] = !ui.mlOpen[pid]; return render(); }
   if (act === 'sheet-p') { ui.sheet = { t: 'p', pid: b.dataset.pid }; return render(); }
   if (act === 'sheet-t') { ui.sheet = { t: 'team', day, id: b.dataset.id }; return render(); }
   if (act === 'sheet-close') { ui.sheet = null; return render(); }
@@ -2899,7 +2972,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027210435';
+const APP_VERSION = '20261027212250';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
