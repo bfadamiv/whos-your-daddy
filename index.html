@@ -440,6 +440,41 @@ tr.chg td { background: var(--warn-bg); }
 @media (max-width: 440px) { .kp-btn { width: 46px; height: 46px; font-size: 26px; } .kp-score { width: 50px; } .kp-score b { font-size: 34px; } .kp-ctl { gap: 4px; } .kp-row { padding: 10px; } }
 .kp-ctp > span { font-size: 16px; }
 @media print { body * { visibility: hidden; } .printable, .printable * { visibility: visible; } .printable { position: absolute; left: 0; top: 0; box-shadow: none; } .noprint, .noprint * { display: none !important; } nav.tabs, header.band { display: none; } }
+
+/* Green clubhouse panels: white type on green, leaderboard rows as cream slats */
+.panel.board { background: var(--m-frame); color: #fff; box-shadow: inset 0 0 0 3px var(--m-frame-2); }
+.panel.board h2, .panel.board h3 { color: #fff; }
+.panel.board .muted, .panel.board .muted.small { color: #cfe0d4; }
+.panel.board .btn { background: rgba(255,255,255,.1); color: #fff; border-color: rgba(255,255,255,.35); }
+.panel.board .lb { gap: 3px; }
+.panel.board .lb-row { background: var(--m-slat); color: var(--m-ink); border: 0; border-radius: 3px; }
+.panel.board .lb-row .lb-rank, .panel.board .lb-row .lb-name small { color: #5e665f; }
+.panel.board .lb-row .lb-score.under { color: var(--m-under); }
+.panel.board .lb-row .lb-score.over { color: var(--m-over); }
+.panel.board .lb-row .lb-money { color: #8a6410; }
+.panel.board .lb-row.me { background: #fff6cf; box-shadow: inset 5px 0 0 var(--m-gold); }
+.panel.board .lb-hdr { color: var(--m-gold); }
+.panel.board .lb.pinned { border-color: var(--m-gold); }
+.panel.board .lb-cap { background: var(--m-gold); color: #10301e; }
+.panel.board .pill.final { background: var(--m-gold); color: #10301e; }
+.panel.board .kpi .l { color: #cfe0d4; }
+.panel.board .me-card { background: rgba(255,255,255,.08); box-shadow: 0 0 0 2px var(--m-gold); color: #fff; }
+.panel.board .mlist .amt { color: var(--m-gold); }
+.panel.board .bul li { border-color: rgba(255,255,255,.18); }
+:root[data-contrast="hi"] .panel.board { background: #fff; color: #000; box-shadow: 0 0 0 2px #000; }
+:root[data-contrast="hi"] .panel.board h2, :root[data-contrast="hi"] .panel.board h3, :root[data-contrast="hi"] .panel.board .muted { color: #000; }
+:root[data-contrast="hi"] .panel.board .lb-row { background: #fff; border-bottom: 1px solid #000; }
+/* Bulleted lists */
+.mlist { display: flex; flex-direction: column; gap: 4px; }
+.mlist > b { font-size: 18px; }
+ul.bul { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; }
+ul.bul li { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0 6px 18px; border-bottom: 1px solid var(--line); position: relative; font-size: 16px; }
+ul.bul li:last-child { border-bottom: 0; }
+ul.bul li::before { content: '•'; position: absolute; left: 4px; color: var(--pine); font-weight: 700; }
+.panel.board ul.bul li::before { color: var(--m-gold); }
+ul.bul li .amt { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--gold); white-space: nowrap; }
+.summary > div > b { font-family: var(--font-display); font-size: 17px; letter-spacing: .03em; text-transform: uppercase; color: var(--pine); }
+.summary ul.bul li { font-size: 15px; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -1601,10 +1636,10 @@ function plainWhy(why) {
   return String(why).replace(/^CTP #/, 'Closest to pin #').replace(/^LD #/, 'Long drive #').replace(/ \(tie\)/, ', tied')
     .replace(/^(\d+)(st|nd|rd|th)(, tied)? place$/, (m, n, s, t) => n + s + ' place team' + (t || ''));
 }
-function moneySentence(pid, who) {
+function moneyList(pid, who) {
   const items = moneyItems(pid), total = items.reduce((s, i) => s + i.amt, 0);
-  if (!items.length) return `${who} hasn't won any money yet.`;
-  return `${who} won <b>${fmt$(total)}</b>: ` + items.map(i => `${i.day === 'wknd' ? '' : LB_DAYS[i.day] + ' '}${esc(plainWhy(i.why))} (${fmt$(i.amt)})`).join(', ') + '.';
+  if (!items.length) return `<div class="mlist"><b>${who} ha${who === 'You' ? 've' : 's'}n't won any money yet.</b></div>`;
+  return `<div class="mlist"><b>${who} won ${fmt$(total)}</b><ul class="bul">${items.map(i => `<li><span>${i.day === 'wknd' ? 'Weekend' : LB_DAYS[i.day]} · ${esc(plainWhy(i.why).replace(/^Weekend individual/, 'Individual'))}</span><span class="amt">${fmt$(i.amt)}</span></li>`).join('')}</ul></div>`;
 }
 
 // ---------- Right Now ----------
@@ -1627,37 +1662,42 @@ function viewNow() {
     const t = rows.find(x => (S.teams[day].find(y => y.id === x.id) || { pids: [] }).pids.includes(me));
     const line = t ? (t.toPar == null ? `Your team hasn't started yet.` : `Your team is <b>${placeWord(t.pos)}</b> at <b>${underWord(t.toPar)}</b>, ${t.final ? 'finished' : 'through ' + t.thru + ' holes'}.`) : `You're not on a ${DAY_LABEL[day]} team yet.`;
     mine = `<section class="panel me-card"><div class="row between"><h3>${esc(nm)}</h3><button class="btn" data-act="sheet-p" data-pid="${me}">My scores</button></div>
-      <p class="big-p">${line}</p><p>${moneySentence(me, 'You')}</p></section>`;
+      <p class="big-p">${line}</p>${moneyList(me, 'You')}</section>`;
   }
   const top = rows.slice(0, 5).map(x => lbRow({ rank: x.pos, name: teamName(x.names), sub: thruWord(x), score: tpStr(x.toPar), scoreCls: scoreCls(x.toPar), money: x.payout, me: me && teamPids(day, x.id).includes(me), act: `data-act="sheet-t" data-day="${day}" data-id="${esc(x.id)}"` })).join('');
   const skins = r.skins.length ? r.skins.slice().reverse().slice(0, 6).map(s => `<div class="li"><span><b>Hole ${s.hole}</b> ${s.winners.map(w => esc(w.name)).join(' and ')}${s.winners.length === 2 ? ' <span class="muted">(split)</span>' : ''}</span><span class="amt">${fmt$(s.winners.reduce((a, w) => a + w.amt, 0))}</span></div>`).join('') : '<div class="muted">No skins won yet.</div>';
   const summary = r.complete ? daySummary(day) : '';
   return head + pick + mine + `
-    <section class="panel"><div class="row between"><h3>Leaders</h3><button class="btn" data-act="go" data-tab="board">Full leaderboard</button></div>
+    <section class="panel board"><div class="row between"><h3>Leaders</h3><button class="btn" data-act="go" data-tab="board">Full leaderboard</button></div>
       <div class="lb">${top || '<div class="muted">No teams yet.</div>'}</div></section>` + summary + `
     <section class="panel"><div class="row between"><h3>Latest skins</h3><span class="muted small">${r.skinUnits ? r.skinUnits + ' won so far' : ''}</span></div>${skins}</section>`;
 }
 function teamPids(day, id) { const t = (S.teams[day] || []).find(x => x.id === id); return t ? t.pids.filter(Boolean) : []; }
 
 // End-of-day card: winners, skins, low round. Share sends the plain text.
-function daySummaryText(day) {
-  const r = computeDay(S, day), out = [`Who's Your Daddy 2026 · ${DAY_LABEL[day]} at ${r.course.name}`];
-  r.standings.filter(t => t.payout).forEach(t => out.push(`${t.tied ? 'T' : ''}${t.pos}. ${t.name} ${t.total} (${fmt$(t.payout)})`));
-  if (r.skins.length) out.push('Skins: ' + r.skins.map(s => '#' + s.hole + ' ' + s.winners.map(w => w.name).join(' & ')).join(', '));
+function daySummaryParts(day) {
+  const r = computeDay(S, day), parts = [];
+  const places = r.standings.filter(t => t.payout).map(t => `${t.tied ? 'T' : ''}${t.pos}. ${t.name} · ${t.total} · ${fmt$(t.payout)}`);
+  if (places.length) parts.push(['Team places', places]);
+  if (r.skins.length) parts.push(['Skins', r.skins.map(s => `#${s.hole} · ${s.winners.map(w => w.name).join(' & ')}${s.winners.length === 2 ? ' (split)' : ''} · ${fmt$(s.winners.reduce((a, w) => a + w.amt, 0))}`)]);
   if (!r.fmt.scramble) {
     const ind = r.standings.flatMap(t => t.members.map(m => ({ pid: m.pid, g: m.gross.reduce((a, b) => a + (b || 0), 0), n: m.gross.reduce((a, b) => a + (b || 0), 0) - m.ph }))).filter(x => x.g);
     const lowG = ind.slice().sort((a, b) => a.g - b.g)[0], lowN = ind.slice().sort((a, b) => a.n - b.n)[0];
-    if (lowG) out.push(`Low gross: ${S.players[lowG.pid].name} ${lowG.g}`);
-    if (lowN) out.push(`Low net: ${S.players[lowN.pid].name} ${lowN.n}`);
+    const low = []; if (lowG) low.push(`Low gross · ${S.players[lowG.pid].name} · ${lowG.g}`); if (lowN) low.push(`Low net · ${S.players[lowN.pid].name} · ${lowN.n}`);
+    if (low.length) parts.push(['Low rounds', low]);
   }
-  const ctp = r.contests.filter(c => c.winner).map(c => '#' + c.hole + ' ' + S.players[c.winner].name);
-  if (ctp.length) out.push('Closest to pin: ' + ctp.join(', '));
-  return out.join('\n');
+  const ctp = r.contests.filter(c => c.winner).map(c => `#${c.hole} · ${S.players[c.winner].name}${c.dist ? ' · ' + c.dist : ''}`);
+  if (ctp.length) parts.push(['Closest to the pin', ctp]);
+  return { title: `Who's Your Daddy 2026 · ${DAY_LABEL[day]} at ${r.course.name}`, parts };
+}
+function daySummaryText(day) {
+  const { title, parts } = daySummaryParts(day);
+  return [title].concat(parts.map(([h, items]) => '\n' + h + '\n' + items.map(i => '• ' + i).join('\n'))).join('\n');
 }
 function daySummary(day) {
-  const lines = daySummaryText(day).split('\n');
+  const { parts } = daySummaryParts(day);
   return `<section class="panel summary"><div class="row between"><h3>${DAY_LABEL[day]} wrap-up</h3><button class="btn primary" data-act="share-day" data-day="${day}">Share</button></div>
-    ${lines.slice(1).map(l => `<div>${esc(l)}</div>`).join('')}</section>`;
+    ${parts.map(([h, items]) => `<div><b>${esc(h)}</b><ul class="bul">${items.map(i => `<li>${esc(i)}</li>`).join('')}</ul></div>`).join('')}</section>`;
 }
 
 // ---------- Leaderboard ----------
@@ -1673,7 +1713,7 @@ function viewLeaderboard() {
   const myRow = me ? rows.find(x => teamPids(day, x.id).includes(me)) : null;
   const pinned = myRow ? `<div class="lb pinned"><div class="lb-cap">Your team</div>${lbRow({ rank: myRow.pos, name: teamName(myRow.names), sub: thruWord(myRow), score: tpStr(myRow.toPar), scoreCls: scoreCls(myRow.toPar), money: myRow.payout, me: true, act: `data-act="sheet-t" data-day="${day}" data-id="${esc(myRow.id)}"` })}</div>` : '';
   const status = r.complete ? '<span class="pill final">Final</span>' : dayStarted(day) ? `<span class="pill live">${r.cardsIn} of ${r.cardsTotal} finished</span>` : '';
-  const head = `<section class="panel"><div class="row between"><div><h2>${DAY_LABEL[day]} · ${esc(r.course.name)}</h2><div class="muted">${esc(r.fmt.label)}. Tap a team to see its card.</div></div>${status}${isLocked(day) ? '<span class="pill">Locked</span>' : ''}</div>
+  const head = `<section class="panel board"><div class="row between"><div><h2>${DAY_LABEL[day]} · ${esc(r.course.name)}</h2><div class="muted">${esc(r.fmt.label)}. Tap a team to see its card.</div></div>${status}${isLocked(day) ? '<span class="pill">Locked</span>' : ''}</div>
     ${pinned}<div class="lb-hdr"><span>Place</span><span>Team</span><span>Score · won</span></div><div class="lb">${list.join('') || '<div class="muted">No teams set yet.</div>'}</div></section>`;
   return chips + (r.complete ? daySummary(day) : '') + head + dayDetails(day, r, me) + tvBtn;
 }
@@ -1711,7 +1751,7 @@ function weekendBoard(me) {
   const places = (S.config.weekend && S.config.weekend.places) || [];
   const sub = (x) => ['f', 's', 'u'].map((k, i) => x[k] == null ? null : ['Fri', 'Sat', 'Sun'][i] + ' ' + tpStr(x[k])).filter(Boolean).join(' · ') || 'No rounds yet';
   const mine = me ? rows.find(x => x.pid === me) : null;
-  return `<section class="panel"><div class="row between"><div><h2>Weekend individual</h2><div class="muted">Your Friday net + Saturday net + your Sunday team's net. Pays ${places.map((p, i) => ordinal(i + 1) + ' ' + fmt$(p)).join(', ')}.</div></div>${complete ? '<span class="pill final">Final</span>' : '<span class="pill live">In progress</span>'}</div>
+  return `<section class="panel board"><div class="row between"><div><h2>Weekend individual</h2><div class="muted">Your Friday net + Saturday net + your Sunday team's net. Pays ${places.map((p, i) => ordinal(i + 1) + ' ' + fmt$(p)).join(', ')}.</div></div>${complete ? '<span class="pill final">Final</span>' : '<span class="pill live">In progress</span>'}</div>
     ${mine ? `<div class="lb pinned"><div class="lb-cap">You</div>${lbRow({ rank: mine.pos, name: mine.name, sub: sub(mine), score: tpStr(mine.toPar), scoreCls: scoreCls(mine.toPar), money: mine.pay, me: true, act: `data-act="sheet-p" data-pid="${mine.pid}"` })}</div>` : ''}
     <div class="lb">${rows.map(x => lbRow({ rank: x.pos, name: x.name, sub: sub(x), score: tpStr(x.toPar), scoreCls: scoreCls(x.toPar), money: x.pay, me: x.pid === me, act: `data-act="sheet-p" data-pid="${x.pid}"` })).join('')}</div></section>`;
 }
@@ -1726,11 +1766,11 @@ function viewMoney() {
   const list = tm.list.slice();
   const ranks = rankLabels(list, x => x.total);
   const paid = list.reduce((s, p) => s + p.total, 0), pot = buyIn * list.length;
-  const short = (pid) => { const items = moneyItems(pid); return items.length ? items.map(i => (i.day === 'wknd' ? '' : LB_DAYS[i.day] + ' ') + plainWhy(i.why)).join(' · ') : 'Nothing yet'; };
+  const short = (pid) => { const items = moneyItems(pid); return items.length ? items.map(i => '• ' + esc((i.day === 'wknd' ? 'Weekend' : LB_DAYS[i.day]) + ' · ' + plainWhy(i.why).replace(/^Weekend individual/, 'Individual'))).join('<br>') : 'Nothing yet'; };
   const mine = me ? list.find(x => x.pid === me) : null;
-  return chips + `<section class="panel"><div class="row between"><h2>Money list</h2><div class="kpis"><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(paid)}</div><div class="l">Won so far</div></div></div></div>
-    ${mine ? `<p class="big-p">${moneySentence(me, 'You')} ${mine.net >= 0 ? `That's <b>${fmt$(mine.net)}</b> ahead of your ${fmt$(buyIn)} buy-in.` : `You're <b>${fmt$(-mine.net)}</b> short of your ${fmt$(buyIn)} buy-in.`}</p>` : ''}
-    <div class="lb">${list.map((p, i) => lbRow({ rank: p.total ? ranks[i] : '', name: p.name, sub: esc(short(p.pid)), score: '', money: p.total, me: p.pid === me, act: `data-act="sheet-p" data-pid="${p.pid}"` })).join('')}</div>
+  return chips + `<section class="panel board"><div class="row between"><h2>Money list</h2><div class="kpis"><div class="kpi"><div class="v">${fmt$(pot)}</div><div class="l">Pot</div></div><div class="kpi"><div class="v">${fmt$(paid)}</div><div class="l">Won so far</div></div></div></div>
+    ${mine ? `<div class="me-card panel">${moneyList(me, 'You')}<div class="big-p">${mine.net >= 0 ? `<b>${fmt$(mine.net)}</b> ahead of your ${fmt$(buyIn)} buy-in` : `<b>${fmt$(-mine.net)}</b> short of your ${fmt$(buyIn)} buy-in`}</div></div>` : ''}
+    <div class="lb">${list.map((p, i) => lbRow({ rank: p.total ? ranks[i] : '', name: p.name, sub: short(p.pid), score: '', money: p.total, me: p.pid === me, act: `data-act="sheet-p" data-pid="${p.pid}"` })).join('')}</div>
     <div class="muted small">Tap a name to see where the money came from and his cards.</div></section>`;
 }
 
@@ -1761,7 +1801,7 @@ function sheetPlayer(pid) {
   }).join('');
   const isMe = meId() === pid;
   return `<div class="sh-h"><div><h2>${esc(p.name)}</h2><div class="muted">Index ${Number(p.index || 0).toFixed(1)}</div></div></div>
-    <p>${moneySentence(pid, p.name.split(' ')[0])}</p>${parts}
+    ${moneyList(pid, p.name.split(' ')[0])}${parts}
     <div class="row"><button class="btn" data-act="me-set" data-pid="${isMe ? '' : pid}">${isMe ? 'Stop following me' : 'This is me'}</button></div>
     <div class="muted small">Circles are birdies, squares are bogeys. Dots mark holes where he gets a stroke.</div>`;
 }
@@ -2835,7 +2875,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261027201627';
+const APP_VERSION = '20261027202632';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
