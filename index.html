@@ -420,6 +420,7 @@ label.tiny input { width: 64px; }
 .ptable td.dcell { white-space: nowrap; }
 .chbox { display: inline-flex; flex-direction: column; vertical-align: middle; margin-left: 6px; }
 .chbox input { width: 52px; text-align: center; }
+.chcalc { display: inline-block; min-width: 2.2em; margin-left: 8px; text-align: center; font-family: var(--font-display); font-weight: 700; font-size: 17px; }
 .chbox input.set { border-color: var(--warn); background: var(--warn-bg); font-weight: 700; }
 .chbox small { font-size: 11px; color: var(--muted); }
 .lockrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); flex-wrap: wrap; font-size: 16px; }
@@ -677,12 +678,10 @@ function pops(ph, si) {
   return -(Math.floor(p / 18) + (si > 18 - (p % 18) ? 1 : 0));
 }
 
-// Course handicap for a player on a day: a typed-in override wins, otherwise the WHS formula.
+// Course handicap for a player on a day: always the WHS formula from index and tees (no overrides).
 function playerCH(state, pid, day) {
   const p = state.players[pid];
   if (!p) return 0;
-  const o = p.ch && p.ch[day];
-  if (o != null && o !== '' && !isNaN(Number(o))) return Number(o);
   return courseHcp(Number(p.index) || 0, teeFor(state, pid, day));
 }
 function playerPH(state, pid, day) {
@@ -2086,15 +2085,14 @@ function adminPlayers() {
   const c = S.config, ids = Object.keys(S.players).sort((a, b) => S.players[a].name.localeCompare(S.players[b].name));
   const teeSel = (pid, day) => { const course = c.courses[c.days[day].course]; const cur = (S.players[pid].tees && S.players[pid].tees[day]) || course.defaultTee;
     return `<select id="tee-${pid}-${day}" data-tee="${pid}" data-day="${day}">${course.tees.map(t => `<option value="${t.id}" ${t.id === cur ? 'selected' : ''}>${esc(t.name.replace(/ ·.*$/, ''))}</option>`).join('')}</select>`; };
-  const chCell = (pid, day) => { const p = S.players[pid], o = p.ch && p.ch[day], calc = courseHcp(Number(p.index) || 0, teeObj(pid, day));
-    return `<span class="chbox"><input id="ch-${pid}-${day}" data-chover="${pid}" data-day="${day}" inputmode="numeric" value="${o == null ? '' : esc(o)}" placeholder="${calc}" aria-label="${esc(p.name)} ${DAY_LABEL[day]} course handicap" class="${o != null && o !== '' ? 'set' : ''}">${o != null && o !== '' ? `<small>calc ${calc}</small>` : ''}</span>`; };
+  const chCell = (pid, day) => `<span class="chcalc">${courseHcp(Number(S.players[pid].index) || 0, teeObj(pid, day))}</span>`;
   const rows = ids.map(pid => { const p = S.players[pid];
     return `<tr><td><input id="pn-${pid}" data-pfield="name" data-pid="${pid}" value="${esc(p.name)}" style="width:150px"></td>
       <td><input id="pi-${pid}" data-pfield="index" data-pid="${pid}" value="${esc(p.index)}" inputmode="decimal" style="width:60px"></td>
       ${DAYS.map(d => `<td class="dcell">${teeSel(pid, d)}${chCell(pid, d)}</td>`).join('')}
       <td><button class="link" data-act="del-player" data-pid="${pid}">${ui.armed === 'del-' + pid ? 'Tap to confirm' : 'Remove'}</button></td></tr>`; }).join('');
   return `<section class="panel"><div class="row between"><h2>Players · ${ids.length}</h2></div>
-    <div class="muted">Each day shows the tees and the course handicap. The grey number is the calculated handicap. Type a number in the box to use it instead; clear the box to go back to the calculation.</div>
+    <div class="muted">Each day shows the tees and the course handicap. Course handicaps come from the index and tees (Index × Slope ÷ 113 + Rating − Par) and can't be typed over. To change one, change the index or the tees.</div>
     ${ids.length ? `<div class="tbl-wrap"><table class="ptable"><thead><tr><th>Name</th><th>Index</th>${DAYS.map(d => `<th>${DAY_LABEL[d]} · tees &amp; handicap</th>`).join('')}<th></th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}
     <details class="det2"><summary>Add players or update indexes</summary>
     <label class="f">Add players · one per line: Name, Index<textarea id="bulk" placeholder="Player 1, 12.4&#10;Player 2, 8.1"></textarea></label><div class="row"><button class="btn primary" data-act="bulk-add">Add players</button></div>
@@ -2834,7 +2832,7 @@ function viewSetupParts() {
     ${mode === 'live' && isAdmin() ? (ui.tplAsk ? `<div class="banner"><p><b>Are you sure?</b> This replaces every payout amount, the skins pots and the closest-to-pin list with the 2024-style split for 32 players ($3,360). Courses, players, teams and scores stay.</p><div class="row"><button class="btn" data-act="tpl-no">Cancel</button><button class="btn primary" data-act="tpl-yes">Yes, use 2024-style payouts</button></div></div>`
       : ui.tplAsk2 ? `<div class="banner"><p><b>Are you sure?</b> This sets the buy-in to $110 and replaces every payout amount, the skins pots and the closest-to-pin list with the organizer's 2026 sheet for 32 players ($3,520). Courses, players, teams and scores stay.</p><div class="row"><button class="btn" data-act="tpl-no">Cancel</button><button class="btn primary" data-act="tpl2-yes">Yes, use the organizer's 2026 payouts</button></div></div>`
       : `<div class="row"><button class="btn" data-act="tpl2-ask">Use organizer's 2026 payouts</button><button class="btn" data-act="tpl-ask">Use 2024-style payouts</button></div>`) : ''}
-    <div class="muted small">Skins: one low score wins the full skin; two tied for low split it; three or more tied means no skin and the hole carries to the next. The skins pot is divided by the number of skins won. Course handicap = Index × Slope ÷ 113 + (Rating − Par), rounded, unless you type one in on the Players page.</div></section>`;
+    <div class="muted small">Skins: one low score wins the full skin; two tied for low split it; three or more tied means no skin and the hole carries to the next. The skins pot is divided by the number of skins won. Course handicap = Index × Slope ÷ 113 + (Rating − Par), rounded.</div></section>`;
   const coursesSec = `<h2 style="margin-top:8px">Courses</h2>
   <div class="muted small">Ratings, slopes and hole handicaps were pulled from public scorecards. Check them against the card at each course before play.</div>
   ${courses}`;
@@ -3104,7 +3102,6 @@ document.getElementById('main').addEventListener('change', async (e) => {
   if (ds.cmpadd) { if (el.value && ui.sheet && ui.sheet.t === 'cmp') ui.sheet.pids = ui.sheet.pids.concat(el.value).slice(0, 4); return render(); }
   if (ds.me) { setMe(el.value || null); ui.meSkip = true; if (el.value) toast('Following ' + S.players[el.value].name + '.'); return render(); }
   if (ds.fix) { ui.fix = ui.fix || {}; ui.fix[ds.fix] = el.value; if (ds.fix === 'day') ui.fix.key = ''; return ds.fix === 'v' ? undefined : render(); }
-  if (ds.chover) { const v = String(el.value).trim(); return writeDoc('players', { list: { [ds.chover]: { ch: { [ds.day]: v === '' ? null : Number(v) } } } }, true); }
   if (ds.thcp != null) { const v = String(el.value).trim(), i = Number(ds.thcp); return writeTeams('sun', ts => { ts[i].hcp = v === '' ? null : Number(v); }); }
   if (ds.brot) { ui.rotate = el.checked; setRotation(); return; }
   if (ds.clrx) { ui.clearExtras = el.checked; return render(); }
@@ -3181,7 +3178,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261028081246';
+const APP_VERSION = '20261028172016';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
