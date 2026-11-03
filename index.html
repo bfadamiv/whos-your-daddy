@@ -2045,12 +2045,12 @@ function autoBackup() {
 function autoBackups() { try { return JSON.parse(localStorage.getItem('wyd-autobak') || '[]'); } catch (e) { return []; } }
 
 // ---------- Admin hub ----------
-const ADMIN_SECS = [['check', 'Checklist'], ['players', 'Players'], ['teams', 'Teams'], ['scores', 'Scores'], ['payouts', 'Payouts'], ['courses', 'Courses'], ['log', 'Change log'], ['links', 'Links & backup']];
+const ADMIN_SECS = [['check', 'Checklist'], ['players', 'Players'], ['teams', 'Teams'], ['scores', 'Scores'], ['payouts', 'Payouts'], ['courses', 'Courses'], ['log', 'Change log'], ['links', 'Links & backup'], ['outing', 'Side outing']];
 function viewAdmin() {
   const sec = ui.asec || 'check';
   const chips = `<div class="chips seg wrapchips">${ADMIN_SECS.map(([k, l]) => `<button class="chip" aria-pressed="${sec === k}" data-act="asec" data-k="${k}">${l}</button>`).join('')}</div>`;
   if (!isAdmin()) return chips + `<section class="panel"><h2>Admin</h2><p>Enter the admin PIN to make changes.</p><div class="row"><button class="btn primary" data-act="pin-open">Enter admin PIN</button></div></section>`;
-  const body = { check: adminChecklist, players: adminPlayers, teams: adminTeams, scores: adminScores, payouts: adminPayouts, courses: () => viewSetupParts().courses, log: adminLog, links: adminLinks }[sec] || adminChecklist;
+  const body = { check: adminChecklist, players: adminPlayers, teams: adminTeams, scores: adminScores, payouts: adminPayouts, courses: () => viewSetupParts().courses, log: adminLog, links: adminLinks, outing: adminOuting }[sec] || adminChecklist;
   return chips + body();
 }
 function payoutTotals() {
@@ -2320,6 +2320,160 @@ function viewPayBreakdown() {
     <section class="panel"><div class="row between"><h3>Everyone, by category</h3><span class="muted small">Tap a column to sort</span></div>${table}</section>`;
 }
 
+// ===== Private side outing: 4 players, one round, its own course and payouts. Admin only. =====
+// Stored in Firestore at outings/current (locked to the admin PIN by the Firebase rules), never in the trip.
+let OUT = null, outUnsub = null, outErr = null, outLoaded = false;
+const OUT_KEYS = ['o1', 'o2', 'o3', 'o4'];
+function outingDefaults() {
+  return {
+    name: 'Side outing', date: todayISO(),
+    course: { name: '', city: '', pars: [4, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 5, 4], si: [...Array(18).keys()].map(i => i + 1), tee: { name: 'Tees', rating: 72, slope: 113, par: 72 } },
+    players: { o1: { name: '', index: '' }, o2: { name: '', index: '' }, o3: { name: '', index: '' }, o4: { name: '', index: '' } },
+    teams: [['o1', 'o2'], ['o3', 'o4']],
+    buyIn: 0, pay: { bb18: 0, bbF9: 0, bbB9: 0, skins: 0 }, skinsType: 'netGrossP3', allowance: 100, scores: {},
+  };
+}
+function watchOuting() {
+  if (role !== 'admin') return;
+  if (backend === 'local') { try { OUT = JSON.parse(localStorage.getItem('wyd-outing') || 'null'); } catch (e) { OUT = null; } outLoaded = true; return; }
+  if (outUnsub || !db) return;
+  outUnsub = db.collection('outings').doc('current').onSnapshot(snap => {
+    OUT = snap.exists ? snap.data() : null; outErr = null; outLoaded = true;
+    if (ui.tab === 'admin' && ui.asec === 'outing') render();
+  }, e => { outErr = (e && e.code) || 'error'; outLoaded = true; outUnsub = null; if (ui.tab === 'admin' && ui.asec === 'outing') render(); });
+}
+function saveOuting(next) {
+  OUT = next;
+  if (backend === 'local') { try { localStorage.setItem('wyd-outing', JSON.stringify(next)); } catch (e) {} render(); return; }
+  db.collection('outings').doc('current').set(next).catch(e => { toast(e && e.code === 'permission-denied' ? 'Firebase blocked the save. Add the outing rule in Firebase (see the note on this page).' : 'Could not save the outing.'); outErr = e && e.code; render(); });
+  render();
+}
+// Build a one-day trip the scoring engine already understands: day "out", format 2-man best ball.
+function outState() {
+  const o = OUT, c = o.course, pars = c.pars.map(Number), par = pars.reduce((a, b) => a + b, 0);
+  const players = {};
+  OUT_KEYS.forEach(k => { const p = o.players[k]; if (p && String(p.name).trim()) players[k] = { name: p.name.trim(), index: Number(p.index) || 0, tees: { out: 't' } }; });
+  const num = (v) => Number(v) || 0;
+  return {
+    config: {
+      tieBreak: 'split', maxScore: { type: 'netDoublePar' },
+      courses: { oc: { name: c.name || 'Course', city: c.city || '', pars, si: c.si.map(Number), tees: [{ id: 't', name: c.tee.name || 'Tees', rating: num(c.tee.rating) || par, slope: num(c.tee.slope) || 113, par: num(c.tee.par) || par }], defaultTee: 't' } },
+      days: { out: { label: o.name, format: 'bb2', course: 'oc', places: num(o.pay.bb18) ? [num(o.pay.bb18)] : [], skinsPot: num(o.pay.skins), skinsType: o.skinsType || 'netGrossP3',
+        side: { teamF9: num(o.pay.bbF9) ? [num(o.pay.bbF9)] : [], teamB9: num(o.pay.bbB9) ? [num(o.pay.bbB9)] : [] }, contests: [], allowance: o.allowance == null ? 100 : num(o.allowance) } },
+    },
+    players, teams: { out: o.teams.map((t, i) => ({ id: 'T' + (i + 1), pids: t.filter(p => players[p]) })) },
+    scores: { out: o.scores || {} }, extras: {},
+  };
+}
+function outCard(k) { const a = (OUT.scores || {})[k]; return Array.isArray(a) ? a.map(v => v == null || v === '' ? null : Number(v)) : new Array(18).fill(null); }
+
+function adminOuting() {
+  watchOuting();
+  const rules = `<div class="banner"><p><b>One-time Firebase step to keep this private.</b> In Firestore › Rules, add this block inside <code>match /databases/{database}/documents { … }</code>, right under the <code>match /admin/{d}</code> line, then Publish:<br><code>match /outings/{d} { allow read, write: if isAdmin(); }</code></p></div>`;
+  if (outErr === 'permission-denied') return `<section class="panel"><h2>Side outing</h2><p>Firebase isn't letting the app read the private outing yet.</p></section>` + rules;
+  if (!outLoaded) return `<section class="panel"><h2>Side outing</h2><div class="muted">Loading…</div></section>`;
+  if (!OUT) return `<section class="panel"><h2>Side outing</h2><p>A private, one-round outing for 4 players with its own course and payouts. Only the admin can see it. Nothing here touches the trip.</p>
+    <div class="row"><button class="btn primary" data-act="o-start">Start an outing</button></div></section>` + (backend === 'db' ? rules : '');
+  const sec = ui.osec || (Object.keys(OUT.scores || {}).length ? 'score' : 'setup');
+  const chips = `<div class="chips seg"><button class="chip" aria-pressed="${sec === 'setup'}" data-act="o-sec" data-k="setup">Setup</button><button class="chip" aria-pressed="${sec === 'score'}" data-act="o-sec" data-k="score">Keep score</button><button class="chip" aria-pressed="${sec === 'results'}" data-act="o-sec" data-k="results">Results</button></div>`;
+  const head = `<section class="panel soft"><div class="row between"><div><h2>${esc(OUT.name || 'Side outing')}</h2><div class="muted">${esc(OUT.course.name || 'Course not set')}${OUT.date ? ' · ' + esc(OUT.date) : ''} · Private: only the admin sees this</div></div></div></section>`;
+  return head + chips + (sec === 'setup' ? outingSetup() : sec === 'score' ? outingScore() : outingResults());
+}
+
+function outingSetup() {
+  const o = OUT, c = o.course, H = [...Array(18).keys()];
+  const inp = (path, val, w, extra = '') => `<input id="of-${path.replace(/\./g, '-')}" data-of="${path}" value="${esc(val ?? '')}" style="width:${w}px" ${extra}>`;
+  const st = outState(), names = (k) => (o.players[k] && o.players[k].name) || 'Player ' + (OUT_KEYS.indexOf(k) + 1);
+  const chOf = (k) => st.players[k] ? playerPH(st, k, 'out') : '–';
+  const teamSel = `<label class="f">Player 1's partner<select id="of-partner" data-ofpartner="1">${['o2', 'o3', 'o4'].map(k => `<option value="${k}" ${o.teams[0].includes(k) ? 'selected' : ''}>${esc(names(k))}</option>`).join('')}</select></label>`;
+  const potTot = ['bb18', 'bbF9', 'bbB9', 'skins'].reduce((s, k) => s + (Number(o.pay[k]) || 0), 0), pot = (Number(o.buyIn) || 0) * 4;
+  return `<section class="panel"><h3>The outing</h3><div class="row">
+      <label class="f">Name${inp('name', o.name, 200)}</label><label class="f">Date<input type="date" id="of-date" data-of="date" value="${esc(o.date || '')}"></label></div></section>
+    <section class="panel"><h3>Players &amp; teams</h3><div class="muted">2-man best ball net. Course handicaps come from each index and the tees below.</div>
+      <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Name</th><th>Index</th><th class="num">Course hcp</th></tr></thead><tbody>
+      ${OUT_KEYS.map((k, i) => `<tr><td>${i + 1}</td><td>${inp('players.' + k + '.name', o.players[k].name, 130)}</td><td>${inp('players.' + k + '.index', o.players[k].index, 54, 'inputmode="decimal"')}</td><td class="num"><b>${chOf(k)}</b></td></tr>`).join('')}</tbody></table></div>
+      <div class="row">${teamSel}<span class="muted">Team 1: ${esc(o.teams[0].map(names).join(' & '))} · Team 2: ${esc(o.teams[1].map(names).join(' & '))}</span></div></section>
+    <section class="panel"><h3>Payouts</h3><div class="row">
+      <label class="f">Buy-in each${inp('buyIn', o.buyIn, 90, 'inputmode="decimal"')}</label>
+      <label class="f">Best ball 18 (to winning team)${inp('pay.bb18', o.pay.bb18, 90, 'inputmode="decimal"')}</label>
+      <label class="f">Front 9${inp('pay.bbF9', o.pay.bbF9, 80, 'inputmode="decimal"')}</label>
+      <label class="f">Back 9${inp('pay.bbB9', o.pay.bbB9, 80, 'inputmode="decimal"')}</label>
+      <label class="f">Skins pot${inp('pay.skins', o.pay.skins, 90, 'inputmode="decimal"')}</label>
+      <label class="f">Skins scored<select id="of-skinsType" data-of="skinsType">${Object.entries(SKIN_LABEL).map(([k, v]) => `<option value="${k}" ${(o.skinsType || 'netGrossP3') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <label class="f">Handicap %${inp('allowance', o.allowance ?? 100, 70, 'inputmode="numeric"')}</label></div>
+      <div class="muted">Pot ${fmt$(pot)} · assigned ${fmt$(potTot)} ${pot ? (Math.abs(pot - potTot) < 1 ? '✓' : `· ${fmt$(Math.abs(pot - potTot))} ${pot > potTot ? 'left to assign' : 'over'}`) : ''}. Team money splits evenly between partners; ties split.</div></section>
+    <section class="panel"><h3>Course</h3><div class="row">
+      <label class="f">Course${inp('course.name', c.name, 200)}</label><label class="f">City${inp('course.city', c.city, 150)}</label>
+      <label class="f">Tees${inp('course.tee.name', c.tee.name, 120)}</label><label class="f">Rating${inp('course.tee.rating', c.tee.rating, 70, 'inputmode="decimal"')}</label>
+      <label class="f">Slope${inp('course.tee.slope', c.tee.slope, 64, 'inputmode="numeric"')}</label><label class="f">Par${inp('course.tee.par', c.tee.par, 56, 'inputmode="numeric"')}</label></div>
+      <div class="tbl-wrap"><table class="card"><thead><tr><th>Hole</th>${H.map(h => `<th>${h + 1}</th>`).join('')}</tr></thead><tbody>
+        <tr><td>Par</td>${H.map(h => `<td><input class="siinput" id="of-p${h}" data-of="course.pars.${h}" inputmode="numeric" value="${esc(c.pars[h])}"></td>`).join('')}</tr>
+        <tr><td>Hdcp</td>${H.map(h => `<td><input class="siinput" id="of-s${h}" data-of="course.si.${h}" inputmode="numeric" value="${esc(c.si[h])}"></td>`).join('')}</tr></tbody></table></div></section>
+    <section class="panel"><h3>Start over</h3><div class="row"><button class="btn danger ${ui.armed === 'o-clear' ? 'armed' : ''}" data-act="o-clear">${ui.armed === 'o-clear' ? 'Tap again to erase this outing' : 'Erase this outing'}</button></div></section>`;
+}
+
+function outingScore() {
+  const st = outState(), course = st.config.courses.oc, units = OUT_KEYS.filter(k => st.players[k]);
+  if (units.length < 2) return `<section class="panel"><p>Add the players under Setup first.</p></section>`;
+  const saved = (k, h) => outCard(k)[h];
+  const firstOpen = () => { for (let h = 0; h < 18; h++) if (units.some(k => saved(k, h) == null)) return h; return 17; };
+  if (ui.oh == null) ui.oh = firstOpen();
+  const h = ui.oh, par = course.pars[h];
+  ui.ovals = ui.ovals || {};
+  const ph = (k) => playerPH(st, k, 'out'), cap = (k) => maxFor(st, 'out', ph(k), h);
+  const val = (k) => Math.min(ui.ovals[k + '|' + h] ?? saved(k, h) ?? par, cap(k));
+  const dots = course.pars.map((p, k) => `<button class="kp-dot ${k === h ? 'on' : ''} ${units.every(u => saved(u, k) != null) ? 'done' : ''}" data-act="o-hole" data-h="${k}">${k + 1}</button>`).join('');
+  const rows = units.map(k => { const p = pops(ph(k), course.si[h]), v = val(k), d = v - par, set = ui.ovals[k + '|' + h] != null || saved(k, h) != null;
+    return `<div class="kp-row"><b class="kp-nm">${esc(st.players[k].name)}</b><div class="kp-who"><span>${p > 0 ? '<i class="kp-pop">' + '●'.repeat(p) + '</i> gets ' + p + ' stroke' + (p > 1 ? 's' : '') : 'no stroke'} · max ${cap(k)}</span></div>
+      <div class="kp-ctl"><button class="kp-btn" data-act="o-minus" data-k="${k}">−</button><div class="kp-score ${set ? '' : 'default'} ${d < 0 ? 'u' : ''}"><b>${v}</b><small>${d <= -2 ? 'Eagle' : d === -1 ? 'Birdie' : d === 0 ? 'Par' : d === 1 ? 'Bogey' : d === 2 ? 'Double' : '+' + d}${p > 0 ? ' · net ' + (v - p) : ''}</small></div><button class="kp-btn" data-act="o-plus" data-k="${k}" ${v >= cap(k) ? 'disabled' : ''}>+</button></div></div>`; }).join('');
+  return `<section class="panel kp"><div class="kp-dots">${dots}</div>
+    <div class="kp-meta"><div class="kp-hn">Hole ${h + 1}</div><div class="kp-par">Par ${par}</div><div class="muted">Handicap ${course.si[h]}</div></div>
+    <div class="kp-rows">${rows}</div>
+    <div class="kp-nav">${h > 0 ? `<button class="btn" data-act="o-hole" data-h="${h - 1}">← Hole ${h}</button>` : ''}<button class="btn primary kp-next" data-act="o-save">${h === 17 ? 'Save hole 18 · see results' : 'Save · next hole →'}</button></div></section>`;
+}
+
+function outingResults() {
+  const st = outState(), r = computeDay(st, 'out'), course = st.config.courses.oc, par = course.pars.reduce((a, b) => a + b, 0);
+  const teamRows = r.standings.map(t => { const seg = (a, b) => t.holes.slice(a, b).every(v => v != null) ? t.holes.slice(a, b).reduce((x, y) => x + y, 0) : '';
+    return `<tr class="${t.payout ? 'paid' : ''}"><td class="pos">${t.thru === 18 ? (t.tied ? 'T' : '') + t.pos : '–'}</td><td>${esc(t.pids.map(p => st.players[p].name).join(' & '))}</td><td class="num">${t.thru === 18 ? 'F' : t.thru}</td><td class="num">${seg(0, 9)}</td><td class="num">${seg(9, 18)}</td><td class="num score">${t.total ?? ''}</td><td class="num">${t.payout ? fmt$(t.payout) : ''}</td></tr>`; }).join('');
+  const nines = r.games.map(g => `<div class="li"><span><b>${esc(g.label)}</b> ${g.list.filter(x => x.payout).map(x => esc(x.name) + ' ' + x.total).join(', ') || '<span class="muted">not decided</span>'}</span><span class="amt">${g.list.filter(x => x.payout).reduce((s, x) => s + x.payout, 0) ? fmt$(g.list.filter(x => x.payout).reduce((s, x) => s + x.payout, 0)) : ''}</span></div>`).join('');
+  const skins = r.skins.map(s => s.winners.map(w => `<div class="li"><span><b>Hole ${s.hole}</b> ${esc(w.name)} <span class="muted small">${s.gross ? 'gross' : 'net'} ${s.score}${s.worth > 1 ? ' · worth ' + s.worth : ''}${s.winners.length === 2 ? ' · split' : ''}</span></span><span class="amt">${fmt$(w.amt)}</span></div>`).join('')).join('') || '<div class="muted">No skins yet.</div>';
+  const buyIn = Number(OUT.buyIn) || 0;
+  const people = OUT_KEYS.filter(k => st.players[k]).map(k => { const ph = playerPH(st, k, 'out'), card = cappedCard(st, 'out', k, ph), n = card.filter(v => v != null).length, g = card.reduce((a, b) => a + (b || 0), 0), m = r.money[k] || { total: 0, items: [] };
+    return `<tr><td>${esc(st.players[k].name)}</td><td class="num">${ph}</td><td class="num">${n ? g + (n < 18 ? ' <span class="muted small">thru ' + n + '</span>' : '') : '–'}</td><td class="num">${n === 18 ? g - ph + ' <span class="muted small">' + toParStr(g - ph - par) + '</span>' : ''}</td><td class="num"><b>${fmt$(m.total)}</b></td><td class="num">${buyIn ? (m.total - buyIn >= 0 ? '+' : '−') + fmt$(Math.abs(m.total - buyIn)) : ''}</td></tr>`; }).join('');
+  return `<section class="panel"><div class="row between"><h2>Best ball</h2>${r.complete ? '<span class="pill final">Final</span>' : ''}</div>
+      <div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Team</th><th class="num">Thru</th><th class="num">Out</th><th class="num">In</th><th class="num">Net</th><th class="num">Won</th></tr></thead><tbody>${teamRows}</tbody></table></div>${nines}</section>
+    <section class="panel"><div class="row between"><h3>Skins</h3><span class="muted small">${fmt$(r.skinsPot)} pot${r.skinUnits ? ' · ' + r.skinUnits + ' skins' : ''}</span></div>${skins}${r.carries.length ? `<div class="muted small">Carried: holes ${r.carries.map(c => c.hole).join(', ')}</div>` : ''}</section>
+    <section class="panel"><h3>Players</h3><div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="num">Hcp</th><th class="num">Gross</th><th class="num">Net</th><th class="num">Won</th><th class="num">${buyIn ? 'Vs. buy-in' : ''}</th></tr></thead><tbody>${people}</tbody></table></div></section>`;
+}
+
+function setPath(o, path, v) { const ks = path.split('.'); let x = o; for (let i = 0; i < ks.length - 1; i++) x = x[ks[i]]; x[ks[ks.length - 1]] = v; }
+function outingField(el) {
+  const next = clone(OUT), path = el.dataset.of;
+  const numeric = /^(buyIn|allowance|pay\.|course\.tee\.(rating|slope|par)|course\.(pars|si)\.|players\.o\d\.index)/.test(path);
+  let v = el.value; if (numeric) { const s = String(v).trim(); v = s === '' ? '' : s.startsWith('+') ? -Number(s.slice(1)) : Number(s); if (v !== '' && isNaN(v)) return toast('Numbers only there.'); }
+  setPath(next, path, v);
+  if (/^course\.pars\./.test(path)) next.course.tee.par = next.course.pars.reduce((a, b) => a + (Number(b) || 0), 0);
+  saveOuting(next);
+}
+function outingAction(act, b) {
+  if (act === 'o-start') { ui.osec = 'setup'; return saveOuting(outingDefaults()); }
+  if (act === 'o-sec') { ui.osec = b.dataset.k; ui.oh = null; ui.ovals = {}; return render(); }
+  if (act === 'o-clear') { if (ui.armed !== 'o-clear') { arm('o-clear'); return render(); } ui.armed = null; ui.oh = null; ui.osec = 'setup';
+    if (backend === 'local') { OUT = null; try { localStorage.removeItem('wyd-outing'); } catch (e) {} return render(); }
+    OUT = null; db.collection('outings').doc('current').delete().catch(() => toast('Could not erase the outing.')); return render(); }
+  if (act === 'o-hole') { ui.oh = Number(b.dataset.h); render(); window.scrollTo(0, 0); return; }
+  const st = outState(), course = st.config.courses.oc, h = ui.oh, k = b.dataset.k;
+  const cur = (key) => Math.min(ui.ovals[key + '|' + h] ?? outCard(key)[h] ?? course.pars[h], maxFor(st, 'out', playerPH(st, key, 'out'), h));
+  if (act === 'o-minus' || act === 'o-plus') { ui.ovals[k + '|' + h] = Math.max(1, Math.min(maxFor(st, 'out', playerPH(st, k, 'out'), h), cur(k) + (act === 'o-plus' ? 1 : -1))); return render(); }
+  if (act === 'o-save') {
+    const next = clone(OUT); next.scores = next.scores || {};
+    OUT_KEYS.filter(x => st.players[x]).forEach(x => { const arr = outCard(x).slice(); arr[h] = cur(x); next.scores[x] = arr; delete ui.ovals[x + '|' + h]; });
+    if (h < 17) ui.oh = h + 1; else { ui.osec = 'results'; ui.oh = null; }
+    saveOuting(next); window.scrollTo(0, 0); return;
+  }
+}
+
 
 const $ = (s) => document.querySelector(s);
 const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -2387,6 +2541,7 @@ async function submitPin(given) {
     catch (x) { return toast("That PIN didn't work. Check with the host."); }
   }
   canWrite = true; ui.pinOpen = false;
+  if (role === 'admin') watchOuting();
   if (ui.mode === 'admin' && role !== 'admin') { setMode('keeper'); toast("That's the scorekeeper PIN, so you're set up to keep score. Admin needs the admin PIN."); }
   else toast(role === 'admin' ? 'Admin is on for this device.' : 'Scorekeeper is on for this device.');
   render();
@@ -2859,6 +3014,7 @@ document.getElementById('main').addEventListener('click', async (e) => {
   if (act === 'mode-keep') { ui.sheet = null; setMode('keeper'); render(); if (!canWrite) askPin(); return; }
   if (act === 'mode-admin') { ui.sheet = null; setMode('admin'); render(); if (!isAdmin()) askPin(); return; }
   if (['kday', 'kgroup', 'kback', 'khole', 'khole-fix', 'kprev', 'kminus', 'kplus', 'kmax', 'kout', 'kout-yes', 'kout-no', 'kflag-no', 'ksave', 'kreview', 'kdone', 'kfront-ok', 'kundo', 'kctp-yes', 'kctp-no', 'kchange'].includes(act)) return keepAction(act, b);
+  if (act.startsWith('o-')) return outingAction(act, b);
   // ---- streamlined views ----
   if (act === 'go') { ui.tab = b.dataset.tab; collapseAll(); try { localStorage.setItem('wyd-tab', ui.tab); } catch (x) {} render(); window.scrollTo(0, 0); return; }
   if (act === 'lday') { ui.lday = day; collapseAll(); return render(); }
@@ -3100,6 +3256,8 @@ document.getElementById('main').addEventListener('change', async (e) => {
   }
   if (ds.score) return;
   if (ds.cmpadd) { if (el.value && ui.sheet && ui.sheet.t === 'cmp') ui.sheet.pids = ui.sheet.pids.concat(el.value).slice(0, 4); return render(); }
+  if (ds.of) return outingField(el);
+  if (ds.ofpartner) { const next = clone(OUT), p = el.value, rest = ['o2', 'o3', 'o4'].filter(x => x !== p); next.teams = [['o1', p], rest]; return saveOuting(next); }
   if (ds.me) { setMe(el.value || null); ui.meSkip = true; if (el.value) toast('Following ' + S.players[el.value].name + '.'); return render(); }
   if (ds.fix) { ui.fix = ui.fix || {}; ui.fix[ds.fix] = el.value; if (ds.fix === 'day') ui.fix.key = ''; return ds.fix === 'v' ? undefined : render(); }
   if (ds.thcp != null) { const v = String(el.value).trim(), i = Number(ds.thcp); return writeTeams('sun', ts => { ts[i].hcp = v === '' ? null : Number(v); }); }
@@ -3175,10 +3333,11 @@ async function boot() {
     const me = await db.collection('editors').doc(authId).get();
     // Devices unlocked before roles existed used the admin PIN, so they count as admin.
     role = me.exists ? ((me.data() || {}).role || 'admin') : null; canWrite = !!role; render();
+    if (role === 'admin') watchOuting();
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261028172016';
+const APP_VERSION = '20261102213832';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
