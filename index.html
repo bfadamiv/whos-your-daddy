@@ -2337,10 +2337,10 @@ function watchOuting() {
   if (role !== 'admin') return;
   if (backend === 'local') { try { OUT = JSON.parse(localStorage.getItem('wyd-outing') || 'null'); } catch (e) { OUT = null; } outLoaded = true; return; }
   if (outUnsub || !db) return;
-  outUnsub = db.collection('outings').doc('current').onSnapshot(snap => {
+  try { outUnsub = db.collection('outings').doc('current').onSnapshot(snap => {
     OUT = snap.exists ? snap.data() : null; outErr = null; outLoaded = true;
     if (ui.tab === 'admin' && ui.asec === 'outing') render();
-  }, e => { outErr = (e && e.code) || 'error'; outLoaded = true; outUnsub = null; if (ui.tab === 'admin' && ui.asec === 'outing') render(); });
+  }, e => { outErr = (e && e.code) || 'error'; outLoaded = true; outUnsub = null; if (ui.tab === 'admin' && ui.asec === 'outing') render(); }); } catch (e) { outErr = 'error'; outLoaded = true; }
 }
 function saveOuting(next) {
   OUT = next;
@@ -3337,7 +3337,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261102213832';
+const APP_VERSION = '20261102213958';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
