@@ -2357,7 +2357,8 @@ function watchOuting() {
 function saveOuting(next) {
   OUT = next;
   if (backend === 'local') { try { localStorage.setItem('wyd-outing', JSON.stringify(next)); } catch (e) {} render(); return; }
-  db.collection('outings').doc('current').set(next).catch(e => { toast(e && e.code === 'permission-denied' ? 'Firebase blocked the save. Add the outing rule in Firebase (see the note on this page).' : 'Could not save the outing.'); outErr = e && e.code; render(); });
+  ui.outSaveErr = null;
+  db.collection('outings').doc('current').set(next).then(() => { ui.outSaveErr = null; }).catch(e => { ui.outSaveErr = ((e && e.code) || 'error') + (e && e.message ? ': ' + e.message : ''); render(); });
   render();
 }
 // Build a one-day trip the scoring engine already understands: day "out", format 2-man best ball.
@@ -2384,12 +2385,13 @@ function adminOuting() {
   const rules = `<div class="banner"><p><b>One-time Firebase step to keep this private.</b> In Firestore › Rules, add this block inside <code>match /databases/{database}/documents { … }</code>, right under the <code>match /admin/{d}</code> line, then Publish:<br><code>match /outings/{d} { allow read, write: if isAdmin(); }</code></p></div>`;
   if (outErr === 'permission-denied') return `<section class="panel"><h2>Side outing</h2><p>Firebase isn't letting the app read the private outing yet.</p></section>` + rules;
   if (!outLoaded) return `<section class="panel"><h2>Side outing</h2><div class="muted">Loading…</div></section>`;
-  if (!OUT) return `<section class="panel"><h2>Side outing</h2><p>A private, one-round outing for 4 players with its own course and payouts. Only the admin can see it. Nothing here touches the trip.</p>
+  const saveErr = ui.outSaveErr ? `<section class="banner" style="border-color:var(--red)"><p><b>Firebase didn't save the outing.</b> ${esc(ui.outSaveErr)}</p></section>` + (/permission/i.test(ui.outSaveErr) ? rules : '') : '';
+  if (!OUT) return saveErr + `<section class="panel"><h2>Side outing</h2><p>A private, one-round outing for 4 players with its own course and payouts. Only the admin can see it. Nothing here touches the trip.</p>
     <div class="row"><button class="btn primary" data-act="o-start">Start an outing</button></div></section>`;
   const sec = ui.osec || (Object.keys(OUT.scores || {}).length ? 'score' : 'setup');
   const chips = `<div class="chips seg"><button class="chip" aria-pressed="${sec === 'setup'}" data-act="o-sec" data-k="setup">Setup</button><button class="chip" aria-pressed="${sec === 'score'}" data-act="o-sec" data-k="score">Keep score</button><button class="chip" aria-pressed="${sec === 'results'}" data-act="o-sec" data-k="results">Results</button></div>`;
   const head = `<section class="panel soft"><div class="row between"><div><h2>${esc(OUT.name || 'Side outing')}</h2><div class="muted">${esc(OUT.course.name || 'Course not set')}${OUT.date ? ' · ' + esc(OUT.date) : ''} · Private: only the admin sees this</div></div></div></section>`;
-  return head + chips + (sec === 'setup' ? outingSetup() : sec === 'score' ? outingScore() : outingResults());
+  return saveErr + head + chips + (sec === 'setup' ? outingSetup() : sec === 'score' ? outingScore() : outingResults());
 }
 
 function outingSetup() {
@@ -3352,7 +3354,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261102220202';
+const APP_VERSION = '20261102220339';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
