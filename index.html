@@ -613,6 +613,8 @@ ol.pb-top .amt { font-family: var(--font-display); font-weight: 700; font-size: 
 .tvbtn { display: inline-flex; align-items: center; gap: 8px; background: var(--m-frame) !important; color: #fff !important; border-color: var(--m-gold) !important; font-size: 16px !important; padding: 10px 16px !important; box-shadow: inset 0 0 0 1px var(--m-gold); }
 .tvbtn svg { width: 20px; height: 20px; fill: none; stroke: var(--m-gold); stroke-width: 2; stroke-linecap: round; }
 @media (max-width: 600px) { .lb-top { flex-direction: column-reverse; align-items: stretch; } .tvbtn { justify-content: center; } }
+.preset { display: flex; flex-direction: column; gap: 6px; border: 1px dashed var(--pine); border-radius: 8px; padding: 10px 12px; }
+.preset .btn { font-size: 13px; padding: 7px 10px; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -2324,6 +2326,18 @@ function viewPayBreakdown() {
 // Stored in Firestore at outings/current (locked to the admin PIN by the Firebase rules), never in the trip.
 let OUT = null, outUnsub = null, outErr = null, outLoaded = false;
 const OUT_KEYS = ['o1', 'o2', 'o3', 'o4'];
+// Course presets (from the published Houston National scorecards; check the card on the day).
+const OUT_PRESETS = {
+  hn_ns: { name: 'Houston National · North/South', city: 'Houston, TX', pars: [4, 5, 3, 4, 4, 5, 3, 4, 4, 4, 4, 4, 3, 5, 3, 4, 5, 4], si: [5, 1, 17, 7, 9, 11, 15, 13, 3, 4, 2, 14, 18, 6, 16, 10, 12, 8], tees: { Blue: [74.2, 137, 7053], White: [71.4, 127, 6519] } },
+  hn_wn: { name: 'Houston National · West/North', city: 'Houston, TX', pars: [4, 4, 5, 4, 3, 4, 3, 4, 5, 4, 5, 3, 4, 4, 5, 3, 4, 4], si: [13, 7, 3, 9, 17, 11, 15, 1, 5, 6, 2, 18, 8, 10, 12, 16, 14, 4], tees: { Blue: [72.8, 134, 6793], White: [70.3, 126, 6265] } },
+  hn_sw: { name: 'Houston National · South/West', city: 'Houston, TX', pars: [4, 4, 4, 3, 5, 3, 4, 5, 4, 4, 4, 5, 4, 3, 4, 3, 4, 5], si: [3, 1, 13, 17, 5, 15, 9, 11, 7, 14, 8, 4, 10, 18, 12, 16, 2, 6], tees: { Blue: [74.2, 134, 7024], White: [71.1, 127, 6410] } },
+};
+function loadPreset(key, tee) {
+  const pr = OUT_PRESETS[key]; if (!pr || !pr.tees[tee]) return;
+  const next = clone(OUT), [rating, slope, yds] = pr.tees[tee];
+  next.course = { name: pr.name, city: pr.city, pars: pr.pars.slice(), si: pr.si.slice(), tee: { name: tee + ' (' + yds.toLocaleString('en-US') + ' yds)', rating, slope, par: pr.pars.reduce((a, b) => a + b, 0) } };
+  saveOuting(next); toast(pr.name + ', ' + tee + ' tees loaded.');
+}
 function outingDefaults() {
   return {
     name: 'Side outing', date: todayISO(),
@@ -2402,7 +2416,9 @@ function outingSetup() {
       <label class="f">Skins scored<select id="of-skinsType" data-of="skinsType">${Object.entries(SKIN_LABEL).map(([k, v]) => `<option value="${k}" ${(o.skinsType || 'netGrossP3') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
       <label class="f">Handicap %${inp('allowance', o.allowance ?? 100, 70, 'inputmode="numeric"')}</label></div>
       <div class="muted">Pot ${fmt$(pot)} · assigned ${fmt$(potTot)} ${pot ? (Math.abs(pot - potTot) < 1 ? '✓' : `· ${fmt$(Math.abs(pot - potTot))} ${pot > potTot ? 'left to assign' : 'over'}`) : ''}. Team money splits evenly between partners; ties split.</div></section>
-    <section class="panel"><h3>Course</h3><div class="row">
+    <section class="panel"><h3>Course</h3>
+      <div class="preset"><b>Quick load</b><div class="row">${Object.entries(OUT_PRESETS).map(([k, pr]) => Object.keys(pr.tees).map(t => `<button class="btn ${c.name === pr.name && String(c.tee.name).startsWith(t) ? 'primary' : ''}" data-act="o-preset" data-k="${k}" data-t="${t}">${esc(pr.name.replace('Houston National · ', 'HN ' ))} · ${t}</button>`).join('')).join('')}</div><div class="muted small">Houston National has three nines. Pick the pair you're playing; it fills in pars, hole handicaps, rating and slope.</div></div>
+      <div class="row">
       <label class="f">Course${inp('course.name', c.name, 200)}</label><label class="f">City${inp('course.city', c.city, 150)}</label>
       <label class="f">Tees${inp('course.tee.name', c.tee.name, 120)}</label><label class="f">Rating${inp('course.tee.rating', c.tee.rating, 70, 'inputmode="decimal"')}</label>
       <label class="f">Slope${inp('course.tee.slope', c.tee.slope, 64, 'inputmode="numeric"')}</label><label class="f">Par${inp('course.tee.par', c.tee.par, 56, 'inputmode="numeric"')}</label></div>
@@ -2457,6 +2473,7 @@ function outingField(el) {
   saveOuting(next);
 }
 function outingAction(act, b) {
+  if (act === 'o-preset') return loadPreset(b.dataset.k, b.dataset.t);
   if (act === 'o-start') { ui.osec = 'setup'; return saveOuting(outingDefaults()); }
   if (act === 'o-sec') { ui.osec = b.dataset.k; ui.oh = null; ui.ovals = {}; return render(); }
   if (act === 'o-clear') { if (ui.armed !== 'o-clear') { arm('o-clear'); return render(); } ui.armed = null; ui.oh = null; ui.osec = 'setup';
@@ -3337,7 +3354,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261102213958';
+const APP_VERSION = '20261102214426';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
