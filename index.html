@@ -2341,7 +2341,7 @@ function outingDefaults() {
     name: 'Side outing', date: todayISO(),
     course: { name: '', city: '', pars: [4, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 5, 4], si: [...Array(18).keys()].map(i => i + 1), tee: { name: 'Tees', rating: 72, slope: 113, par: 72 } },
     players: { o1: { name: '', index: '' }, o2: { name: '', index: '' }, o3: { name: '', index: '' }, o4: { name: '', index: '' } },
-    teams: [['o1', 'o2'], ['o3', 'o4']],
+    partner: 'o2',
     buyIn: 0, pay: { bb18: 0, bbF9: 0, bbB9: 0, skins: 0 }, skinsType: 'netGrossP3', allowance: 100, scores: {},
   };
 }
@@ -2380,10 +2380,12 @@ function outState() {
       days: { out: { label: o.name, format: 'bb2', course: 'oc', places: num(o.pay.bb18) ? [num(o.pay.bb18)] : [], skinsPot: num(o.pay.skins), skinsType: o.skinsType || 'netGrossP3',
         side: { teamF9: num(o.pay.bbF9) ? [num(o.pay.bbF9)] : [], teamB9: num(o.pay.bbB9) ? [num(o.pay.bbB9)] : [] }, contests: [], allowance: o.allowance == null ? 100 : num(o.allowance) } },
     },
-    players, teams: { out: o.teams.map((t, i) => ({ id: 'T' + (i + 1), pids: t.filter(p => players[p]) })) },
+    players, teams: { out: outTeams(o).map((t, i) => ({ id: 'T' + (i + 1), pids: t.filter(p => players[p]) })) },
     scores: { out: o.scores || {} }, extras: {},
   };
 }
+// Firebase can't store lists inside lists, so only Player 1's partner is saved; the teams come from it.
+function outTeams(o) { const p = ['o2', 'o3', 'o4'].includes(o.partner) ? o.partner : 'o2'; return [['o1', p], ['o2', 'o3', 'o4'].filter(x => x !== p)]; }
 function outCard(k) { const a = (OUT.scores || {})[k]; return Array.isArray(a) ? a.map(v => v == null || v === '' ? null : Number(v)) : new Array(18).fill(null); }
 
 function adminOuting() {
@@ -2407,14 +2409,14 @@ function outingSetup() {
   const inp = (path, val, w, extra = '') => `<input id="of-${path.replace(/\./g, '-')}" data-of="${path}" value="${esc(val ?? '')}" style="width:${w}px" ${extra}>`;
   const st = outState(), names = (k) => (o.players[k] && o.players[k].name) || 'Player ' + (OUT_KEYS.indexOf(k) + 1);
   const chOf = (k) => st.players[k] ? playerPH(st, k, 'out') : '–';
-  const teamSel = `<label class="f">Player 1's partner<select id="of-partner" data-ofpartner="1">${['o2', 'o3', 'o4'].map(k => `<option value="${k}" ${o.teams[0].includes(k) ? 'selected' : ''}>${esc(names(k))}</option>`).join('')}</select></label>`;
+  const teamSel = `<label class="f">Player 1's partner<select id="of-partner" data-ofpartner="1">${['o2', 'o3', 'o4'].map(k => `<option value="${k}" ${outTeams(o)[0].includes(k) ? 'selected' : ''}>${esc(names(k))}</option>`).join('')}</select></label>`;
   const potTot = ['bb18', 'bbF9', 'bbB9', 'skins'].reduce((s, k) => s + (Number(o.pay[k]) || 0), 0), pot = (Number(o.buyIn) || 0) * 4;
   return `<section class="panel"><h3>The outing</h3><div class="row">
       <label class="f">Name${inp('name', o.name, 200)}</label><label class="f">Date<input type="date" id="of-date" data-of="date" value="${esc(o.date || '')}"></label></div></section>
     <section class="panel"><h3>Players &amp; teams</h3><div class="muted">2-man best ball net. Course handicaps come from each index and the tees below.</div>
       <div class="tbl-wrap"><table><thead><tr><th>#</th><th>Name</th><th>Index</th><th class="num">Course hcp</th></tr></thead><tbody>
       ${OUT_KEYS.map((k, i) => `<tr><td>${i + 1}</td><td>${inp('players.' + k + '.name', o.players[k].name, 130)}</td><td>${inp('players.' + k + '.index', o.players[k].index, 54, 'inputmode="decimal"')}</td><td class="num"><b>${chOf(k)}</b></td></tr>`).join('')}</tbody></table></div>
-      <div class="row">${teamSel}<span class="muted">Team 1: ${esc(o.teams[0].map(names).join(' & '))} · Team 2: ${esc(o.teams[1].map(names).join(' & '))}</span></div></section>
+      <div class="row">${teamSel}<span class="muted">Team 1: ${esc(outTeams(o)[0].map(names).join(' & '))} · Team 2: ${esc(outTeams(o)[1].map(names).join(' & '))}</span></div></section>
     <section class="panel"><h3>Payouts</h3><div class="row">
       <label class="f">Buy-in each${inp('buyIn', o.buyIn, 90, 'inputmode="decimal"')}</label>
       <label class="f">Best ball 18 (to winning team)${inp('pay.bb18', o.pay.bb18, 90, 'inputmode="decimal"')}</label>
@@ -3282,7 +3284,7 @@ document.getElementById('main').addEventListener('change', async (e) => {
   if (ds.score) return;
   if (ds.cmpadd) { if (el.value && ui.sheet && ui.sheet.t === 'cmp') ui.sheet.pids = ui.sheet.pids.concat(el.value).slice(0, 4); return render(); }
   if (ds.of) return outingField(el);
-  if (ds.ofpartner) { const next = clone(OUT), p = el.value, rest = ['o2', 'o3', 'o4'].filter(x => x !== p); next.teams = [['o1', p], rest]; return saveOuting(next); }
+  if (ds.ofpartner) { const next = clone(OUT); next.partner = el.value; delete next.teams; return saveOuting(next); }
   if (ds.me) { setMe(el.value || null); ui.meSkip = true; if (el.value) toast('Following ' + S.players[el.value].name + '.'); return render(); }
   if (ds.fix) { ui.fix = ui.fix || {}; ui.fix[ds.fix] = el.value; if (ds.fix === 'day') ui.fix.key = ''; return ds.fix === 'v' ? undefined : render(); }
   if (ds.thcp != null) { const v = String(el.value).trim(), i = Number(ds.thcp); return writeTeams('sun', ts => { ts[i].hcp = v === '' ? null : Number(v); }); }
@@ -3362,7 +3364,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261102220622';
+const APP_VERSION = '20261102220959';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
