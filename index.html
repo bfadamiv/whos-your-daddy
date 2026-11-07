@@ -860,6 +860,8 @@ function computeDay(state, day) {
   //   3+ tied low  -> no skin; the hole's value carries to the next hole
   // Scoring: 'netGrossP3' = net, but gross on par 3s (default); 'net'; 'gross'.
   const skinsType = dc.skinsType || 'netGrossP3';
+  // Options: skinsSolo = only an outright low score wins (no half skins); skinsCarry = false makes ties a push (no carryover).
+  const maxWinners = dc.skinsSolo ? 1 : 2, carryOn = dc.skinsCarry !== false;
   const skins = [], carries = [];
   let carry = 0, units_awarded = 0, skinHolesDecided = 0, carryOut = 0;
   for (let h = 0; h < 18; h++) {
@@ -871,13 +873,13 @@ function computeDay(state, day) {
     const worth = 1 + carry;
     const low = Math.min(...scored.map(x => x.s));
     const at = scored.filter(x => x.s === low);
-    if (at.length <= 2) {
+    if (at.length <= maxWinners) {
       skins.push({ hole: h + 1, par: pars[h], score: low, gross: useGross, worth, final: holeComplete,
         winners: at.map(x => ({ key: x.u.key, pids: x.u.pids, name: x.u.name, share: worth / at.length, grossScore: x.u.gross[h] })) });
       units_awarded += worth; carry = 0;
     } else {
-      carries.push({ hole: h + 1, tied: at.length, score: low, worth, final: holeComplete });
-      carry = worth;
+      carries.push({ hole: h + 1, tied: at.length, score: low, worth, final: holeComplete, push: !carryOn });
+      carry = carryOn ? worth : 0;
     }
   }
   carryOut = carry; // value still carrying after the last scored hole (unclaimed)
@@ -2377,7 +2379,7 @@ function outState() {
     config: {
       tieBreak: 'split', maxScore: { type: 'netDoublePar' },
       courses: { oc: { name: c.name || 'Course', city: c.city || '', pars, si: c.si.map(Number), tees: [{ id: 't', name: c.tee.name || 'Tees', rating: num(c.tee.rating) || par, slope: num(c.tee.slope) || 113, par: num(c.tee.par) || par }], defaultTee: 't' } },
-      days: { out: { label: o.name, format: 'bb2', course: 'oc', places: num(o.pay.bb18) ? [num(o.pay.bb18)] : [], skinsPot: num(o.pay.skins), skinsType: o.skinsType || 'netGrossP3',
+      days: { out: { label: o.name, format: 'bb2', course: 'oc', places: num(o.pay.bb18) ? [num(o.pay.bb18)] : [], skinsPot: num(o.pay.skins), skinsType: 'net', skinsSolo: true, skinsCarry: o.skinsCarry === true,
         side: { teamF9: num(o.pay.bbF9) ? [num(o.pay.bbF9)] : [], teamB9: num(o.pay.bbB9) ? [num(o.pay.bbB9)] : [] }, contests: [], allowance: o.allowance == null ? 100 : num(o.allowance) } },
     },
     players, teams: { out: outTeams(o).map((t, i) => ({ id: 'T' + (i + 1), pids: t.filter(p => players[p]) })) },
@@ -2423,9 +2425,9 @@ function outingSetup() {
       <label class="f">Front 9${inp('pay.bbF9', o.pay.bbF9, 80, 'inputmode="decimal"')}</label>
       <label class="f">Back 9${inp('pay.bbB9', o.pay.bbB9, 80, 'inputmode="decimal"')}</label>
       <label class="f">Skins pot${inp('pay.skins', o.pay.skins, 90, 'inputmode="decimal"')}</label>
-      <label class="f">Skins scored<select id="of-skinsType" data-of="skinsType">${Object.entries(SKIN_LABEL).map(([k, v]) => `<option value="${k}" ${(o.skinsType || 'netGrossP3') === k ? 'selected' : ''}>${v}</option>`).join('')}</select></label>
+      <label class="f">Skins ties<select id="of-skinsCarry" data-ofcarry="1"><option value="push" ${o.skinsCarry === true ? '' : 'selected'}>Push (nobody wins the hole)</option><option value="carry" ${o.skinsCarry === true ? 'selected' : ''}>Carry over to the next hole</option></select></label>
       <label class="f">Handicap %${inp('allowance', o.allowance ?? 100, 70, 'inputmode="numeric"')}</label></div>
-      <div class="muted">Pot ${fmt$(pot)} · assigned ${fmt$(potTot)} ${pot ? (Math.abs(pot - potTot) < 1 ? '✓' : `· ${fmt$(Math.abs(pot - potTot))} ${pot > potTot ? 'left to assign' : 'over'}`) : ''}. Team money splits evenly between partners; ties split.</div></section>
+      <div class="muted">Pot ${fmt$(pot)} · assigned ${fmt$(potTot)} ${pot ? (Math.abs(pot - potTot) < 1 ? '✓' : `· ${fmt$(Math.abs(pot - potTot))} ${pot > potTot ? 'left to assign' : 'over'}`) : ''}. Team money splits evenly between partners; ties split. Skins are all net, and only an outright low net score wins one.</div></section>
     <section class="panel"><h3>Course</h3>
       <div class="preset"><b>Quick load</b><div class="row">${Object.entries(OUT_PRESETS).map(([k, pr]) => Object.keys(pr.tees).map(t => `<button class="btn ${c.name === pr.name && String(c.tee.name).startsWith(t) ? 'primary' : ''}" data-act="o-preset" data-k="${k}" data-t="${t}">${esc(pr.name)} · ${t}</button>`).join('')).join('')}</div><div class="muted small">Fills in pars, hole handicaps, rating and slope from the club's scorecard.</div></div>
       <div class="row">
@@ -2435,7 +2437,7 @@ function outingSetup() {
       <div class="tbl-wrap"><table class="card"><thead><tr><th>Hole</th>${H.map(h => `<th>${h + 1}</th>`).join('')}</tr></thead><tbody>
         <tr><td>Par</td>${H.map(h => `<td><input class="siinput" id="of-p${h}" data-of="course.pars.${h}" inputmode="numeric" value="${esc(c.pars[h])}"></td>`).join('')}</tr>
         <tr><td>Hdcp</td>${H.map(h => `<td><input class="siinput" id="of-s${h}" data-of="course.si.${h}" inputmode="numeric" value="${esc(c.si[h])}"></td>`).join('')}</tr></tbody></table></div></section>
-    <section class="panel"><h3>Start over</h3><div class="row"><button class="btn danger ${ui.armed === 'o-clear' ? 'armed' : ''}" data-act="o-clear">${ui.armed === 'o-clear' ? 'Tap again to erase this outing' : 'Erase this outing'}</button></div></section>`;
+    <section class="panel"><h3>Start over</h3><div class="muted">Clear scores keeps the players, payouts and course. Erase removes the whole outing.</div><div class="row"><button class="btn danger ${ui.armed === 'o-reset' ? 'armed' : ''}" data-act="o-reset">${ui.armed === 'o-reset' ? 'Tap again to clear all scores' : 'Clear all scores'}</button><button class="btn danger ${ui.armed === 'o-clear' ? 'armed' : ''}" data-act="o-clear">${ui.armed === 'o-clear' ? 'Tap again to erase this outing' : 'Erase this outing'}</button></div></section>`;
 }
 
 function outingScore() {
@@ -2455,7 +2457,8 @@ function outingScore() {
   return `<section class="panel kp"><div class="kp-dots">${dots}</div>
     <div class="kp-meta"><div class="kp-hn">Hole ${h + 1}</div><div class="kp-par">Par ${par}</div><div class="muted">Handicap ${course.si[h]}</div></div>
     <div class="kp-rows">${rows}</div>
-    <div class="kp-nav">${h > 0 ? `<button class="btn" data-act="o-hole" data-h="${h - 1}">← Hole ${h}</button>` : ''}<button class="btn primary kp-next" data-act="o-save">${h === 17 ? 'Save hole 18 · see results' : 'Save · next hole →'}</button></div></section>`;
+    <div class="kp-nav">${h > 0 ? `<button class="btn" data-act="o-hole" data-h="${h - 1}">← Hole ${h}</button>` : ''}<button class="btn primary kp-next" data-act="o-save">${h === 17 ? 'Save hole 18 · see results' : 'Save · next hole →'}</button></div></section>
+    ${resetBtn()}`;
 }
 
 function outingResults() {
@@ -2469,10 +2472,11 @@ function outingResults() {
     return `<tr><td>${esc(st.players[k].name)}</td><td class="num">${ph}</td><td class="num">${n ? g + (n < 18 ? ' <span class="muted small">thru ' + n + '</span>' : '') : '–'}</td><td class="num">${n === 18 ? g - ph + ' <span class="muted small">' + toParStr(g - ph - par) + '</span>' : ''}</td><td class="num"><b>${fmt$(m.total)}</b></td><td class="num">${buyIn ? (m.total - buyIn >= 0 ? '+' : '−') + fmt$(Math.abs(m.total - buyIn)) : ''}</td></tr>`; }).join('');
   return `<section class="panel"><div class="row between"><h2>Best ball</h2>${r.complete ? '<span class="pill final">Final</span>' : ''}</div>
       <div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Team</th><th class="num">Thru</th><th class="num">Out</th><th class="num">In</th><th class="num">Net</th><th class="num">Won</th></tr></thead><tbody>${teamRows}</tbody></table></div>${nines}</section>
-    <section class="panel"><div class="row between"><h3>Skins</h3><span class="muted small">${fmt$(r.skinsPot)} pot${r.skinUnits ? ' · ' + r.skinUnits + ' skins' : ''}</span></div>${skins}${r.carries.length ? `<div class="muted small">Carried: holes ${r.carries.map(c => c.hole).join(', ')}</div>` : ''}</section>
-    <section class="panel"><h3>Players</h3><div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="num">Hcp</th><th class="num">Gross</th><th class="num">Net</th><th class="num">Won</th><th class="num">${buyIn ? 'Vs. buy-in' : ''}</th></tr></thead><tbody>${people}</tbody></table></div></section>`;
+    <section class="panel"><div class="row between"><h3>Skins</h3><span class="muted small">All net · outright low wins · ${fmt$(r.skinsPot)} pot${r.skinUnits ? ' · ' + r.skinUnits + ' skin' + (r.skinUnits === 1 ? '' : 's') + ' won' : ''}</span></div>${skins}${r.carries.length ? `<div class="muted small">${r.carries[0].push ? 'Tied, no skin' : 'Tied, carried over'}: holes ${r.carries.map(c => c.hole).join(', ')}</div>` : ''}</section>
+    ${resetBtn()}<section class="panel"><h3>Players</h3><div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="num">Hcp</th><th class="num">Gross</th><th class="num">Net</th><th class="num">Won</th><th class="num">${buyIn ? 'Vs. buy-in' : ''}</th></tr></thead><tbody>${people}</tbody></table></div></section>`;
 }
 
+function resetBtn() { return `<section class="panel"><div class="row between"><span class="muted">Start the scoring over? Players, payouts and course stay.</span><button class="btn danger ${ui.armed === 'o-reset' ? 'armed' : ''}" data-act="o-reset">${ui.armed === 'o-reset' ? 'Tap again to clear all scores' : 'Clear all scores'}</button></div></section>`; }
 function setPath(o, path, v) { const ks = path.split('.'); let x = o; for (let i = 0; i < ks.length - 1; i++) x = x[ks[i]]; x[ks[ks.length - 1]] = v; }
 function outingField(el) {
   const next = clone(OUT), path = el.dataset.of;
@@ -2484,6 +2488,7 @@ function outingField(el) {
 }
 function outingAction(act, b) {
   if (act === 'o-preset') return loadPreset(b.dataset.k, b.dataset.t);
+  if (act === 'o-reset') { if (ui.armed !== 'o-reset') { arm('o-reset'); return render(); } ui.armed = null; ui.oh = null; ui.ovals = {}; const next = clone(OUT); next.scores = {}; toast('Scores cleared.'); return saveOuting(next); }
   if (act === 'o-start') { ui.osec = 'setup'; try { return saveOuting(outingDefaults()); } catch (e) { ui.outSaveErr = 'App error: ' + (e && e.message); OUT = null; return render(); } }
   if (act === 'o-sec') { ui.osec = b.dataset.k; ui.oh = null; ui.ovals = {}; return render(); }
   if (act === 'o-clear') { if (ui.armed !== 'o-clear') { arm('o-clear'); return render(); } ui.armed = null; ui.oh = null; ui.osec = 'setup';
@@ -3284,6 +3289,7 @@ document.getElementById('main').addEventListener('change', async (e) => {
   if (ds.score) return;
   if (ds.cmpadd) { if (el.value && ui.sheet && ui.sheet.t === 'cmp') ui.sheet.pids = ui.sheet.pids.concat(el.value).slice(0, 4); return render(); }
   if (ds.of) return outingField(el);
+  if (ds.ofcarry) { const next = clone(OUT); next.skinsCarry = el.value === 'carry'; delete next.skinsType; return saveOuting(next); }
   if (ds.ofpartner) { const next = clone(OUT); next.partner = el.value; delete next.teams; return saveOuting(next); }
   if (ds.me) { setMe(el.value || null); ui.meSkip = true; if (el.value) toast('Following ' + S.players[el.value].name + '.'); return render(); }
   if (ds.fix) { ui.fix = ui.fix || {}; ui.fix[ds.fix] = el.value; if (ds.fix === 'day') ui.fix.key = ''; return ds.fix === 'v' ? undefined : render(); }
@@ -3364,7 +3370,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261102220959';
+const APP_VERSION = '20261106212520';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
