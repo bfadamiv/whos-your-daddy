@@ -2513,10 +2513,14 @@ function outingResults() {
     __MATCHROW__</tbody></table></div><div class="muted small">Best net ball on each hole. Green marks the team that won the hole. * = nine still in progress.</div>` : '';
   const nines = r.games.map(g => `<div class="li"><span><b>${esc(g.label)}</b> ${g.list.filter(x => x.payout).map(x => esc(x.name) + ' ' + x.total).join(', ') || '<span class="muted">not decided</span>'}</span><span class="amt">${g.list.filter(x => x.payout).reduce((s, x) => s + x.payout, 0) ? fmt$(g.list.filter(x => x.payout).reduce((s, x) => s + x.payout, 0)) : ''}</span></div>`).join('');
   // Skins money isn't divided until every card is in: the value of a skin depends on how many get won.
-  const skinsDone = r.complete;
-  const skins = r.skins.map(s => s.winners.map(w => `<div class="li"><span><b>Hole ${s.hole}</b> ${esc(w.name)} <span class="muted small">${s.gross ? 'gross' : 'net'} ${s.score}${s.worth > 1 ? ' · worth ' + s.worth + ' skins' : ''}${s.winners.length === 2 ? ' · split' : ''}</span></span><span class="amt">${skinsDone ? fmt$(w.amt) : s.worth + ' skin' + (s.worth > 1 ? 's' : '')}</span></div>`).join('')).join('') || '<div class="muted">No skins yet.</div>';
-  const skinsNote = skinsDone ? '' : `<div class="muted small">Skins money is split after 18: the ${fmt$(r.skinsPot)} pot is divided by the number of skins won.${r.carryOut ? ' ' + r.carryOut + ' skin' + (r.carryOut > 1 ? 's are' : ' is') + ' carrying right now.' : ''}</div>`;
-  const skinMoney = (k) => ((r.money[k] && r.money[k].items) || []).filter(i => /skin/i.test(i.why)).reduce((a, i) => a + i.amt, 0);
+  // During the round each skin is worth pot ÷ 18. Whatever isn't won (carrying or lost) is held and split among the skins won once all 18 are in.
+  const skinsDone = r.complete, perSkin = (Number(r.skinsPot) || 0) / 18;
+  const liveAmt = (s, w) => Math.round(perSkin * s.worth * (w.share / s.worth));
+  const skins = r.skins.map(s => s.winners.map(w => `<div class="li"><span><b>Hole ${s.hole}</b> ${esc(w.name)} <span class="muted small">${s.gross ? 'gross' : 'net'} ${s.score}${s.worth > 1 ? ' · worth ' + s.worth + ' skins' : ''}${s.winners.length === 2 ? ' · split' : ''}</span></span><span class="amt">${fmt$(skinsDone ? w.amt : liveAmt(s, w))}</span></div>`).join('')).join('') || '<div class="muted">No skins yet.</div>';
+  const liveWon = r.skins.reduce((a, s) => a + s.winners.reduce((b, w) => b + liveAmt(s, w), 0), 0);
+  const skinsNote = skinsDone ? '' : `<div class="muted small">So far each skin is worth ${fmt$(Math.round(perSkin * 100) / 100)} (${fmt$(r.skinsPot)} ÷ 18). The other ${fmt$(Math.max(0, r.skinsPot - liveWon))} is held${r.carryOut ? ', including ' + r.carryOut + ' skin' + (r.carryOut > 1 ? 's' : '') + ' carrying now,' : ''} and split among the skins won once all 18 are in.</div>`;
+  const engineSkin = (k) => ((r.money[k] && r.money[k].items) || []).filter(i => /skin/i.test(i.why)).reduce((a, i) => a + i.amt, 0);
+  const liveSkin = (k) => r.skins.reduce((a, s) => a + s.winners.filter(w => w.pids.includes(k)).reduce((b, w) => b + liveAmt(s, w), 0), 0);
   const buyIn = Number(OUT.buyIn) || 0;
   const mp = outMatch(r, st);
   const matchRow = mp ? `<tr class="mp"><td class="lab">Match</td>${[...Array(18).keys()].map(h => { const v = mp.status[h]; return `<td>${v == null ? '' : v === 'AS' ? 'AS' : v.slice(0, -1) + '<small>' + (v.endsWith('A') ? '▲' : '▼') + '</small>'}</td>` + (h === 8 ? '<td class="tot"></td>' : ''); }).join('')}<td class="tot"></td><td class="tot"></td></tr>` : '';
@@ -2524,7 +2528,7 @@ function outingResults() {
     <div class="h2h-res">${esc(mp.text)}</div>
     <div class="muted small">${esc(mp.nameA)} (▲) vs. ${esc(mp.nameB)} (▼), best net ball, hole by hole. The Match row on the card above shows the running status.${mp.pot ? ` Pays ${fmt$(mp.pot)} to the winning team${mp.final && mp.winner ? '' : ', split four ways if halved'}.` : ''}</div>
     ${mp.final && mp.pot ? `<div class="li"><span><b>Match play</b> ${mp.winner ? esc(mp.winner === mp.A ? mp.nameA : mp.nameB) : 'Halved'}</span><span class="amt">${fmt$(mp.pot)}</span></div>` : ''}</section>` : '';
-  const people = OUT_KEYS.filter(k => st.players[k]).map(k => { const ph = playerPH(st, k, 'out'), card = cappedCard(st, 'out', k, ph), n = card.filter(v => v != null).length, g = card.reduce((a, b) => a + (b || 0), 0), m0 = r.money[k] || { total: 0, items: [] }, m = { total: m0.total - (skinsDone ? 0 : skinMoney(k)) + ((mp && mp.money[k]) || 0) };
+  const people = OUT_KEYS.filter(k => st.players[k]).map(k => { const ph = playerPH(st, k, 'out'), card = cappedCard(st, 'out', k, ph), n = card.filter(v => v != null).length, g = card.reduce((a, b) => a + (b || 0), 0), m0 = r.money[k] || { total: 0, items: [] }, m = { total: m0.total - (skinsDone ? 0 : engineSkin(k) - liveSkin(k)) + ((mp && mp.money[k]) || 0) };
     return `<tr><td>${esc(st.players[k].name)}</td><td class="num">${ph}</td><td class="num">${n ? g + (n < 18 ? ' <span class="muted small">thru ' + n + '</span>' : '') : '–'}</td><td class="num">${n === 18 ? g - ph + ' <span class="muted small">' + toParStr(g - ph - par) + '</span>' : ''}</td><td class="num"><b>${fmt$(m.total)}</b></td><td class="num">${buyIn ? (m.total - buyIn >= 0 ? '+' : '−') + fmt$(Math.abs(m.total - buyIn)) : ''}</td></tr>`; }).join('');
   return `<section class="panel"><div class="row between"><h2>Best ball</h2>${r.complete ? '<span class="pill final">Final</span>' : live.some(x => x.thru) ? '<span class="pill live">Live</span>' : ''}</div>
       ${status}<div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Team</th><th class="num">Thru</th><th class="num">Out</th><th class="num">In</th><th class="num">Net</th><th class="num">To par</th><th class="num">Won</th></tr></thead><tbody>${teamRows}</tbody></table></div>${holeCard.replace('__MATCHROW__', matchRow)}${nines}</section>
@@ -3427,7 +3431,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261108090001';
+const APP_VERSION = '20261108090352';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
