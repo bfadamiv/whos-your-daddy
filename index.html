@@ -619,6 +619,7 @@ ol.pb-top .amt { font-family: var(--font-display); font-weight: 700; font-size: 
 td.score.under { color: var(--red); }
 .card.mini tr.mp td { font-family: var(--font-body); font-size: 12px; font-weight: 700; color: var(--pine); }
 .card.mini tr.mp td small { font-size: 9px; margin-left: 1px; }
+table.indt { width: 100%; table-layout: fixed; } table.indt th { white-space: normal; font-size: 11px; line-height: 1.15; } table.indt th:nth-child(1) { width: 28px; } table.indt th:nth-child(3) { width: 34px; } table.indt th:nth-child(4), table.indt th:nth-child(5) { width: 44px; } table.indt th:nth-child(6) { width: 56px; } table.indt td, table.indt th { padding: 7px 4px; } table.indt td:nth-child(2) { white-space: normal; } table.indt td small { font-size: 12px; } table.indt td.score small { color: inherit; }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -2528,13 +2529,34 @@ function outingResults() {
     <div class="h2h-res">${esc(mp.text)}</div>
     <div class="muted small">${esc(mp.nameA)} (▲) vs. ${esc(mp.nameB)} (▼), best net ball, hole by hole. The Match row on the card above shows the running status.${mp.pot ? ` Pays ${fmt$(mp.pot)} to the winning team${mp.final && mp.winner ? '' : ', split four ways if halved'}.` : ''}</div>
     ${mp.final && mp.pot ? `<div class="li"><span><b>Match play</b> ${mp.winner ? esc(mp.winner === mp.A ? mp.nameA : mp.nameB) : 'Halved'}</span><span class="amt">${fmt$(mp.pot)}</span></div>` : ''}</section>` : '';
-  const people = OUT_KEYS.filter(k => st.players[k]).map(k => { const ph = playerPH(st, k, 'out'), card = cappedCard(st, 'out', k, ph), n = card.filter(v => v != null).length, g = card.reduce((a, b) => a + (b || 0), 0), m0 = r.money[k] || { total: 0, items: [] }, m = { total: m0.total - (skinsDone ? 0 : engineSkin(k) - liveSkin(k)) + ((mp && mp.money[k]) || 0) };
-    return `<tr><td>${esc(st.players[k].name)}</td><td class="num">${ph}</td><td class="num">${n ? g + (n < 18 ? ' <span class="muted small">thru ' + n + '</span>' : '') : '–'}</td><td class="num">${n === 18 ? g - ph + ' <span class="muted small">' + toParStr(g - ph - par) + '</span>' : ''}</td><td class="num"><b>${fmt$(m.total)}</b></td><td class="num">${buyIn ? (m.total - buyIn >= 0 ? '+' : '−') + fmt$(Math.abs(m.total - buyIn)) : ''}</td></tr>`; }).join('');
+  // Individual scores, live: gross and net over the holes each player has finished.
+  const indiv = OUT_KEYS.filter(k => st.players[k]).map(k => {
+    const ph = playerPH(st, k, 'out'), card = cappedCard(st, 'out', k, ph);
+    const done = card.map((v, h) => v == null ? null : h).filter(h => h != null);
+    const g = done.reduce((a, h) => a + card[h], 0), net = done.reduce((a, h) => a + card[h] - pops(ph, course.si[h]), 0), parT = done.reduce((a, h) => a + course.pars[h], 0);
+    const m0 = r.money[k] || { total: 0, items: [] }, won = m0.total - (skinsDone ? 0 : engineSkin(k) - liveSkin(k)) + ((mp && mp.money[k]) || 0);
+    return { k, name: st.players[k].name, ph, card, thru: done.length, g, net, tpG: done.length ? g - parT : null, tpN: done.length ? net - parT : null, won };
+  });
+  const byNet = indiv.slice().sort((x, y) => (x.tpN == null) - (y.tpN == null) || (x.tpN ?? 0) - (y.tpN ?? 0) || (x.tpG ?? 0) - (y.tpG ?? 0));
+  const nRank = rankLabels(byNet, x => x.tpN);
+  const people = byNet.map((x, i) => `<tr><td class="pos">${x.thru ? nRank[i] : ''}</td><td>${esc(lastName(x.name))}<br><span class="muted small">hcp ${x.ph}</span></td><td class="num">${x.thru === 18 ? 'F' : x.thru || '–'}</td><td class="num">${x.thru ? x.g + '<br><small class="muted">' + toParStr(x.tpG) + '</small>' : ''}</td><td class="num score ${x.tpN < 0 ? 'under' : ''}">${x.thru ? x.net + '<br><small>' + toParStr(x.tpN) + '</small>' : ''}</td><td class="num"><b>${fmt$(x.won)}</b>${buyIn ? `<br><small class="muted">${(x.won - buyIn >= 0 ? '+' : '−') + fmt$(Math.abs(x.won - buyIn))}</small>` : ''}</td></tr>`).join('');
+  const H2 = [...Array(18).keys()];
+  const scCell = (x, h) => { const v = x.card[h]; if (v == null) return '<td>–</td>'; const d = v - course.pars[h], st2 = pops(x.ph, course.si[h]);
+    return `<td><span class="sc ${d <= -2 ? 'eagle' : d === -1 ? 'birdie' : d === 1 ? 'bogey' : d >= 2 ? 'dbl' : ''}">${v}</span>${st2 > 0 ? '<i class="dot">' + '•'.repeat(st2) + '</i>' : ''}</td>`; };
+  const segG = (x, a, b) => { const hs = H2.slice(a, b).filter(h => x.card[h] != null); return hs.length ? hs.reduce((s, h) => s + x.card[h], 0) : ''; };
+  const indCard = indiv.length ? `<div class="tbl-wrap"><table class="card mini fixed"><colgroup><col class="c-lab">${'<col class="c-h">'.repeat(9)}<col class="c-t">${'<col class="c-h">'.repeat(9)}<col class="c-t"><col class="c-t"><col class="c-t"></colgroup>
+    <thead><tr><th>Hole</th>${H2.slice(0, 9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">Out</th>${H2.slice(9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">In</th><th class="tot">Gross</th><th class="tot">Net</th></tr></thead><tbody>
+    <tr class="meta"><td class="lab">Par</td>${course.pars.slice(0, 9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${course.pars.slice(0, 9).reduce((a, b) => a + b, 0)}</td>${course.pars.slice(9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${course.pars.slice(9).reduce((a, b) => a + b, 0)}</td><td class="tot">${par}</td><td class="tot"></td></tr>
+    <tr class="meta"><td class="lab">Hdcp</td>${course.si.slice(0, 9).map(p => `<td>${p}</td>`).join('')}<td class="tot"></td>${course.si.slice(9).map(p => `<td>${p}</td>`).join('')}<td class="tot"></td><td class="tot"></td><td class="tot"></td></tr>
+    ${indiv.map(x => `<tr><td class="lab">${esc(lastName(x.name))} (${x.ph})</td>${H2.slice(0, 9).map(h => scCell(x, h)).join('')}<td class="tot">${segG(x, 0, 9)}</td>${H2.slice(9).map(h => scCell(x, h)).join('')}<td class="tot">${segG(x, 9, 18)}</td><td class="tot">${x.thru ? x.g : ''}</td><td class="tot"><b>${x.thru ? x.net : ''}</b></td></tr>`).join('')}
+    </tbody></table></div><div class="muted small">Gross scores. Dots mark holes where the player gets a stroke. Circles are birdies, squares are bogeys.</div>` : '';
   return `<section class="panel"><div class="row between"><h2>Best ball</h2>${r.complete ? '<span class="pill final">Final</span>' : live.some(x => x.thru) ? '<span class="pill live">Live</span>' : ''}</div>
       ${status}<div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Team</th><th class="num">Thru</th><th class="num">Out</th><th class="num">In</th><th class="num">Net</th><th class="num">To par</th><th class="num">Won</th></tr></thead><tbody>${teamRows}</tbody></table></div>${holeCard.replace('__MATCHROW__', matchRow)}${nines}</section>
     ${matchPanel}
     <section class="panel"><div class="row between"><h3>Skins</h3><span class="muted small">All net · outright low wins · ${fmt$(r.skinsPot)} pot${r.skinUnits ? ' · ' + r.skinUnits + ' skin' + (r.skinUnits === 1 ? '' : 's') + ' won' : ''}</span></div>${skins}${skinsNote}${r.carries.length ? `<div class="muted small">${r.carries[0].push ? 'Tied, no skin' : 'Tied, carried over'}: holes ${r.carries.map(c => c.hole).join(', ')}</div>` : ''}</section>
-    ${resetBtn()}<section class="panel"><h3>Players</h3><div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="num">Hcp</th><th class="num">Gross</th><th class="num">Net</th><th class="num">Won</th><th class="num">${buyIn ? 'Vs. buy-in' : ''}</th></tr></thead><tbody>${people}</tbody></table></div></section>`;
+    <section class="panel"><div class="row between"><h2>Individual scores</h2>${r.complete ? '<span class="pill final">Final</span>' : indiv.some(x => x.thru) ? '<span class="pill live">Live</span>' : ''}</div>
+      <div class="tbl-wrap"><table class="indt"><thead><tr><th>#</th><th>Player</th><th class="num">Thru</th><th class="num">Gross</th><th class="num">Net</th><th class="num">Won</th></tr></thead><tbody>${people}</tbody></table></div>
+      ${indCard}</section>${resetBtn()}`;
 }
 
 function resetBtn() { return `<section class="panel"><div class="row between"><span class="muted">Start the scoring over? Players, payouts and course stay.</span><button class="btn danger ${ui.armed === 'o-reset' ? 'armed' : ''}" data-act="o-reset">${ui.armed === 'o-reset' ? 'Tap again to clear all scores' : 'Clear all scores'}</button></div></section>`; }
@@ -3431,7 +3453,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261108090352';
+const APP_VERSION = '20261108091722';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
