@@ -2379,7 +2379,7 @@ function outState() {
     config: {
       tieBreak: 'split', maxScore: { type: 'netDoublePar' },
       courses: { oc: { name: c.name || 'Course', city: c.city || '', pars, si: c.si.map(Number), tees: [{ id: 't', name: c.tee.name || 'Tees', rating: num(c.tee.rating) || par, slope: num(c.tee.slope) || 113, par: num(c.tee.par) || par }], defaultTee: 't' } },
-      days: { out: { label: o.name, format: 'bb2', course: 'oc', places: num(o.pay.bb18) ? [num(o.pay.bb18)] : [], skinsPot: num(o.pay.skins), skinsType: 'net', skinsSolo: true, skinsCarry: o.skinsCarry === true,
+      days: { out: { label: o.name, format: 'bb2', course: 'oc', places: num(o.pay.bb18) ? [num(o.pay.bb18)] : [], skinsPot: num(o.pay.skins), skinsType: 'net', skinsSolo: true, skinsCarry: o.skinsCarry !== false,
         side: { teamF9: num(o.pay.bbF9) ? [num(o.pay.bbF9)] : [], teamB9: num(o.pay.bbB9) ? [num(o.pay.bbB9)] : [] }, contests: [], allowance: o.allowance == null ? 100 : num(o.allowance) } },
     },
     players, teams: { out: outTeams(o).map((t, i) => ({ id: 'T' + (i + 1), pids: t.filter(p => players[p]) })) },
@@ -2425,7 +2425,7 @@ function outingSetup() {
       <label class="f">Front 9${inp('pay.bbF9', o.pay.bbF9, 80, 'inputmode="decimal"')}</label>
       <label class="f">Back 9${inp('pay.bbB9', o.pay.bbB9, 80, 'inputmode="decimal"')}</label>
       <label class="f">Skins pot${inp('pay.skins', o.pay.skins, 90, 'inputmode="decimal"')}</label>
-      <label class="f">Skins ties<select id="of-skinsCarry" data-ofcarry="1"><option value="push" ${o.skinsCarry === true ? '' : 'selected'}>Push (nobody wins the hole)</option><option value="carry" ${o.skinsCarry === true ? 'selected' : ''}>Carry over to the next hole</option></select></label>
+      <label class="f">Skins ties<select id="of-skinsCarry" data-ofcarry="1"><option value="carry" ${o.skinsCarry !== false ? 'selected' : ''}>Carry over to the next hole</option><option value="push" ${o.skinsCarry === false ? 'selected' : ''}>Push (skin is lost)</option></select></label>
       <label class="f">Handicap %${inp('allowance', o.allowance ?? 100, 70, 'inputmode="numeric"')}</label></div>
       <div class="muted">Pot ${fmt$(pot)} · assigned ${fmt$(potTot)} ${pot ? (Math.abs(pot - potTot) < 1 ? '✓' : `· ${fmt$(Math.abs(pot - potTot))} ${pot > potTot ? 'left to assign' : 'over'}`) : ''}. Team money splits evenly between partners; ties split. Skins are all net, and only an outright low net score wins one.</div></section>
     <section class="panel"><h3>Course</h3>
@@ -3370,7 +3370,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261106212520';
+const APP_VERSION = '20261108061314';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
