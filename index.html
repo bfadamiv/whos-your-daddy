@@ -615,6 +615,8 @@ ol.pb-top .amt { font-family: var(--font-display); font-weight: 700; font-size: 
 @media (max-width: 600px) { .lb-top { flex-direction: column-reverse; align-items: stretch; } .tvbtn { justify-content: center; } }
 .preset { display: flex; flex-direction: column; gap: 6px; border: 1px dashed var(--pine); border-radius: 8px; padding: 10px 12px; }
 .preset .btn { font-size: 13px; padding: 7px 10px; }
+.card.mini td.won { background: var(--pine-soft); color: var(--pine); font-weight: 700; box-shadow: inset 0 0 0 2px var(--pine); }
+td.score.under { color: var(--red); }
 </style>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -2463,15 +2465,31 @@ function outingScore() {
 
 function outingResults() {
   const st = outState(), r = computeDay(st, 'out'), course = st.config.courses.oc, par = course.pars.reduce((a, b) => a + b, 0);
-  const teamRows = r.standings.map(t => { const seg = (a, b) => t.holes.slice(a, b).every(v => v != null) ? t.holes.slice(a, b).reduce((x, y) => x + y, 0) : '';
-    return `<tr class="${t.payout ? 'paid' : ''}"><td class="pos">${t.thru === 18 ? (t.tied ? 'T' : '') + t.pos : '–'}</td><td>${esc(t.pids.map(p => st.players[p].name).join(' & '))}</td><td class="num">${t.thru === 18 ? 'F' : t.thru}</td><td class="num">${seg(0, 9)}</td><td class="num">${seg(9, 18)}</td><td class="num score">${t.total ?? ''}</td><td class="num">${t.payout ? fmt$(t.payout) : ''}</td></tr>`; }).join('');
+  // Live best ball: running net and to-par over the holes each team has finished, plus a hole-by-hole card.
+  const live = r.standings.map(t => {
+    const done = t.holes.map((v, h) => v == null ? null : h).filter(h => h != null);
+    const net = done.reduce((s, h) => s + t.holes[h], 0), parT = done.reduce((s, h) => s + course.pars[h], 0);
+    const seg = (a, b) => { const hs = done.filter(h => h >= a && h < b); return hs.length ? hs.reduce((s, h) => s + t.holes[h], 0) : null; };
+    return { t, thru: done.length, net, tp: done.length ? net - parT : null, out: seg(0, 9), inn: seg(9, 18), outAll: done.filter(h => h < 9).length === 9, inAll: done.filter(h => h >= 9).length === 9 };
+  }).sort((x, y) => (x.tp == null) - (y.tp == null) || (x.tp ?? 0) - (y.tp ?? 0));
+  const lead = live.length === 2 && live[0].tp != null && live[1].tp != null ? live[1].tp - live[0].tp : null;
+  const teamRows = live.map((x, i) => { const t = x.t, pos = t.thru === 18 && r.complete ? (t.tied ? 'T' : '') + t.pos : x.tp == null ? '–' : (lead === 0 ? 'T1' : String(i + 1));
+    return `<tr class="${t.payout ? 'paid' : ''}"><td class="pos">${pos}</td><td>${esc(t.pids.map(p => st.players[p].name).join(' & '))}</td><td class="num">${x.thru === 18 ? 'F' : x.thru || '–'}</td><td class="num">${x.out ?? ''}${x.out != null && !x.outAll ? '*' : ''}</td><td class="num">${x.inn ?? ''}${x.inn != null && !x.inAll ? '*' : ''}</td><td class="num score">${x.thru ? x.net : ''}</td><td class="num score ${x.tp < 0 ? 'under' : ''}">${x.tp == null ? '' : toParStr(x.tp)}</td><td class="num">${t.payout ? fmt$(t.payout) : ''}</td></tr>`; }).join('');
+  const status = r.complete ? '' : lead == null ? '' : `<div class="big-p">${lead === 0 ? 'All square' : esc(live[0].t.pids.map(p => lastName(st.players[p].name)).join(' & ')) + ' lead by ' + lead}${live[0].thru < 18 ? ` <span class="muted small">(through ${Math.min(live[0].thru, live[1].thru)})</span>` : ''}</div>`;
+  const H = [...Array(18).keys()];
+  const holeCard = r.standings.length ? `<div class="tbl-wrap"><table class="card mini fixed"><colgroup><col class="c-lab">${'<col class="c-h">'.repeat(9)}<col class="c-t">${'<col class="c-h">'.repeat(9)}<col class="c-t"><col class="c-t"></colgroup>
+    <thead><tr><th>Hole</th>${H.slice(0, 9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">Out</th>${H.slice(9).map(h => `<th>${h + 1}</th>`).join('')}<th class="tot">In</th><th class="tot">Tot</th></tr></thead><tbody>
+    <tr class="meta"><td class="lab">Par</td>${course.pars.slice(0, 9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${course.pars.slice(0, 9).reduce((a, b) => a + b, 0)}</td>${course.pars.slice(9).map(p => `<td>${p}</td>`).join('')}<td class="tot">${course.pars.slice(9).reduce((a, b) => a + b, 0)}</td><td class="tot">${par}</td></tr>
+    ${r.standings.map((t, i) => { const other = r.standings[1 - i]; const cell = (h) => { const v = t.holes[h], o = other && other.holes[h]; return `<td class="${v != null && o != null && v < o ? 'won' : ''}">${v ?? ''}</td>`; }; const sum = (a, b) => t.holes.slice(a, b).filter(v => v != null).reduce((x, y) => x + y, 0) || '';
+      return `<tr><td class="lab">${esc(t.pids.map(p => lastName(st.players[p].name)).join(' / '))}</td>${H.slice(0, 9).map(cell).join('')}<td class="tot">${sum(0, 9)}</td>${H.slice(9).map(cell).join('')}<td class="tot">${sum(9, 18)}</td><td class="tot">${sum(0, 18)}</td></tr>`; }).join('')}
+    </tbody></table></div><div class="muted small">Best net ball on each hole. Green marks the team that won the hole. * = nine still in progress.</div>` : '';
   const nines = r.games.map(g => `<div class="li"><span><b>${esc(g.label)}</b> ${g.list.filter(x => x.payout).map(x => esc(x.name) + ' ' + x.total).join(', ') || '<span class="muted">not decided</span>'}</span><span class="amt">${g.list.filter(x => x.payout).reduce((s, x) => s + x.payout, 0) ? fmt$(g.list.filter(x => x.payout).reduce((s, x) => s + x.payout, 0)) : ''}</span></div>`).join('');
   const skins = r.skins.map(s => s.winners.map(w => `<div class="li"><span><b>Hole ${s.hole}</b> ${esc(w.name)} <span class="muted small">${s.gross ? 'gross' : 'net'} ${s.score}${s.worth > 1 ? ' · worth ' + s.worth : ''}${s.winners.length === 2 ? ' · split' : ''}</span></span><span class="amt">${fmt$(w.amt)}</span></div>`).join('')).join('') || '<div class="muted">No skins yet.</div>';
   const buyIn = Number(OUT.buyIn) || 0;
   const people = OUT_KEYS.filter(k => st.players[k]).map(k => { const ph = playerPH(st, k, 'out'), card = cappedCard(st, 'out', k, ph), n = card.filter(v => v != null).length, g = card.reduce((a, b) => a + (b || 0), 0), m = r.money[k] || { total: 0, items: [] };
     return `<tr><td>${esc(st.players[k].name)}</td><td class="num">${ph}</td><td class="num">${n ? g + (n < 18 ? ' <span class="muted small">thru ' + n + '</span>' : '') : '–'}</td><td class="num">${n === 18 ? g - ph + ' <span class="muted small">' + toParStr(g - ph - par) + '</span>' : ''}</td><td class="num"><b>${fmt$(m.total)}</b></td><td class="num">${buyIn ? (m.total - buyIn >= 0 ? '+' : '−') + fmt$(Math.abs(m.total - buyIn)) : ''}</td></tr>`; }).join('');
-  return `<section class="panel"><div class="row between"><h2>Best ball</h2>${r.complete ? '<span class="pill final">Final</span>' : ''}</div>
-      <div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Team</th><th class="num">Thru</th><th class="num">Out</th><th class="num">In</th><th class="num">Net</th><th class="num">Won</th></tr></thead><tbody>${teamRows}</tbody></table></div>${nines}</section>
+  return `<section class="panel"><div class="row between"><h2>Best ball</h2>${r.complete ? '<span class="pill final">Final</span>' : live.some(x => x.thru) ? '<span class="pill live">Live</span>' : ''}</div>
+      ${status}<div class="tbl-wrap"><table><thead><tr><th>Pos</th><th>Team</th><th class="num">Thru</th><th class="num">Out</th><th class="num">In</th><th class="num">Net</th><th class="num">To par</th><th class="num">Won</th></tr></thead><tbody>${teamRows}</tbody></table></div>${holeCard}${nines}</section>
     <section class="panel"><div class="row between"><h3>Skins</h3><span class="muted small">All net · outright low wins · ${fmt$(r.skinsPot)} pot${r.skinUnits ? ' · ' + r.skinUnits + ' skin' + (r.skinUnits === 1 ? '' : 's') + ' won' : ''}</span></div>${skins}${r.carries.length ? `<div class="muted small">${r.carries[0].push ? 'Tied, no skin' : 'Tied, carried over'}: holes ${r.carries.map(c => c.hole).join(', ')}</div>` : ''}</section>
     ${resetBtn()}<section class="panel"><h3>Players</h3><div class="tbl-wrap"><table><thead><tr><th>Player</th><th class="num">Hcp</th><th class="num">Gross</th><th class="num">Net</th><th class="num">Won</th><th class="num">${buyIn ? 'Vs. buy-in' : ''}</th></tr></thead><tbody>${people}</tbody></table></div></section>`;
 }
@@ -3370,7 +3388,7 @@ async function boot() {
     if (ui.autoPin && !canWrite) { const pin = ui.autoPin; ui.autoPin = null; await submitPin(pin); }
   } catch (e) { /* watching only */ }
 }
-const APP_VERSION = '20261108061314';
+const APP_VERSION = '20261108084655';
 async function checkForUpdate() {
   try {
     const r = await fetch('version.json?t=' + Date.now(), { cache: 'no-store' });
